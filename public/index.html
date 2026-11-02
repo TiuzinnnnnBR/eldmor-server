@@ -2365,7 +2365,7 @@ function vignette(a){const k=W+'x'+H+'x'+a.toFixed(2);if(VIGK!==k){VIGK=k;VIG=ct
 /* ================= Servidor Eldmor: mundo fixo com nome de usuário e chefes compartilhados ================= */
 const SRV={on:false,ws:null,id:0,name:'',url:'',players:new Map(),bossBi:-1,bhp:0,bmax:0,sendT:0,want:false,retry:0,killOK:false,hits:0};
 const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(_){return''}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
-function srvDefaultUrl(){if(window.ELD_SAME)return location.origin.replace(/^http/,'ws');return lsGet('eldmor-srv')}
+function srvDefaultUrl(){if(window.ELD_SAME)return location.origin.replace(/^http/,'ws');return lsGet('eldmor-srv')||'wss://eldmor-server.onrender.com'}
 function srvNorm(u){u=(u||'').trim();if(!u)return'';if(!/^wss?:\/\//.test(u))u=(/^http:/.test(u)?u.replace(/^http/,'ws'):'wss://'+u.replace(/^https?:\/\//,''));return u.replace(/\/+$/,'')}
 function srvSend(o){try{if(SRV.ws&&SRV.ws.readyState===1)SRV.ws.send(JSON.stringify(o))}catch(_){}}
 function srvConnect(name,url){name=(name||'').trim().replace(/[<>]/g,'').slice(0,16);url=srvNorm(url);
@@ -2425,7 +2425,7 @@ function srvHTML(){const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<'
     return`<div id="srvbox"><h3>Servidor Eldmor</h3><p class="up">Conectado como <b>${esc(SRV.name)}</b>. ${SRV.players.size+1} jogador(es) online.</p>${ls?`<ul style="margin:6px 0 10px 18px;padding:0">${ls}</ul>`:'<p class="muted">Ninguém mais online agora.</p>'}
     <div class="row"><input id="schat" class="ninput" maxlength="80" placeholder="Mensagem para todos" autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"><button class="btn" data-act="schat">Enviar</button></div>
     <div class="row" style="margin-top:8px"><button class="btn" data-act="sleave">Sair do servidor</button></div><hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:14px 0"></div>`}
-  const nm=esc(S.uname||lsGet('eldmor-name')||''),url=esc(lsGet('eldmor-srv'));
+  const nm=esc(S.uname||lsGet('eldmor-name')||''),url=esc((lsGet('eldmor-srv')||'eldmor-server.onrender.com').replace(/^wss?:\/\//,''));
   return`<div id="srvbox"><h3>Servidor Eldmor (recomendado)</h3><p class="muted">Todo mundo entra no mesmo mundo fixo, com o próprio nome de usuário. Os chefes do servidor são raros e aparecem para todos ao mesmo tempo.</p>
   <div class="row"><input id="sname" class="ninput" maxlength="16" placeholder="Seu nome de usuário" value="${nm}" autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>
   ${window.ELD_SAME?'':`<div class="row" style="margin-top:8px"><input id="surl" class="ninput" placeholder="Endereço do servidor (ex.: eldmor.onrender.com)" value="${url}" autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>`}
