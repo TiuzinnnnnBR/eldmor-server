@@ -2448,7 +2448,7 @@ bossCheck=bossLimitCheck;
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
 /* ---- conta Google (Firebase): login e progresso salvo na nuvem ---- */
-const FB={cfg:null,ok:false,user:null,db:null,upT:0,busy:false,loading:null,cloud:null};
+const FB={cfg:{apiKey:"AIzaSyCtrgUNbpPSgmQeagRWB58Tw9RMkCeJbMo",authDomain:"reinos-de-eldmor.firebaseapp.com",projectId:"reinos-de-eldmor",storageBucket:"reinos-de-eldmor.firebasestorage.app",messagingSenderId:"267442802628",appId:"1:267442802628:web:3f15fe1e7e515e991b9e91"},ok:false,user:null,db:null,upT:0,busy:false,loading:null,cloud:null};
 function fbCfg(){return FB.cfg||window.ELD_FIREBASE||null}
 (function(){try{const s=document.createElement('script');s.src='config.js';s.onload=()=>{if(window.ELD_FIREBASE)fbInit()};s.onerror=()=>{};document.head.appendChild(s)}catch(_){}})();
 function fbLoad(){if(FB.loading)return FB.loading;const V='10.12.2',L=['app','auth','firestore'].map(n=>`https://cdn.jsdelivr.net/npm/firebase@${V}/firebase-${n}-compat.js`);
