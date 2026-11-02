@@ -2483,6 +2483,9 @@ function openGuide(){mode='modal';openModal(`<div class="mhead"><h2>Login com Go
 {const _ot=openTitle;openTitle=function(){_ot();const r=mbox.querySelector('.row');if(r)r.insertAdjacentHTML('afterend',gboxHTML())}}
 {const _oo=openOnline;openOnline=function(){_oo();const h=mbox.querySelector('.mhead');if(h)h.insertAdjacentHTML('afterend',gboxHTML());if(FB.user){const n=$('sname');if(n&&!n.value)n.value=(FB.user.displayName||'').split(' ')[0].slice(0,16)}}}
 
+const ELD_VER='v17 · 02/11/2026';
+{const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
+
 /* ================= atualização ================= */
 const keys={};
 function update(dt){
@@ -3040,6 +3043,6 @@ requestAnimationFrame(frame);
 })();
 </script>
 
-<script>if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+<script>if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>{let rl=false;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),10*60e3)}).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=true;try{if(typeof save==='function')save()}catch(e){}location.reload()})});</script>
 </body>
 </html>

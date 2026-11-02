@@ -1,0 +1,39 @@
+SERVIDOR ELDMOR — como colocar no ar de graça (Render)
+=====================================================
+
+O que tem aqui:
+- server.js     → o servidor (não precisa instalar nada)
+- package.json  → diz para o Render como ligar o servidor
+- public/       → o jogo inteiro (o servidor também entrega o jogo)
+
+PASSO A PASSO
+1) No GitHub, crie um repositório novo chamado  eldmor-server  (pode ser público).
+2) Clique em "Add file" > "Upload files" e arraste TUDO que está dentro desta pasta
+   (server.js, package.json, LEIA-ME.txt e a pasta public). Clique em "Commit changes".
+3) Entre em https://render.com e crie a conta com o seu GitHub (é grátis).
+4) Clique em "New +" > "Web Service" e escolha o repositório eldmor-server.
+5) Preencha assim:
+     Name:            eldmor   (vira o endereço eldmor.onrender.com)
+     Language:        Node
+     Build Command:   npm install
+     Start Command:   node server.js
+     Instance Type:   Free
+6) Clique em "Deploy Web Service" e espere aparecer "Live" (uns 2 minutos).
+
+PRONTO. O endereço do seu servidor é algo como:  https://eldmor.onrender.com
+
+COMO OS AMIGOS JOGAM
+- Jeito mais fácil: abram o endereço do servidor (https://eldmor.onrender.com).
+  O jogo abre e já sabe qual é o servidor. Menu > Online > digita o nome > "Entrar no servidor".
+- Pelo site do GitHub Pages, APK ou PC: Menu > Online, digite o nome e cole o endereço
+  do servidor (eldmor.onrender.com) uma vez só. O jogo guarda.
+
+COISAS BOAS DE SABER
+- No plano grátis o servidor "dorme" depois de 15 minutos sem ninguém.
+  O primeiro que entrar espera uns 30 a 50 segundos para ele acordar. Depois fica normal.
+- Cada um guarda o próprio progresso no aparelho, igual antes.
+- Os chefes do servidor aparecem um de cada vez, a cada 8 a 16 minutos, para todos ao mesmo tempo.
+  Quem bater no chefe ganha a recompensa quando ele morre.
+- Eventos (Lua de Sangue, Chuva de Ouro, etc.) também são iguais para todos.
+- Para atualizar o jogo no servidor: troque a pasta public pela nova e faça "Commit".
+  O Render atualiza sozinho.
