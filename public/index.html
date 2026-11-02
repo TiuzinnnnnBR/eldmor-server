@@ -2456,10 +2456,12 @@ function fbLoad(){if(FB.loading)return FB.loading;const V='10.12.2',L=['app','au
 async function fbInit(){const c=fbCfg();if(!c||FB.ok)return FB.ok;try{await fbLoad();if(!firebase.apps.length)firebase.initializeApp(c);FB.db=firebase.firestore();FB.ok=true;
   firebase.auth().onAuthStateChanged(u=>{FB.user=u||null;if(u)fbAfterLogin();fbRefresh()});try{await firebase.auth().getRedirectResult()}catch(_){}}catch(e){FB.ok=false}return FB.ok}
 function fbRefresh(){const b=$('gbox');if(b)b.outerHTML=gboxHTML()}
-async function gLogin(){if(!fbCfg()){openGuide();return}if(!(await fbInit())){toast('Não consegui carregar o login do Google. Confira a internet.','#ff7a6e');return}
+const IN_APP=/EldmorApp|; wv\)|Electron/.test(navigator.userAgent)||location.protocol==='file:';
+function openAppLogin(){mode='modal';const site='https://tiuzinnnnnbr.github.io/eldmor-/';openModal(`<div class="mhead"><h2>Login com Google</h2><button class="btn s" data-act="close">Fechar</button></div><p>O Google não deixa fazer login dentro de aplicativos, por segurança. Por isso o login com Google funciona só pelo navegador.</p><p class="muted">Abra o jogo pelo site, entre com o Google e o seu progresso de lá fica salvo na nuvem. Aqui no aplicativo o progresso continua salvo no aparelho normalmente.</p><div class="row" style="margin-top:12px"><a class="btn pri" href="${site}" target="_blank" rel="noopener">Abrir o jogo no navegador</a></div>`,false,'small')}
+async function gLogin(){if(IN_APP){openAppLogin();return}if(!fbCfg()){openGuide();return}if(!(await fbInit())){toast('Não consegui carregar o login do Google. Confira a internet.','#ff7a6e');return}
   const pr=new firebase.auth.GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});
   try{await firebase.auth().signInWithPopup(pr)}catch(e){const c=e&&e.code||'';
-    if(c==='auth/popup-blocked'||c==='auth/operation-not-supported-in-this-environment'||c==='auth/cancelled-popup-request'){try{await firebase.auth().signInWithRedirect(pr)}catch(e2){gErr(e2)}}else if(c!=='auth/popup-closed-by-user')gErr(e)}}
+    if(c==='auth/popup-blocked'){try{await firebase.auth().signInWithRedirect(pr)}catch(e2){gErr(e2)}}else if(c!=='auth/popup-closed-by-user')gErr(e)}}
 function gErr(e){const c=e&&e.code||'';toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase. Veja o LEIA-ME da conta Google.':c==='auth/web-storage-unsupported'||/disallowed/.test(String(e&&e.message))?'O Google não deixa entrar por aqui. Use o jogo pelo navegador.':'Não deu para entrar com o Google ('+(c||'erro')+').','#ff7a6e')}
 async function gLogout(){try{await fbUpload(true);await firebase.auth().signOut()}catch(_){}FB.user=null;FB.cloud=null;toast('Você saiu da conta Google. O progresso continua salvo neste aparelho.','#a597bd');fbRefresh()}
 async function fbAfterLogin(){const u=FB.user;if(!u)return;S.uname=S.uname||(u.displayName||'').split(' ')[0].slice(0,16);try{if(!lsGet('eldmor-name'))lsSet('eldmor-name',(u.displayName||'').split(' ')[0].slice(0,16))}catch(_){}
@@ -2483,7 +2485,7 @@ function openGuide(){mode='modal';openModal(`<div class="mhead"><h2>Login com Go
 {const _ot=openTitle;openTitle=function(){_ot();const r=mbox.querySelector('.row');if(r)r.insertAdjacentHTML('afterend',gboxHTML())}}
 {const _oo=openOnline;openOnline=function(){_oo();const h=mbox.querySelector('.mhead');if(h)h.insertAdjacentHTML('afterend',gboxHTML());if(FB.user){const n=$('sname');if(n&&!n.value)n.value=(FB.user.displayName||'').split(' ')[0].slice(0,16)}}}
 
-const ELD_VER='v17 · 02/11/2026';
+const ELD_VER='v18 · 02/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ================= atualização ================= */
