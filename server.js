@@ -81,7 +81,7 @@ const online = () => [...clients.values()].filter(c => c.joined).length;
 const clean = s => String(s || '').replace(/[<>]/g, '').trim().slice(0, 16);
 
 /* ---------- mundo ---------- */
-const W = { boss: null, nextBoss: Date.now() + (process.env.BOSS_FIRST ? +process.env.BOSS_FIRST * 1000 : rand(3, 6) * MIN), ev: null, nextEv: Date.now() + (process.env.EV_FIRST ? +process.env.EV_FIRST * 1000 : rand(6, 10) * MIN) };
+const W = { tiles: new Map(), boss: null, nextBoss: Date.now() + (process.env.BOSS_FIRST ? +process.env.BOSS_FIRST * 1000 : rand(3, 6) * MIN), ev: null, nextEv: Date.now() + (process.env.EV_FIRST ? +process.env.EV_FIRST * 1000 : rand(6, 10) * MIN) };
 function pub(c) { if (!c.h) return c.h; return c.op ? Object.assign({}, c.h, { lv: 0, op: 1 }) : c.h; }
 function bossMsg() { const b = W.boss; return b ? { t: 'boss', bi: b.bi, hp: Math.ceil(b.hp), max: b.max } : null; }
 
@@ -92,7 +92,7 @@ function onMsg(c, m) {
     let base = name, k = 2; while (taken(name)) name = (base.slice(0, 13) + ' ' + k++);
     if (isOp(m.k)) { c.op = true; name = 'Operador level 0'; }
     c.name = name; c.h = m.h || null; c.joined = true;
-    send(c, { t: 'welcome', id: c.id, name, op: !!c.op, players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
+    send(c, { t: 'welcome', id: c.id, name, op: !!c.op, tiles: [...W.tiles], players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
     all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c);
     console.log('entrou:', name, '| online:', online()); return;
   }
@@ -102,6 +102,8 @@ function onMsg(c, m) {
     if (m.c === 'hide') { c.hide = !!m.v; if (c.hide) all({ t: 'pl', id: c.id }, c); else all({ t: 'pj', p: { id: c.id, name: c.name, h: pub(c) } }, c); }
     else if (m.c === 'boss' && m.bi >= 0 && m.bi < BOSSES) { if (W.boss) all({ t: 'bgone', bi: W.boss.bi }); W.boss = { bi: m.bi | 0, hp: 0, max: 0, who: new Set(), end: Date.now() + BOSS_LIFE * MIN, dirty: false, t: 0 }; all({ t: 'boss', bi: m.bi | 0 }); }
     else if (m.c === 'ev') { if (m.k && EVENTS.includes(m.k)) { W.ev = { k: m.k, end: Date.now() + EV_LEN * MIN }; all({ t: 'ev', k: m.k, rem: EV_LEN * MIN }); } else { W.ev = null; W.nextEv = Date.now() + rand(EV_MIN, EV_MAX) * MIN; all({ t: 'ev', k: null }); } }
+    else if (m.c === 'tile' && Number.isInteger(m.k) && Number.isInteger(m.v) && m.k >= 0 && m.k < 2e6 && m.v >= -2 && m.v < 32) { if (W.tiles.size < 60000 || W.tiles.has(m.k)) { W.tiles.set(m.k, m.v); all({ t: 'tile', k: m.k, v: m.v }); } }
+    else if (m.c === 'tilesclear') { W.tiles.clear(); }
     else if (m.c === 'smite') { const t = clients.get(m.id); if (t && t.joined && !t.op) send(t, { t: 'smite' }); }
     return;
   }

@@ -2483,7 +2483,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v20 · 03/11/2026';
+const ELD_VER='v21 · 03/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -2601,6 +2601,62 @@ setTimeout(()=>{let drag=null;mbody.addEventListener('pointerdown',e=>{if(e.targ
  addEventListener('keydown',e=>{if(menuEl.hidden||menuTab!=='map')return;if(e.code==='ArrowLeft'||e.code==='ArrowRight'){BIGOX=clamp(BIGOX+(e.code==='ArrowLeft'?-48:48),0,MW-256);drawBigMap();e.stopPropagation()}},true)},0);
 {const _om=openMenu;openMenu=function(t){BIGFOLLOW=true;return _om(t)}}
 WXK.push('fog','leaf','sand','snow','mote','ember');
+
+/* ================= Modo Criativo do Operador (construir, voar, itens, tempo) ================= */
+const CRE={blk:'grass',bar:null,applied:false,dayOff:0,dayLock:null,brush:1};
+const BLOCKS=[['grass','Grama',null],['path','Caminho',PATH],['floor','Piso',FLOOR],['cobble','Pedra lisa',COBBLE],['sand','Areia',SAND],['snow','Neve',SNOW],['water','Água',WATER],['lava','Lava',LAVA],['ice','Gelo',ICE],['tree','Árvore',TREE],['dead','Árvore seca',DEAD],['rock','Rocha',ROCK],['wall','Muro',WALL],['crystal','Cristal',CRYSTAL],['pillar','Coluna',PILLAR],['cactus','Cacto',CACTUS],['chasm','Abismo',CHASM],['erase','Apagar',-1]];
+const zst=z=>z>=12?[1,0,4,3,5,2][z-12]:z>=6?z-6:z;
+function mkObj(tx,ty){const k=I(tx,ty),t=map[k],z=zmap[k],h=HN(tx*31,ty*17);let img=null,kind='',jx=0;
+  if(t===TREE){img=(z===3||z===15)?SNOWP[(h*100|0)%2]:h<0.62?OAK[(h*100|0)%3]:PINE[(h*100|0)%2];kind='tree';jx=(HN(tx,ty*3)-0.5)*4}
+  else if(t===CACTUS){img=CACTI[(h*10|0)%2];kind='cactus'}else if(t===PILLAR){img=PILLARS[(h*10|0)%2];kind='pillar'}
+  else if(t===CRYSTAL){img=CRYST[HN(tx*3,ty)<0.6?1:0];kind='crystal'}else if(t===DEAD){img=DEADT[(h*10|0)%2];kind='dead'}
+  else if(t===ROCK){img=(ROCKS[z]||ROCKS[zst(z)])[(h*10|0)%2];kind='rock'}else if(t===WALL){img=WALLS[z]||WALLS[zst(z)];kind='wall'}
+  objAt[k]=img?{img,kind,x:tx*T+8+jx,y:ty*T+(kind==='wall'?16:kind==='tree'||kind==='dead'?14:13),w:img.width/G,h:img.height/G}:null}
+function updGP(k){const t=map[k];GP.fw[k]=t===WATER?1:0;GP.fi[k]=t===ICE?1:0;GP.fl[k]=t===LAVA?1:0;GP.fc[k]=t===CHASM?1:0;GP.fp[k]=t===PATH?1:0;GP.fco[k]=t===COBBLE?1:0;
+  const x0=k%MW,y0=(k/MW)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=x0+dx,y=y0+dy;if(x<0||y<0||x>=MW||y>=MH)continue;const kk=I(x,y);
+    for(const[a,n]of[['fw','nW'],['fi','nI'],['fl','nLv'],['fc','nC'],['fp','nP'],['fco','nCo']]){let s=0;for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const xx=clamp(x+i,0,MW-1),yy=clamp(y+j,0,MH-1);s+=GP[a][yy*MW+xx]}GP[n][kk]=s>0?1:0}}}
+function repaintAt(tx,ty){for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const cx=Math.floor((tx+dx)/CHK),cy=Math.floor((ty+dy)/CHK);if(cx<0||cy<0||cx>=CHW||cy>=CHH)continue;chunkCv[cy*CHW+cx]=null}
+  try{const g=miniBase.getContext('2d'),t=map[I(tx,ty)],z=zmap[I(tx,ty)];const c=t===WATER?WA[1]:t===LAVA?LA[3]:t===ICE?IC[1]:t===CHASM?CA_[1]:t===PATH?(PA[z]||PA[0])[1]:t===COBBLE?CO[2]:(t===FLOOR||t===WALL)?(FLc[z]||FLc[0])[0]:SOLIDS[t]?[40,40,48]:(GR[z]||GR[0])[1];g.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;g.fillRect(tx*2,ty*2,2,2)}catch(_){}}
+function setTile(k,v,from){if(k<0||k>=MW*MH)return;const tx=k%MW,ty=(k/MW)|0;if(tx<1||ty<1||tx>=MW-1||ty>=MH-1)return;let t=v;if(v===-2)t=ZB[zmap[k]]===undefined?GRASS:ZB[zmap[k]];
+  if(map[k]===HOUSE||map[k]===CAVE||map[k]===CEXIT)return;map[k]=t;pmap[k]=t;mkObj(tx,ty);updGP(k);repaintAt(tx,ty);if(!SOLIDS[t])reach[k]=1;
+  if(from!=='net'&&from!=='load'){if(SRV.on&&GOD.srv)srvSend({t:'op',c:'tile',k,v});else{if(!S.edits)S.edits={};S.edits[k]=v}}}
+function blockVal(id){const b=BLOCKS.find(x=>x[0]===id);if(!b)return-2;if(b[2]===null)return-2;if(b[2]===-1)return-2;return b[2]}
+function buildAt(wx,wy){const tx=Math.floor(wx/T),ty=Math.floor(wy/T),r=CRE.brush-1;const v=blockVal(CRE.blk);
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=tx+dx,y=ty+dy;if(x<1||y<1||x>=MW-1||y>=MH-1)continue;if(SOLIDS[v>=0?v:0]&&hyp(P.x-(x*T+8),P.y-(y*T+8))<10&&!GOD.ghost)continue;setTile(I(x,y),v)}
+  burst(wx,wy,['#ffd040','#ffffff'],6,40,0.3,1)}
+function buildBar(on){if(!on){if(CRE.bar){CRE.bar.remove();CRE.bar=null}return}if(CRE.bar)return;const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:min(96vw,760px);padding:6px;background:rgba(20,14,30,.88);border:2px solid #ffd040;border-radius:8px;pointer-events:auto';
+  const draw=()=>{d.innerHTML=BLOCKS.map(b=>`<button data-b="${b[0]}" style="font:700 11px Nunito,system-ui;padding:5px 7px;border-radius:5px;border:1px solid ${CRE.blk===b[0]?'#ffd040':'#4a3d63'};background:${CRE.blk===b[0]?'#ffd040':'#1f1830'};color:${CRE.blk===b[0]?'#1a1020':'#f1e7d0'};cursor:pointer">${b[1]}</button>`).join('')+`<button data-brush="1" style="font:800 11px Nunito;padding:5px 8px;border-radius:5px;border:1px solid #8ad8ff;background:#1f1830;color:#8ad8ff">Pincel ${CRE.brush}x${CRE.brush}</button><button data-close="1" style="font:800 11px Nunito;padding:5px 8px;border-radius:5px;border:1px solid #ff7a6e;background:#1f1830;color:#ff7a6e">Sair da construção</button>`};
+  draw();d.addEventListener('pointerdown',e=>e.stopPropagation());d.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;if(b.dataset.b)CRE.blk=b.dataset.b;if(b.dataset.brush)CRE.brush=CRE.brush===1?2:CRE.brush===2?3:1;if(b.dataset.close){GOD.build=false;buildBar(false);toast('Modo construção desligado.','#ffd040');return}draw()});document.body.appendChild(d);CRE.bar=d}
+setTimeout(()=>{let painting=false;
+  cv.addEventListener('pointerdown',e=>{if(!GOD.on||!GOD.build||mode!=='play'||e.button===2)return;e.stopImmediatePropagation();e.preventDefault();painting=true;const w=screenToWorld(e.clientX,e.clientY);buildAt(w.x,w.y)},true);
+  cv.addEventListener('pointermove',e=>{if(!painting||!GOD.build)return;e.stopImmediatePropagation();const w=screenToWorld(e.clientX,e.clientY);const tx=Math.floor(w.x/T),ty=Math.floor(w.y/T);if(CRE.last===tx+','+ty)return;CRE.last=tx+','+ty;buildAt(w.x,w.y)},true);
+  window.addEventListener('pointerup',()=>{painting=false;CRE.last=null;if(GOD.build&&!(SRV.on&&GOD.srv))save()});
+  let md=null;mbody.addEventListener('pointerdown',e=>{if(e.target.id==='bigmap')md={x:e.clientX,y:e.clientY}},true);
+  mbody.addEventListener('pointerup',e=>{if(!GOD.on||e.target.id!=='bigmap'||!md)return;const far=hyp(e.clientX-md.x,e.clientY-md.y)>12;md=null;if(far)return;const r=e.target.getBoundingClientRect();const wx=((e.clientX-r.left)/r.width*256+BIGOX)*T,wy=(e.clientY-r.top)/r.height*MH*T;e.stopImmediatePropagation();P.x=wx;P.y=wy;P.path=null;P.target=null;cam.x=P.x;cam.y=P.y;closeMenu();zoneCheck();toast('Teleportado.','#ffd040')},true)},0);
+/* voar: andar em linha reta atravessando tudo */
+{const _wt=walkTo;walkTo=function(x,y,goal){if(GOD.on&&GOD.ghost){P.goal=goal||null;P.dash=null;P.path=[{x,y}];P.mark={x,y,t:0.7};P.stuck=0;return}return _wt(x,y,goal)}}
+/* tempo do dia */
+{const _dp=dayPhase;dayPhase=function(){if(CRE.dayLock!==null)return CRE.dayLock;return _dp()}}
+/* construções salvas (fora do servidor) */
+{const _up=update;update=function(dt){_up(dt);if(!CRE.applied&&mode==='play'&&S&&S.edits){CRE.applied=true;for(const k in S.edits)setTile(+k,S.edits[k],'load')}}}
+{const _sd=srvData;srvData=function(m){if(m&&m.t==='tile'){setTile(m.k,m.v,'net');return}if(m&&m.t==='welcome'&&m.tiles){setTimeout(()=>{for(const[k,v]of m.tiles)setTile(k,v,'net')},0)}return _sd(m)}}
+/* inventário criativo: todos os itens */
+function openAllItems(){mode='modal';const L=DB.slice().sort((a,b)=>b.rar-a.rar);
+  openModal(`<div class="mhead"><h2 style="color:#ffd040">Todos os itens</h2><button class="btn s" data-act="god" data-id="back">Voltar</button></div><p class="muted">Toque num item para colocar na mochila. O item vem no nível ${S.lvl}.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">${L.map(b=>`<button class="btn s" data-act="god" data-id="give:${b.id}" style="justify-content:flex-start;color:${RCOL[b.rar]};text-align:left">${esc(b.nome)}</button>`).join('')}</div>
+  <h3>Itens gerados</h3><div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(GT).map(t=>`<button class="btn s" data-act="god" data-id="gen:${t}">${GT[t].n} lendário</button>`).join('')}</div>`)}
+{const _og=openGod;openGod=function(){_og();const h=mbox.querySelector('h3');if(!h)return;h.insertAdjacentHTML('beforebegin',`<h3>Modo Criativo</h3><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn${GOD.build?' pri':''}" data-act="god" data-id="build">${GOD.build?'Construção: ligada':'Construir e quebrar blocos'}</button><button class="btn" data-act="god" data-id="fly">${GOD.ghost&&GOD.fast?'Voar: ligado':'Voar (atravessa tudo)'}</button><button class="btn" data-act="god" data-id="items">Todos os itens</button><button class="btn" data-act="god" data-id="max">Nível 300</button></div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn s" data-act="god" data-id="day:0.25">Dia</button><button class="btn s" data-act="god" data-id="day:0.62">Entardecer</button><button class="btn s" data-act="god" data-id="day:0.8">Noite</button><button class="btn s" data-act="god" data-id="day:auto">Tempo normal</button><button class="btn s" data-act="god" data-id="undo">Desfazer minhas construções</button></div>
+  <p class="muted" style="font-size:12px">No mapa grande, toque em qualquer lugar para se teletransportar.</p>`)}}
+{const _gc=godCmd;godCmd=function(id){const[a,b]=id.split(':');
+  if(a==='build'){GOD.build=!GOD.build;buildBar(GOD.build);closeModal();toast(GOD.build?'Construção ligada: escolha o bloco embaixo e toque no chão. Arraste para pintar.':'Construção desligada.','#ffd040');return}
+  if(a==='fly'){const on=!(GOD.ghost&&GOD.fast);GOD.ghost=on;GOD.fast=on;toast(on?'Voando: você atravessa tudo e anda rápido.':'Voo desligado.','#ffd040');openGod();return}
+  if(a==='items'){openAllItems();return}if(a==='back'){openGod();return}
+  if(a==='give'){const d=DBI[b];if(d){const it=itemFrom(d);it.lvl=Math.max(it.lvl||1,S.lvl);S.inv.unshift(it);toast('Recebeu: '+dname(it),RCOL[it.rar]);save()}return}
+  if(a==='gen'){const it=genItem(b,null,4,Math.max(1,S.lvl));S.inv.unshift(it);toast('Recebeu: '+dname(it),RCOL[4]);save();return}
+  if(a==='max'){let n=0;while(S.lvl<300&&n<400){gainXP(xpNeed(S.lvl)+1);n++}const st=stats();S.hp=st.mhp;S.mp=st.mmp;save();toast('Nível '+S.lvl+'!','#8bd86a');openGod();return}
+  if(a==='day'){CRE.dayLock=b==='auto'?null:+b;toast(b==='auto'?'O tempo voltou ao normal.':'Hora do dia alterada.','#ffd040');openGod();return}
+  if(a==='undo'){const E=S.edits||{};S.edits={};if(SRV.on&&GOD.srv)srvSend({t:'op',c:'tilesclear'});toast('As construções somem ao recarregar o jogo.','#ffd040');save();openGod();return}
+  return _gc(id)}}
 
 /* ================= atualização ================= */
 const keys={};
