@@ -2292,7 +2292,7 @@ ACH.push(['paulo','Para Sempre na Equipe','Deixe uma flor na estátua do Paulo',
 function pauloIn(x,y,m){m=m||0;return x>PAULO.x0*T-m&&x<(PAULO.x1+1)*T+m&&y>PAULO.y0*T-m&&y<(PAULO.y1+1)*T+m}
 {const _ue=updateEnemies;updateEnemies=function(dt){_ue(dt);const x0=PAULO.x0*T-6,x1=(PAULO.x1+1)*T+6,y0=PAULO.y0*T-6,y1=(PAULO.y1+1)*T+6;
   for(const e of enemies){if(e.x>x0&&e.x<x1&&e.y>y0&&e.y<y1){const dl=e.x-x0,dr=x1-e.x,du=e.y-y0,dd=y1-e.y,m=Math.min(dl,dr,du,dd);if(m===dl)e.x=x0;else if(m===dr)e.x=x1;else if(m===du)e.y=y0;else e.y=y1;if(pauloIn(P.x,P.y,8))e.aggro=false;if(Math.random()<0.15)parts.push({x:e.x,y:e.y-6,vx:rand(-10,10),vy:rand(-20,-6),life:0.6,max:0.6,col:pick(['#fff0a8','#ffffff']),s:1,g:0})}}
-  for(let i=projs.length-1;i>=0;i--){const p=projs[i];if(p.owner!=='p'&&pauloIn(p.x,p.y,2)){burst(p.x,p.y,['#fff0a8','#ffffff'],4,40,0.3,1);projs.splice(i,1)}}}}
+  for(let i=projs.length-1;i>=0;i--){const p=projs[i];if(!p)continue;if(p.owner!=='p'&&pauloIn(p.x,p.y,2)){burst(p.x,p.y,['#fff0a8','#ffffff'],4,40,0.3,1);projs.splice(i,1)}}}}
 const ANGEL_TXT=['Este lugar é protegido. Aqui nenhum monstro entra.','O Paulo pediu para a gente cuidar de quem vem visitar.','Descanse um pouco. Sua vida e sua mana voltam mais rápido aqui.','Ele sorria toda vez que alguém escolhia o Arqueiro.','Enquanto houver alguém lembrando dele, o Paulo continua aqui.'];
 {const _up=update;update=function(dt){_up(dt);if(!PAULO.angels)return;
   for(const o of PAULO.angels){o.img=ANGF[Math.floor(time*5+o.ph*3)%4];if(Math.abs(cam.x-o.x)<420&&Math.random()<dt*3)parts.push({x:o.x+rand(-8,8),y:o.y-rand(10,26),vx:rand(-4,4),vy:rand(-10,-3),life:1.2,max:1.2,col:pick(['#ffffff','#fff0a8','#d8e2ff']),s:1,g:0})}
@@ -2373,7 +2373,7 @@ function srvConnect(name,url){name=(name||'').trim().replace(/[<>]/g,'').slice(0
   if(NET.role){netStat('Saia da sala com código antes de entrar no servidor.');return}
   SRV.name=name;SRV.url=url;SRV.want=true;lsSet('eldmor-name',name);if(!window.ELD_SAME)lsSet('eldmor-srv',url);S.uname=name;srvOpen()}
 function srvOpen(){if(!SRV.want)return;netStat('Conectando ao servidor... (se ele estava dormindo, pode levar uns 30 segundos)');let ws;try{ws=new WebSocket(SRV.url)}catch(e){netStat('Endereço do servidor inválido.');SRV.want=false;return}SRV.ws=ws;
-  ws.onopen=()=>{SRV.retry=0;srvSend({t:'join',name:SRV.name,h:srvHero()})};
+  ws.onopen=()=>{SRV.retry=0;srvSend({t:'join',name:SRV.name,k:SRV.opKey||undefined,h:srvHero()})};
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(_){return}srvData(m)};
   ws.onclose=()=>{const was=SRV.on;srvDrop();if(SRV.want){SRV.retry++;if(was)toast('A conexão com o servidor caiu. Tentando voltar...','#a597bd');setTimeout(srvOpen,Math.min(15000,1500*SRV.retry))}};
   ws.onerror=()=>{if(!SRV.on)netStat('Não consegui falar com o servidor. Confira o endereço e a internet. Tentando de novo...')}}
@@ -2387,7 +2387,7 @@ function srvData(m){
     if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
     if(!modal.hidden&&mode==='modal'&&$('srvbox'))closeModal();toast(`Bem-vindo ao servidor, ${SRV.name}! ${SRV.players.size?SRV.players.size+' jogador(es) online.':'Você é o primeiro aqui.'}`,'#6ad8ff');sfx('lvl');return}
   if(!SRV.on)return;
-  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z})}}
+  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z})}}
   else if(m.t==='pj'){if(m.p.id!==SRV.id){srvAdd(m.p);toast(`${m.p.name} entrou no servidor.`,'#6ad8ff')}}
   else if(m.t==='pl'){const p=SRV.players.get(m.id);if(p){SRV.players.delete(m.id);toast(`${p.name} saiu do servidor.`,'#a597bd')}}
   else if(m.t==='ev'){if(m.k&&EVD[m.k]){EVT={k:m.k,end:Date.now()+m.rem};const d=EVD[m.k];banner(d.n,d.d);toast('Evento no servidor: '+d.n+'. '+d.d+'.',d.c);sfx('boss')}else EVT=null}
@@ -2398,7 +2398,7 @@ function srvData(m){
   else if(m.t==='bgone'){const e=enemies.find(x=>x.srv&&x.bi===m.bi);if(e)enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;toast(`${BD[m.bi].name} voltou para as sombras.`,'#a597bd')}
   else if(m.t==='chat'){toast(`${m.n}: ${m.m}`,'#e8e0ff')}
   $('p2hud')&&($('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online')}
-function srvAdd(p){const h=p.h||{};SRV.players.set(p.id,{id:p.id,name:p.name,x:h.x||SPAWN.x,y:h.y||SPAWN.y,tx:h.x||SPAWN.x,ty:h.y||SPAWN.y,dn:h.dn||'down',actT:0,actMax:0.3,walk:0,cls:h.cls||'warrior',look:h.look,dead:false,lv:h.lv||1,ghosts:[]})}
+function srvAdd(p){const h=p.h||{};SRV.players.set(p.id,{id:p.id,name:p.name,op:h.op,x:h.x||SPAWN.x,y:h.y||SPAWN.y,tx:h.x||SPAWN.x,ty:h.y||SPAWN.y,dn:h.dn||'down',actT:0,actMax:0.3,walk:0,cls:h.cls||'warrior',look:h.look,dead:false,lv:h.lv||1,ghosts:[]})}
 function srvBoss(m,announce){const bi=m.bi;if(!BD[bi])return;SRV.bossBi=bi;let e=enemies.find(x=>x.boss&&x.bi===bi);
   if(!e){const n=enemies.length;spawnBoss(bi);e=enemies[enemies.length-1];if(enemies.length===n||!e||!e.boss)return}
   e.srv=true;if(m.max){e.max=m.max;e.hp=Math.max(1,m.hp)}else srvSend({t:'bmax',bi,max:e.max});
@@ -2417,7 +2417,7 @@ function drawRemote(p){const sheet=heroSheet(p.cls||'warrior',p.look||LOOK_DEF[p
   ctx.save();ctx.translate(Math.round(p.x),Math.round(fy));if(d==='left')ctx.scale(-1,1);if(p.dead){ctx.rotate(-Math.PI/2);ctx.translate(0,-2)}ctx.drawImage(img,-w/2,-24.5,w,h);ctx.restore()}
 {const _dp=drawPlayer;drawPlayer=function(){if(SRV.on){const cx=cam.x,cy=cam.y,vw=W/SCALE,vh=H/SCALE;for(const p of SRV.players.values())if(Math.abs(p.x-cx)<vw&&Math.abs(p.y-cy)<vh)drawRemote(p)}_dp()}}
 {const _rn=render;render=function(){_rn();if(!SRV.on||mode==='title')return;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.font='800 12px Nunito, system-ui, sans-serif';
-  for(const p of SRV.players.values()){const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2;if(x<-80||y<-40||x>W+80||y>H+40)continue;const lb=p.name+' · Nv '+(p.lv||1);ctx.strokeText(lb,x,y);ctx.fillStyle='#6ad8ff';ctx.fillText(lb,x,y)}}}
+  for(const p of SRV.players.values()){const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2;if(x<-80||y<-40||x>W+80||y>H+40)continue;const lb=p.op?p.name:p.name+' · Nv '+(p.lv||1);ctx.strokeText(lb,x,y);ctx.fillStyle='#6ad8ff';ctx.fillText(lb,x,y)}}}
 {const _mm=drawMapMarkers;drawMapMarkers=function(g,s,big){_mm(g,s,big);if(!SRV.on)return;for(const p of SRV.players.values()){if(p.y>=SURF*T!==(P.y>=SURF*T))continue;g.fillStyle='#6ad8ff';g.fillRect(Math.floor(p.x/T*s)-(big?2:1),Math.floor(p.y/T*s)-(big?2:1),big?5:3,big?5:3)}}}
 {const _hm=heroMsg;heroMsg=function(){const m=_hm();return m}}
 function srvHTML(){const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -2447,46 +2447,73 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-/* ---- conta Google (Firebase): login e progresso salvo na nuvem ---- */
-const FB={cfg:{apiKey:"AIzaSyCtrgUNbpPSgmQeagRWB58Tw9RMkCeJbMo",authDomain:"reinos-de-eldmor.firebaseapp.com",projectId:"reinos-de-eldmor",storageBucket:"reinos-de-eldmor.firebasestorage.app",messagingSenderId:"267442802628",appId:"1:267442802628:web:3f15fe1e7e515e991b9e91"},ok:false,user:null,db:null,upT:0,busy:false,loading:null,cloud:null};
-function fbCfg(){return FB.cfg||window.ELD_FIREBASE||null}
-(function(){try{const s=document.createElement('script');s.src='config.js';s.onload=()=>{if(window.ELD_FIREBASE)fbInit()};s.onerror=()=>{};document.head.appendChild(s)}catch(_){}})();
-function fbLoad(){if(FB.loading)return FB.loading;const V='10.12.2',L=['app','auth','firestore'].map(n=>`https://cdn.jsdelivr.net/npm/firebase@${V}/firebase-${n}-compat.js`);
-  FB.loading=L.reduce((p,u)=>p.then(()=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})),Promise.resolve());return FB.loading}
-async function fbInit(){const c=fbCfg();if(!c||FB.ok)return FB.ok;try{await fbLoad();if(!firebase.apps.length)firebase.initializeApp(c);FB.db=firebase.firestore();FB.ok=true;
-  firebase.auth().onAuthStateChanged(u=>{FB.user=u||null;if(u)fbAfterLogin();fbRefresh()});try{await firebase.auth().getRedirectResult()}catch(_){}}catch(e){FB.ok=false}return FB.ok}
-function fbRefresh(){const b=$('gbox');if(b)b.outerHTML=gboxHTML()}
-const IN_APP=/EldmorApp|; wv\)|Electron/.test(navigator.userAgent)||location.protocol==='file:';
-function openAppLogin(){mode='modal';const site='https://tiuzinnnnnbr.github.io/eldmor-/';openModal(`<div class="mhead"><h2>Login com Google</h2><button class="btn s" data-act="close">Fechar</button></div><p>O Google não deixa fazer login dentro de aplicativos, por segurança. Por isso o login com Google funciona só pelo navegador.</p><p class="muted">Abra o jogo pelo site, entre com o Google e o seu progresso de lá fica salvo na nuvem. Aqui no aplicativo o progresso continua salvo no aparelho normalmente.</p><div class="row" style="margin-top:12px"><a class="btn pri" href="${site}" target="_blank" rel="noopener">Abrir o jogo no navegador</a></div>`,false,'small')}
-async function gLogin(){if(IN_APP){openAppLogin();return}if(!fbCfg()){openGuide();return}if(!(await fbInit())){toast('Não consegui carregar o login do Google. Confira a internet.','#ff7a6e');return}
-  const pr=new firebase.auth.GoogleAuthProvider();pr.setCustomParameters({prompt:'select_account'});
-  try{await firebase.auth().signInWithPopup(pr)}catch(e){const c=e&&e.code||'';
-    if(c==='auth/popup-blocked'){try{await firebase.auth().signInWithRedirect(pr)}catch(e2){gErr(e2)}}else if(c!=='auth/popup-closed-by-user')gErr(e)}}
-function gErr(e){const c=e&&e.code||'';toast(c==='auth/unauthorized-domain'?'Este endereço ainda não foi autorizado no Firebase. Veja o LEIA-ME da conta Google.':c==='auth/web-storage-unsupported'||/disallowed/.test(String(e&&e.message))?'O Google não deixa entrar por aqui. Use o jogo pelo navegador.':'Não deu para entrar com o Google ('+(c||'erro')+').','#ff7a6e')}
-async function gLogout(){try{await fbUpload(true);await firebase.auth().signOut()}catch(_){}FB.user=null;FB.cloud=null;toast('Você saiu da conta Google. O progresso continua salvo neste aparelho.','#a597bd');fbRefresh()}
-async function fbAfterLogin(){const u=FB.user;if(!u)return;S.uname=S.uname||(u.displayName||'').split(' ')[0].slice(0,16);try{if(!lsGet('eldmor-name'))lsSet('eldmor-name',(u.displayName||'').split(' ')[0].slice(0,16))}catch(_){}
-  try{const d=await FB.db.collection('saves').doc(u.uid).get();FB.cloud=d.exists?d.data():null}catch(e){FB.cloud=null;toast('Entrou como '+(u.displayName||'jogador')+', mas não consegui ler a nuvem agora.','#a597bd');return}
-  const loc=lsGet(KEY),lt=+(S.savedAt||0);
-  if(FB.cloud&&FB.cloud.data&&FB.cloud.data!==loc&&(FB.cloud.t||0)>lt+30e3){openCloudAsk();return}
-  toast('Conectado com o Google: '+(u.displayName||'')+'. Seu progresso vai ser salvo na nuvem.','#8bd86a');fbUpload(true)}
-function openCloudAsk(){const c=FB.cloud;let lv='?';try{lv=JSON.parse(c.data).lvl}catch(_){}mode='modal';
-  openModal(`<div class="mhead"><h2>Progresso na nuvem</h2></div><p>Encontrei um progresso salvo na sua conta Google: <b>nível ${lv}</b>, salvo em ${new Date(c.t).toLocaleString('pt-BR')}.</p><p class="muted">Neste aparelho você está no nível ${S.lvl}. Qual você quer usar?</p>
-  <div class="row" style="margin-top:12px"><button class="btn pri" data-act="gload">Usar o da nuvem</button><button class="btn" data-act="gkeep">Manter o deste aparelho</button></div>`,false,'small')}
-function gUseCloud(){const c=FB.cloud;if(!c||!c.data)return;try{JSON.parse(c.data);localStorage.setItem(KEY,c.data);toast('Carregando o progresso da nuvem...','#8bd86a');setTimeout(()=>location.reload(),400)}catch(_){toast('O progresso da nuvem está danificado.','#ff7a6e')}}
-function gKeep(){closeModal();fbUpload(true);toast('Mantive o progresso deste aparelho e mandei para a nuvem.','#8bd86a')}
-async function fbUpload(force){if(!FB.user||!FB.db||FB.busy)return;const now=Date.now();if(!force&&now-FB.upT<45e3)return;const data=lsGet(KEY);if(!data)return;if(data.length>900000)return;FB.busy=true;FB.upT=now;
-  try{await FB.db.collection('saves').doc(FB.user.uid).set({data,t:+(S.savedAt||now),lvl:S.lvl,name:FB.user.displayName||'',v:1})}catch(_){}FB.busy=false}
-{const _sv=save;save=function(){S.savedAt=Date.now();_sv();if(FB.user)fbUpload(false)}}
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&FB.user)fbUpload(true)});
-function gboxHTML(){const u=FB.user,esc2=t=>String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  if(u)return`<div id="gbox" class="qbox" style="display:flex;gap:10px;align-items:center;margin:10px 0">${u.photoURL?`<img src="${esc2(u.photoURL)}" alt="" referrerpolicy="no-referrer" style="width:36px;height:36px;border-radius:50%">`:''}<div style="flex:1;min-width:0"><b>${esc2(u.displayName)}</b><div class="muted" style="font-size:12px">Progresso salvo na nuvem</div></div><button class="btn s" data-act="glogout">Sair</button></div>`;
-  return`<div id="gbox" style="margin:10px 0"><button class="btn" data-act="glogin" style="display:inline-flex;gap:8px;align-items:center;background:#fff;color:#222;border-color:#ddd"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.8 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4-13.5-9.6l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Entrar com Google</button><span class="muted" style="font-size:12px;margin-left:8px">Salva o progresso na nuvem e usa seu nome no online</span></div>`}
-function openGuide(){mode='modal';openModal(`<div class="mhead"><h2>Login com Google</h2><button class="btn s" data-act="close">Fechar</button></div><p>O login com Google ainda não foi ligado nesta versão do jogo.</p><p class="muted">Quem cuida do jogo precisa criar um projeto grátis no Firebase e colar a configuração no arquivo <b>config.js</b>. O passo a passo está no arquivo LEIA-ME-GOOGLE.txt que vem junto com o jogo.</p>`,false,'small')}
-{const _ot=openTitle;openTitle=function(){_ot();const r=mbox.querySelector('.row');if(r)r.insertAdjacentHTML('afterend',gboxHTML())}}
-{const _oo=openOnline;openOnline=function(){_oo();const h=mbox.querySelector('.mhead');if(h)h.insertAdjacentHTML('afterend',gboxHTML());if(FB.user){const n=$('sname');if(n&&!n.value)n.value=(FB.user.displayName||'').split(' ')[0].slice(0,16)}}}
-
-const ELD_VER='v18 · 02/11/2026';
+const ELD_VER='v19 · 03/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
+
+/* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
+const MOBPOW=l=>30+l*l*1.1+l*18, MOBDMG=l=>5+l*1.6+l*l*0.012;
+for(let z=0;z<ZCOUNT.length;z++)ZCOUNT[z]=Math.round(ZCOUNT[z]*(z<6?1.7:1.75));
+for(let z=0;z<6&&z<ZREC.length;z++){const lo=ZMIN[z],hi=Math.round(lo*1.6+8);ZREC[z]=`Monstros nível ${lo} a ${hi}`}
+{const _me=makeEnemy;makeEnemy=function(type,x,y,minion){const e=_me(type,x,y,minion);const d0=e.def;if(!d0||e.boss)return e;
+  const spread=Math.max(2,Math.round(d0.lvl*0.6));const L=d0.lvl+(minion?0:Math.floor(Math.pow(Math.random(),1.6)*spread));
+  const f=MOBPOW(L)/MOBPOW(d0.lvl),fd=MOBDMG(L)/MOBDMG(d0.lvl);
+  const d=Object.assign({},d0,{lvl:L,hp:Math.round(d0.hp*1.45*f),dmg:Math.round(d0.dmg*1.3*fd),xp:Math.round(d0.xp*1.3*f),gold:[Math.round(d0.gold[0]*(0.5+f*0.5)),Math.round(d0.gold[1]*(0.5+f*0.6))]});
+  e.def=d;e.hp=e.max=d.hp;e.dmg=d.dmg;e.lvl=L;return e}}
+/* renascimento: cada monstro morto volta depois de um tempinho, longe da sua vista */
+const RESP={q:[],pend:{}};
+{const _ke=killEnemy;killEnemy=function(e){const ok=e&&!e.boss&&!e.minion&&!e.rift&&!e.net&&!e.dummy;const z=ok?(e.sz===undefined?e.z:e.sz):null;_ke(e);
+  if(ok&&typeof z==='number'&&NET.role!=='guest'){RESP.q.push({z,at:Date.now()+rand(7,15)*1000});RESP.pend[z]=(RESP.pend[z]||0)+1}}}
+function respTick(){if(NET.role==='guest'||mode==='title')return;const now=Date.now();for(let i=RESP.q.length-1;i>=0;i--){const r=RESP.q[i];if(now<r.at)continue;RESP.q.splice(i,1);RESP.pend[r.z]=Math.max(0,(RESP.pend[r.z]||0)-1);
+  const n=enemies.filter(e=>!e.boss&&!e.minion&&!e.rift&&(e.sz===undefined?e.z:e.sz)===r.z).length;if(n<ZCOUNT[r.z])spawnIn(r.z,false)}}
+{const _up=update;update=function(dt){_up(dt);respTick()}}
+
+/* ================= Modo Deus (só o criador) ================= */
+const GOD={on:false,srv:false,inv:true,mana:true,fast:false,ghost:false,one:true,hide:false,btn:null};
+const GOD_H='5baf53334a1b7c526e4c1be9117271c600da5f8a52a6a9d44dc2ac5f0fde6ce1';
+async function godHash(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('eldmor:'+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(_){return''}}
+async function godCheck(name){if(!name)return false;const h=await godHash(name.trim());if(h&&h===GOD_H){godOn();return true}return false}
+function godOn(){if(GOD.on)return;GOD.on=true;try{sessionStorage.setItem('eldmor-op','1')}catch(_){}godButton();toast('Modo Deus ativado. Toque no raio dourado para abrir o painel.','#ffd040');sfx('lvl')}
+function godButton(){if(GOD.btn)return;const b=document.createElement('button');b.textContent='⚡';b.title='Painel do Operador';b.style.cssText='position:fixed;left:50%;top:calc(6px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;width:38px;height:38px;border-radius:50%;border:2px solid #ffd040;background:rgba(20,14,30,.85);color:#ffd040;font-size:20px;cursor:pointer;pointer-events:auto';b.onclick=e=>{e.stopPropagation();if(mode==='play'||mode==='modal')openGod()};document.body.appendChild(b);GOD.btn=b}
+const GT_=(k,l)=>`<button class="btn s${GOD[k]?' pri':''}" data-act="god" data-id="t:${k}">${l}: ${GOD[k]?'Ligado':'Desligado'}</button>`;
+function godPlaces(){const a=[['Vila de Eldmor',SPAWN.x,SPAWN.y],['Memorial do Paulo',PAULO.x,PAULO.y+20]];for(let z=0;z<6;z++)a.push([ZN[z],KX[z]*T+8,roadY(KX[z])*T+8]);for(const C of CAVES)a.push([ZN[C.cz],(C.ex+1)*T+8,C.ey*T+8]);BD.forEach((d,i)=>{const c=AC_(i);a.push(['Arena: '+d.name,c.x,c.y+40])});return a}
+function openGod(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.test(k)).sort((a,b)=>ED[a].lvl-ED[b].lvl);const pl=SRV.on?[...SRV.players.values()]:[];
+  openModal(`<div class="mhead"><h2 style="color:#ffd040">⚡ Painel do Operador</h2><button class="btn s" data-act="close">Fechar</button></div>
+  <p class="muted">Você está como <b>Operador level 0</b>. ${GOD.srv?'O servidor reconheceu você: os poderes valem para todos.':'Poderes locais ativos. Entre no servidor para ter os poderes online.'}</p>
+  <h3>Poderes</h3><div class="row" style="flex-wrap:wrap;gap:6px">${GT_('inv','Invencível')}${GT_('mana','Mana infinita')}${GT_('one','Matar com 1 golpe')}${GT_('fast','Super velocidade')}${GT_('ghost','Atravessar paredes')}${GOD.srv?GT_('hide','Invisível para jogadores'):''}</div>
+  <h3>Criar monstros e chefes</h3><div class="row" style="gap:6px;flex-wrap:wrap"><select id="gmob" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${mobs.map(k=>`<option value="${k}">${ED[k].n} (nv ${ED[k].lvl})</option>`).join('')}</select><select id="gqty" class="ninput" style="width:80px;letter-spacing:0">${[1,5,10,25].map(n=>`<option>${n}</option>`).join('')}</select><button class="btn" data-act="god" data-id="spawn">Criar</button></div>
+  <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><select id="gboss" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${BD.map((d,i)=>`<option value="${i}">${d.name} (nv ${d.lvl})</option>`).join('')}</select><button class="btn" data-act="god" data-id="boss">Chamar chefe</button>${GOD.srv?'<button class="btn" data-act="god" data-id="sboss">Chefe para todos</button>':''}</div>
+  <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn" data-act="god" data-id="killnear">Matar monstros perto</button><button class="btn" data-act="god" data-id="killall">Matar todos os monstros</button><button class="btn" data-act="god" data-id="clearboss">Sumir com os chefes</button></div>
+  <h3>Teleporte</h3><div class="row" style="gap:6px;flex-wrap:wrap"><select id="gtp" class="ninput" style="flex:1;min-width:200px;text-transform:none;letter-spacing:0">${godPlaces().map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('')}</select><button class="btn" data-act="god" data-id="tp">Ir</button></div>
+  <h3>Dar para mim</h3><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn s" data-act="god" data-id="gold">+100 mil de ouro</button><button class="btn s" data-act="god" data-id="dia">+500 diamantes</button><button class="btn s" data-act="god" data-id="lvl">+10 níveis</button><button class="btn s" data-act="god" data-id="leg">Item lendário</button><button class="btn s" data-act="god" data-id="pot">+100 poções</button><button class="btn s" data-act="god" data-id="heal">Curar tudo</button></div>
+  <h3>Mundo</h3><div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(EVD).map(k=>`<button class="btn s" data-act="god" data-id="ev:${k}">${EVD[k].n}</button>`).join('')}<button class="btn s" data-act="god" data-id="ev:none">Parar evento</button></div>
+  ${GOD.srv?`<h3>Jogadores online</h3>${pl.length?pl.map(p=>`<div class="row" style="gap:6px;align-items:center;margin:4px 0"><b style="flex:1;color:#6ad8ff">${esc(p.name)} · Nv ${p.lv||1}</b><button class="btn s" data-act="god" data-id="goto:${p.id}">Ir até</button><button class="btn s" data-act="god" data-id="smite:${p.id}" style="border-color:#ff5a4a;color:#ff7a6e">Matar</button></div>`).join(''):'<p class="muted">Ninguém mais online.</p>'}`:''}`)
+  mbox.querySelectorAll('select').forEach(el=>['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation())))}
+function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.value:''};const[a,b]=id.split(':');let keep=true;
+  if(a==='t'){GOD[b]=!GOD[b];if(b==='hide'&&GOD.srv)srvSend({t:'op',c:'hide',v:GOD.hide});toast(`${b==='inv'?'Invencível':b==='mana'?'Mana infinita':b==='one'?'Matar com 1 golpe':b==='fast'?'Super velocidade':b==='ghost'?'Atravessar paredes':'Invisível'}: ${GOD[b]?'ligado':'desligado'}`,'#ffd040')}
+  else if(a==='spawn'){const k=v('gmob'),n=+v('gqty')||1;for(let i=0;i<n;i++){const ang=Math.random()*7,r=rand(30,70);const e=makeEnemy(k,P.x+Math.cos(ang)*r,P.y+Math.sin(ang)*r);e.sz=e.z;e.aggro=true;enemies.push(e)}toast(`${n} × ${ED[k].n} criados.`,'#ffd040')}
+  else if(a==='boss'){const i=+v('gboss');const old=enemies.find(e=>e.boss&&e.bi===i);if(old)enemies.splice(enemies.indexOf(old),1);const c=AC_(i);P.x=c.x;P.y=c.y+50;P.path=null;cam.x=P.x;cam.y=P.y;spawnBoss(i);keep=false}
+  else if(a==='sboss'){srvSend({t:'op',c:'boss',bi:+v('gboss')});toast('Chefe chamado para todos no servidor.','#ffd040')}
+  else if(a==='killnear'||a==='killall'){const L=enemies.filter(e=>!e.net&&!e.srv&&(a==='killall'||hyp(e.x-P.x,e.y-P.y)<200));let n=0;for(const e of L){if(!enemies.includes(e))continue;e.hp=0;killEnemy(e);n++}toast(`${n} monstros derrotados.`,'#ffd040')}
+  else if(a==='clearboss'){enemies=enemies.filter(e=>!e.boss||e.srv);toast('Chefes removidos.','#ffd040')}
+  else if(a==='tp'){const p=godPlaces()[+v('gtp')];if(p){P.x=p[1];P.y=p[2];P.path=null;P.target=null;cam.x=P.x;cam.y=P.y;prepaintNear&&prepaintNear(P.x,P.y,1,99);zoneCheck&&zoneCheck();keep=false}}
+  else if(a==='goto'){const p=SRV.players.get(+b);if(p){P.x=p.x+12;P.y=p.y;P.path=null;cam.x=P.x;cam.y=P.y;zoneCheck&&zoneCheck();keep=false}}
+  else if(a==='smite'){srvSend({t:'op',c:'smite',id:+b});toast('Raio enviado.','#ffd040')}
+  else if(a==='gold'){S.gold+=100000;toast('+100 mil de ouro','#f2b84b')}
+  else if(a==='dia'){S.dia+=500;toast('+500 diamantes','#4ac8ff')}
+  else if(a==='lvl'){for(let i=0;i<10;i++)gainXP(xpNeed(S.lvl)+1);toast('Agora você está no nível '+S.lvl,'#8bd86a')}
+  else if(a==='leg'){const pool=DB.filter(i=>i.rar===4);const it=itemFrom(pick(pool));S.inv.unshift(it);toast('Recebeu: '+dname(it),RCOL[4])}
+  else if(a==='pot'){S.pot.hp+=100;S.pot.mp+=100;toast('+100 poções de vida e de mana','#e0483e')}
+  else if(a==='heal'){const st=stats();S.hp=st.mhp;S.mp=st.mmp;P.dead=false}
+  else if(a==='ev'){if(GOD.srv)srvSend({t:'op',c:'ev',k:b==='none'?null:b});else if(b==='none'){EVT=null}else startEvent(b,180e3)}
+  save();if(keep)openGod();else closeModal()}
+/* efeitos dos poderes */
+{const _hp=hurtPlayer;hurtPlayer=function(d,x,y){if(GOD.on&&GOD.inv)return;return _hp(d,x,y)}}
+{const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(GOD.on&&GOD.one&&e&&!(opt&&opt.remote)&&!e.dummy)base=Math.max(base,(e.max||e.hp||1)*(e.srv?0.08:1.2));return _de(e,base,ang,opt)}}
+{const _mv=moveEnt;moveEnt=function(e,dx,dy){if(GOD.on&&e===P){if(GOD.fast){dx*=2.5;dy*=2.5}if(GOD.ghost){P.x=clamp(P.x+dx,8,MW*T-8);P.y=clamp(P.y+dy,8,MH*T-8);return!!(dx||dy)}}return _mv(e,dx,dy)}}
+{const _up=update;update=function(dt){_up(dt);if(!GOD.on)return;const st=stats();if(GOD.inv){if(S.hp<st.mhp)S.hp=st.mhp;if(P.dead&&mode!=='title'){P.dead=false}}if(GOD.mana&&S.mp<st.mmp)S.mp=st.mmp;if(GOD.mana)P.cd={}}}
+{const _sc=srvConnect;srvConnect=function(name,url){godCheck(name).then(ok=>{if(ok){const k=(name||'').trim();SRV.opKey=k;_sc('Operador',url)}else _sc(name,url)})}}
+{const _sd=srvData;srvData=function(m){if(m&&m.t==='welcome'&&m.op){GOD.srv=true;godOn()}if(m&&m.t==='smite'){if(GOD.on)return;S.hp=0;P.invT=0;burst(P.x,P.y-10,['#ffffff','#ffd040','#8ad8ff'],60,140,0.8,2);shake(8);sfx('boom');toast('Um raio do Operador caiu sobre você!','#ffd040');try{die()}catch(_){}return}return _sd(m)}}
+try{if(sessionStorage.getItem('eldmor-op')==='1'){GOD.on=true;setTimeout(godButton,500)}}catch(_){}
 
 /* ================= atualização ================= */
 const keys={};
@@ -2496,7 +2523,7 @@ function update(dt){
   updateP2(dt);netUpdate(dt);
   if(mode==='play'){if(NET.role!=='guest')updateRift();if(!P2.on){const gp=navigator.getGamepads?[...navigator.getGamepads()].find(Boolean):null;if(gp&&gp.buttons[9]&&gp.buttons[9].pressed)p2Join()}achT-=dt;if(achT<=0){achT=2;checkAch()}
     updatePlayer(dt);if(NET.role==='guest')netGuestEnemies(dt);else updateEnemies(dt);updateProj(dt);updateTeles(dt);updateRains(dt);updateDrops(dt);
-    if(NET.role!=='guest')spawnT-=dt;if(spawnT<=0){spawnT=0.7;for(let z=0;z<NZT;z++){const c=enemies.filter(e=>!e.boss&&!e.minion&&!e.rift&&(e.sz===undefined?e.z:e.sz)===z).length;if(c<ZCOUNT[z])spawnIn(z,false)}}
+    if(NET.role!=='guest')spawnT-=dt;if(spawnT<=0){spawnT=0.7;for(let z=0;z<NZT;z++){const c=enemies.filter(e=>!e.boss&&!e.minion&&!e.rift&&(e.sz===undefined?e.z:e.sz)===z).length;if(c+(RESP.pend[z]||0)<ZCOUNT[z])spawnIn(z,false)}}
     if(NET.role!=='guest')bossCheck();updateBossChests(dt);zoneCheck();
     const st=stats();const inV=curZone===-1;const calm=time-P.lastHurt>5;
     S.mp=Math.min(st.mmp,S.mp+dt*((inV?st.mmp*0.15:2+S.lvl*0.25)+st.mreg));
@@ -2575,7 +2602,7 @@ function updateEnemies(dt){const inV=(P.x<19.5*T&&P.y<SURF*T)||pauloIn(P.x,P.y,6
 function explode(p){burst(p.x,p.y,['#ff8a2a','#ffe04a','#c43a1a','#ffffff'],22,110,0.5,2);effects.push({type:'ring',x:p.x,y:p.y,r0:3,r1:p.aoe,t:0,max:0.25,col:'#ffb060'});sfx('boom');
   for(const e of foes().slice()){if(hyp(e.x-p.x,e.y-p.y)<p.aoe+e.r)damageEnemy(e,p.dmg,Math.atan2(e.y-p.y,e.x-p.x),{col:['#ff8a2a','#ffe04a'],crit:p.crit})}}
 function updateProj(dt){const F=foes();
-  for(let i=projs.length-1;i>=0;i--){const p=projs[i];
+  for(let i=projs.length-1;i>=0;i--){const p=projs[i];if(!p)continue;
     if(p.tgt){if(p.tgt.dummy||(p.tgt.hp>0&&enemies.includes(p.tgt))){const cur=Math.atan2(p.vy,p.vx),want=Math.atan2(p.tgt.y-4-p.y,p.tgt.x-p.x),sp=hyp(p.vx,p.vy);const na=cur+clamp(angDiff(want,cur),-12*dt,12*dt);p.vx=Math.cos(na)*sp;p.vy=Math.sin(na)*sp}else p.tgt=null}
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let dead=false;
     if(p.kind==='pfire'&&Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:rand(-10,10),vy:rand(-10,10),life:0.3,max:0.3,col:pick(['#ff8a2a','#ffe04a']),s:2,g:0});
@@ -2590,7 +2617,7 @@ function updateProj(dt){const F=foes();
     if(dead){if(p.aoe)explode(p);else if(p.hit)damageEnemy(p.hit,p.dmg,Math.atan2(p.vy,p.vx),{crit:p.crit,ls:p.ls,col:p.kind==='porb'?['#c36bff','#ffffff']:undefined});else if(p.owner==='e'||p.kind==='porb')burst(p.x,p.y,p.col,4,40,0.25,1);projs.splice(i,1)}}}
 function updateTeles(dt){for(let i=teles.length-1;i>=0;i--){const t=teles[i];t.t-=dt;if(t.t<=0){if(t.dmg){burst(t.x,t.y,['#ff8a2a','#ffe04a','#5a4a44'],20,100,0.5,2);sfx('boom');shake(3);if(hyp(P.x-t.x,P.y-t.y)<t.r+3){hurtPlayer(t.dmg,t.x,t.y);if(t.slow)P.slowT=Math.max(P.slowT,t.slow)}if(P2.on&&!P2.dead&&hyp(P2.x-t.x,P2.y-t.y)<t.r+3)hurtP2(t.dmg,t.x,t.y)}teles.splice(i,1)}}}
 function updateRains(dt){for(let i=rains.length-1;i>=0;i--){const r=rains[i];r.next-=dt;if(r.next<=0){r.next=0.32;r.waves--;for(let k=0;k<10;k++)parts.push({x:r.x+rand(-28,28),y:r.y+rand(-18,18)-34,vx:0,vy:150,life:0.22,max:0.22,col:'#e8eef5',s:1.5,g:0});burst(r.x,r.y,['#bce8ff','#ffffff'],10,60,0.3,1);sfx('hit');for(const e of foes().slice()){if(hyp(e.x-r.x,e.y-r.y)<32+e.r)damageEnemy(e,r.dmg,Math.atan2(e.y-r.y,e.x-r.x),{crit:r.crit,noKb:true})}if(r.waves<=0)rains.splice(i,1)}}}
-function updateDrops(dt){for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.t+=dt;d.vx*=1-dt*4;d.vy*=1-dt*4;const dx=P.x-d.x,dy=P.y-d.y,dist=hyp(dx,dy);
+function updateDrops(dt){for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!d)continue;d.t+=dt;d.vx*=1-dt*4;d.vy*=1-dt*4;const dx=P.x-d.x,dy=P.y-d.y,dist=hyp(dx,dy);
   if(d.t>0.35&&dist<44){const s=170*dt;d.x+=dx/dist*s;d.y+=dy/dist*s}else{d.x+=d.vx*dt;d.y+=d.vy*dt}
   if(d.t>0.35&&dist<7){if(d.kind==='gold'){S.gold+=d.v;sfx('coin')}else if(d.kind==='php'){const n=d.v||1;S.pot.hp+=n;toast(`+${n} ${n>1?'poções':'poção'} de vida (agora ${S.pot.hp})`,'#e0483e');sfx('coin')}else if(d.kind==='pmp'){const n=d.v||1;S.pot.mp+=n;toast(`+${n} ${n>1?'poções':'poção'} de mana (agora ${S.pot.mp})`,'#4f8ff0');sfx('coin')}else if(d.kind==='hpo'){const st=stats(),h=Math.round(st.mhp*0.12);S.hp=Math.min(st.mhp,S.hp+h);addText(P.x,P.y-26,'+'+h,'#ff7a6e');sfx('heal')}else if(d.kind==='mpo'){const st=stats(),h=Math.round(st.mmp*0.15);S.mp=Math.min(st.mmp,S.mp+h);addText(P.x,P.y-26,'+'+h,'#8ab8ff');sfx('heal')}else if(d.kind==='key'){S.keys++;toast('+1 Chave de Cripta','#e0b040');sfx('chest')}else if(d.kind==='dia'){S.dia+=d.v;toast(`+${d.v} diamante`,'#4ac8ff');sfx('chest')}drops.splice(i,1);continue}
   if(d.t>40)drops.splice(i,1)}}
@@ -2964,10 +2991,7 @@ mbox.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)r
   case'sleave':srvLeave();openOnline();break;
   case'schat':srvChat();break;
   case'pickeq':pickEquip(id);break;
-  case'glogin':gLogin();break;
-  case'glogout':gLogout();break;
-  case'gload':gUseCloud();break;
-  case'gkeep':gKeep();break;
+  case'god':godCmd(id);break;
   case'pauloPray':pauloPray();openPaulo();break;
   case'pauloBow':pauloGiveBow();openPaulo();break;
   case'pauloMsg':pauloSaveMsg();openPaulo();break;
@@ -3039,7 +3063,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode!=='ti
 /* ================= laço ================= */
 fillWorld();makeDummies();updateClassBtns();updateSkillBtns();openTitle();
 let last=performance.now();
-function frame(now){let dt=(now-last)/1000;last=now;if(!(dt>0))dt=0.016;dt=Math.min(dt,0.05);update(dt);render();if(dt<0.034)prepaintNear(cam.x,cam.y,2,1);menuPreview();hudT-=dt;if(hudT<=0){hudT=1/15;hud();if(!menuEl.hidden&&menuTab==='map')drawBigMap()}requestAnimationFrame(frame)}
+let FRAMEERR=0;function frame(now){let dt=(now-last)/1000;last=now;if(!(dt>0))dt=0.016;dt=Math.min(dt,0.05);try{update(dt)}catch(err){FRAMEERR++;if(FRAMEERR<4)console.error('update',err)}try{render()}catch(err){FRAMEERR++;if(FRAMEERR<4)console.error('render',err);try{ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}catch(_){}}if(dt<0.034)prepaintNear(cam.x,cam.y,2,1);menuPreview();hudT-=dt;if(hudT<=0){hudT=1/15;hud();if(!menuEl.hidden&&menuTab==='map')drawBigMap()}requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 
 })();

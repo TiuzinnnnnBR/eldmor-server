@@ -14,6 +14,8 @@ const EVENTS = ['blood', 'gold', 'xp', 'horde'];
 const EV_MIN = 14, EV_MAX = 22, EV_LEN = 3; // minutos
 
 const rand = (a, b) => a + Math.random() * (b - a);
+const ADMIN_HASH = process.env.ADMIN_HASH || '5baf53334a1b7c526e4c1be9117271c600da5f8a52a6a9d44dc2ac5f0fde6ce1'; // nome secreto do Operador (hash)
+const isOp = k => typeof k === 'string' && k.length < 64 && crypto.createHash('sha256').update('eldmor:' + k).digest('hex') === ADMIN_HASH;
 const MIN = 60e3;
 
 /* ---------- arquivos do jogo (pasta public) ---------- */
@@ -80,6 +82,7 @@ const clean = s => String(s || '').replace(/[<>]/g, '').trim().slice(0, 16);
 
 /* ---------- mundo ---------- */
 const W = { boss: null, nextBoss: Date.now() + (process.env.BOSS_FIRST ? +process.env.BOSS_FIRST * 1000 : rand(3, 6) * MIN), ev: null, nextEv: Date.now() + (process.env.EV_FIRST ? +process.env.EV_FIRST * 1000 : rand(6, 10) * MIN) };
+function pub(c) { if (!c.h) return c.h; return c.op ? Object.assign({}, c.h, { lv: 0, op: 1 }) : c.h; }
 function bossMsg() { const b = W.boss; return b ? { t: 'boss', bi: b.bi, hp: Math.ceil(b.hp), max: b.max } : null; }
 
 function onMsg(c, m) {
@@ -87,16 +90,24 @@ function onMsg(c, m) {
   if (m.t === 'join') {
     let name = clean(m.name) || 'Herói'; const taken = n => [...clients.values()].some(x => x.joined && x !== c && x.name.toLowerCase() === n.toLowerCase());
     let base = name, k = 2; while (taken(name)) name = (base.slice(0, 13) + ' ' + k++);
+    if (isOp(m.k)) { c.op = true; name = 'Operador level 0'; }
     c.name = name; c.h = m.h || null; c.joined = true;
-    send(c, { t: 'welcome', id: c.id, name, players: [...clients.values()].filter(x => x.joined).map(x => ({ id: x.id, name: x.name, h: x.h })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
-    all({ t: 'pj', p: { id: c.id, name, h: c.h } }, c);
+    send(c, { t: 'welcome', id: c.id, name, op: !!c.op, players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
+    all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c);
     console.log('entrou:', name, '| online:', online()); return;
   }
   if (!c.joined) return;
   if (m.t === 'p') { if (m.h && typeof m.h.x === 'number') c.h = m.h; return; }
+  if (m.t === 'op' && c.op) {
+    if (m.c === 'hide') { c.hide = !!m.v; if (c.hide) all({ t: 'pl', id: c.id }, c); else all({ t: 'pj', p: { id: c.id, name: c.name, h: pub(c) } }, c); }
+    else if (m.c === 'boss' && m.bi >= 0 && m.bi < BOSSES) { if (W.boss) all({ t: 'bgone', bi: W.boss.bi }); W.boss = { bi: m.bi | 0, hp: 0, max: 0, who: new Set(), end: Date.now() + BOSS_LIFE * MIN, dirty: false, t: 0 }; all({ t: 'boss', bi: m.bi | 0 }); }
+    else if (m.c === 'ev') { if (m.k && EVENTS.includes(m.k)) { W.ev = { k: m.k, end: Date.now() + EV_LEN * MIN }; all({ t: 'ev', k: m.k, rem: EV_LEN * MIN }); } else { W.ev = null; W.nextEv = Date.now() + rand(EV_MIN, EV_MAX) * MIN; all({ t: 'ev', k: null }); } }
+    else if (m.c === 'smite') { const t = clients.get(m.id); if (t && t.joined && !t.op) send(t, { t: 'smite' }); }
+    return;
+  }
   if (m.t === 'bmax') { const b = W.boss; if (b && b.bi === m.bi && !b.max && m.max > 0 && m.max < 1e8) { const n = Math.max(1, online()); b.max = Math.round(m.max * (1 + 0.5 * (n - 1))); b.hp = b.max; all(bossMsg()); } return; }
   if (m.t === 'bhit') {
-    const b = W.boss; if (!b || b.bi !== m.bi || !b.max) return; const d = Math.max(0, Math.min(+m.d || 0, b.max * 0.08));
+    const b = W.boss; if (!b || b.bi !== m.bi || !b.max) return; const d = Math.max(0, Math.min(+m.d || 0, b.max * (c.op ? 1 : 0.08)));
     b.hp -= d; b.who.add(c.id); b.dirty = true;
     if (b.hp <= 0) { const who = [...b.who]; all({ t: 'bdead', bi: b.bi, who, names: who.map(id => (clients.get(id) || {}).name).filter(Boolean) }); console.log('chefe derrotado:', b.bi); W.boss = null; W.nextBoss = Date.now() + rand(BOSS_MIN, BOSS_MAX) * MIN; }
     return;
@@ -107,7 +118,7 @@ function onMsg(c, m) {
 setInterval(() => {
   const now = Date.now(), n = online();
   // posições de todos, 10 vezes por segundo
-  if (n > 1) all({ t: 'ps', l: [...clients.values()].filter(c => c.joined && c.h).map(c => [c.id, c.h]) });
+  if (n > 1) all({ t: 'ps', l: [...clients.values()].filter(c => c.joined && c.h && !c.hide).map(c => [c.id, pub(c)]) });
   // chefe raro, um por vez, igual para todos
   if (!W.boss && n > 0 && now >= W.nextBoss) {
     const bi = Math.floor(Math.random() * BOSSES); W.boss = { bi, hp: 0, max: 0, who: new Set(), end: now + BOSS_LIFE * MIN, dirty: false, t: 0 };
