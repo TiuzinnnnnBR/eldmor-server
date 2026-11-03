@@ -7,7 +7,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const PUB = path.resolve(process.env.PUB || path.join(__dirname, 'public'));
-const BOSSES = 18;                       // quantidade de chefes no jogo
+const BOSSES = 24;                       // quantidade de chefes no jogo
 const BOSS_MIN = 8, BOSS_MAX = 16;       // minutos entre um chefe e outro (só um por vez)
 const BOSS_LIFE = 12;                    // minutos até o chefe ir embora se ninguém matar
 const EVENTS = ['blood', 'gold', 'xp', 'horde'];
