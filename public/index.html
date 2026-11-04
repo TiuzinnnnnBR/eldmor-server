@@ -2427,19 +2427,22 @@ function srvConnect(name,url){name=(name||'').trim().replace(/[<>]/g,'').slice(0
   if(name.length<2){netStat('Escolha um nome de usuário com pelo menos 2 letras.');return}if(!url){netStat('Coloque o endereço do servidor.');return}
   if(NET.role){netStat('Saia da sala com código antes de entrar no servidor.');return}
   SRV.name=name;SRV.url=url;SRV.want=true;lsSet('eldmor-name',name);if(!window.ELD_SAME)lsSet('eldmor-srv',url);S.uname=name;srvOpen()}
-function srvOpen(){if(!SRV.want)return;netStat('Conectando ao servidor... (se ele estava dormindo, pode levar uns 30 segundos)');let ws;try{ws=new WebSocket(SRV.url)}catch(e){netStat('Endereço do servidor inválido.');SRV.want=false;return}SRV.ws=ws;
-  ws.onopen=()=>{SRV.retry=0;srvSend({t:'join',name:SRV.name,k:SRV.opKey||undefined,h:srvHero()})};
-  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(_){return}srvData(m)};
-  ws.onclose=()=>{const was=SRV.on;srvDrop();if(SRV.want){SRV.retry++;if(was)toast('A conexão com o servidor caiu. Tentando voltar...','#a597bd');setTimeout(srvOpen,Math.min(15000,1500*SRV.retry))}};
+function srvDid(){let d=lsGet('eldmor-did');if(!d){d=Math.random().toString(36).slice(2)+Date.now().toString(36);lsSet('eldmor-did',d)}return d}
+function srvOpen(){if(!SRV.want)return;clearTimeout(SRV.rt);if(SRV.ws){const o=SRV.ws;SRV.ws=null;o.onclose=o.onmessage=o.onerror=null;try{o.close()}catch(_){}}netStat('Conectando ao servidor... (se ele estava dormindo, pode levar uns 30 segundos)');let ws;try{ws=new WebSocket(SRV.url)}catch(e){netStat('Endereço do servidor inválido.');SRV.want=false;return}SRV.ws=ws;
+  ws.onopen=()=>{if(ws!==SRV.ws){try{ws.close()}catch(_){}return}SRV.retry=0;srvSend({t:'join',name:SRV.name,did:srvDid(),k:SRV.opKey||undefined,h:srvHero()})};
+  ws.onmessage=ev=>{if(ws!==SRV.ws)return;let m;try{m=JSON.parse(ev.data)}catch(_){return}srvData(m)};
+  ws.onclose=()=>{if(ws!==SRV.ws)return;const was=SRV.on;srvDrop();if(SRV.want){SRV.retry++;if(was)toast('A conexão com o servidor caiu. Tentando voltar...','#a597bd');clearTimeout(SRV.rt);SRV.rt=setTimeout(srvOpen,Math.min(15000,1500*SRV.retry))}};
   ws.onerror=()=>{if(!SRV.on)netStat('Não consegui falar com o servidor. Confira o endereço e a internet. Tentando de novo...')}}
-function srvDrop(){SRV.on=false;SRV.players.clear();for(const e of enemies.filter(e=>e.srv))enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;$('p2hud').hidden=true}
+function srvExitBtn(on){let b=$('srvExit');const h=$('p2hud');if(!h)return;if(!b){b=document.createElement('button');b.id='srvExit';b.className='btn';b.textContent='Sair do servidor';b.style.cssText='display:block;width:100%;margin-top:6px;padding:5px 8px;font-size:12px;pointer-events:auto';b.addEventListener('click',e=>{e.stopPropagation();srvLeave()});h.appendChild(b)}b.hidden=!on}
+function srvDrop(){SRV.on=false;srvExitBtn(false);SRV.players.clear();for(const e of enemies.filter(e=>e.srv))enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;$('p2hud').hidden=true}
 function srvLeave(){SRV.want=false;try{SRV.ws&&SRV.ws.close()}catch(_){}srvDrop();SRV.ws=null;toast('Você saiu do servidor. Voltando para o seu mundo.','#a597bd')}
 function srvHero(){const m=heroMsg();m.z=curZone;return m}
 function srvData(m){
+  if(m.t==='kicked'){SRV.want=false;srvDrop();toast('Você entrou no servidor em outra aba ou aparelho. Esta aba saiu do servidor.','#a597bd');return}
   if(m.t==='welcome'){SRV.on=true;SRV.id=m.id;SRV.players.clear();for(const p of m.players)if(p.id!==SRV.id)srvAdd(p);
     for(let i=enemies.length-1;i>=0;i--)if(enemies[i].boss&&!enemies[i].srv)enemies.splice(i,1);
     if(m.ev&&EVD[m.ev.k]){EVT={k:m.ev.k,end:Date.now()+m.ev.rem}}else EVT=null;EVN=Infinity;
-    if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
+    if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;srvExitBtn(true);$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
     if(!modal.hidden&&mode==='modal'&&$('srvbox'))closeModal();toast(`Bem-vindo ao servidor, ${SRV.name}! ${SRV.players.size?SRV.players.size+' jogador(es) online.':'Você é o primeiro aqui.'}`,'#6ad8ff');sfx('lvl');return}
   if(!SRV.on)return;
   if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z})}}
@@ -2502,7 +2505,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v28 · 04/11/2026';
+const ELD_VER='v29 · 04/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */

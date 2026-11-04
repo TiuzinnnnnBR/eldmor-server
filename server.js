@@ -53,7 +53,7 @@ server.on('upgrade', (req, sock) => {
   const acc = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + acc + '\r\n\r\n');
   sock.setNoDelay(true);
-  const c = { id: NEXT++, sock, buf: Buffer.alloc(0), joined: false, name: '', h: null, last: Date.now(), frag: [] };
+  const c = { id: NEXT++, ip: String(req.headers['x-forwarded-for'] || sock.remoteAddress || '').split(',')[0].trim(), sock, buf: Buffer.alloc(0), joined: false, name: '', h: null, last: Date.now(), frag: [] };
   clients.set(c.id, c);
   sock.on('data', d => { c.buf = Buffer.concat([c.buf, d]); if (c.buf.length > 1 << 20) return drop(c); parse(c); });
   sock.on('close', () => drop(c)); sock.on('error', () => drop(c));
@@ -88,6 +88,11 @@ function bossMsg() { const b = W.boss; return b ? { t: 'boss', bi: b.bi, hp: Mat
 function onMsg(c, m) {
   if (!m || typeof m.t !== 'string') return;
   if (m.t === 'join') {
+    if (c.joined) return;
+    const did = String(m.did || '').slice(0, 40);
+    const nm0 = (clean(m.name) || 'Herói').toLowerCase();
+    for (const x of [...clients.values()]) if (x !== c && !x.dead && ((did && x.did === did) || (!did && !x.did && x.ip === c.ip && x.base === nm0))) { send(x, { t: 'kicked' }); if (x.joined) { x.joined = false; all({ t: 'pl', id: x.id }); } x.did = ''; setTimeout(() => drop(x), 400); }
+    c.did = did; c.base = nm0;
     let name = clean(m.name) || 'Herói'; const taken = n => [...clients.values()].some(x => x.joined && x !== c && x.name.toLowerCase() === n.toLowerCase());
     let base = name, k = 2; while (taken(name)) name = (base.slice(0, 13) + ' ' + k++);
     if (isOp(m.k)) { c.op = true; name = 'Operador level 0'; }
