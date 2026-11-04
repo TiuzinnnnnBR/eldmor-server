@@ -1718,7 +1718,7 @@ function stats(){const c=S.cls,w=S.weapons[c],L=S.lvl,M=CMOD[c];
   s.def=Math.round(s.def*M.def+(ms('def')-1)*0.7);if(P.buff.roar>0)s.def=Math.round(s.def*1.5);
   if(buffOn('atk'))s.atk=Math.round(s.atk*1.12);if(buffOn('def'))s.def=Math.round(s.def*1.15);
   s.mhp=Math.round(s.mhp*M.hp);s.mmp=Math.round(s.mmp*M.mp);
-  s.spdBase=Math.round((42+Math.min(10,L*0.2))*M.spd);s.spdBonus=Math.round(s.spdBase*(Math.min(0.3,s.mspd)+(P.buff.agile>0?0.3:0)));s.spd=s.spdBase+s.spdBonus;if(P.slowT>0)s.spd=Math.round(s.spd*0.6);
+  s.spdBase=Math.round((33+Math.min(7,L*0.12))*M.spd);s.spdBonus=Math.round(s.spdBase*(Math.min(0.2,s.mspd)+(P.buff.agile>0?0.3:0)));s.spd=s.spdBase+s.spdBonus;if(P.slowT>0)s.spd=Math.round(s.spd*0.6);
   return s}
 function statsFor(c){const o=S.cls;S.cls=c;const s=stats();S.cls=o;return s}
 function gainMs(k,n){const m=S.ms[k];m.x+=n;let up=false;while(m.x>=msNeed(m.l)){m.x-=msNeed(m.l);m.l++;up=true}if(up){addText(P.x,P.y-32,MSN[k]+' '+m.l,'#8ad8ff',true);toast(`${MSN[k]} subiu para ${m.l}`,'#8ad8ff');sfx('lvl')}}
@@ -2322,7 +2322,7 @@ function pauloSpiritOn(){return mode!=='title'&&!P.dead&&buffOn('paulo')}
 function pauloTick(dt){if(!pauloSpiritOn()){PS.x=0;return}
   if(!PS.x||hyp(PS.x-P.x,PS.y-P.y)>160){PS.x=P.x-P.dir*14;PS.y=P.y-4}
   const tx=P.x-P.dir*15,ty=P.y-5,dx=tx-PS.x,dy=ty-PS.y,dd=hyp(dx,dy);
-  if(dd>3){const sp=Math.min(dd*4,140)*dt;PS.x+=dx/dd*sp;PS.y+=dy/dd*sp;PS.walk+=dt*6;if(PS.atk<=0){PS.dn=dirOf(dx,dy);PS.dir=dx>=0?1:-1}}else PS.walk=0;
+  if(dd>(PS.mv?2:9)){PS.mv=1;const sp=Math.min(dd*3,Math.max(45,stats().spd*1.15))*dt;PS.x+=dx/dd*Math.min(sp,dd);PS.y+=dy/dd*Math.min(sp,dd);PS.walk+=dt*7;if(PS.atk<=0){PS.dn=dirOf(dx,dy);PS.dir=dx>=0?1:-1}}else{PS.mv=0;PS.walk=0;if(PS.atk<=0&&P.dirName)PS.dn=P.dirName}
   PS.atk-=dt;PS.cd-=dt;PS.lt-=dt;if(PS.lt<=0){PS.lt=0.12;parts.push({x:PS.x+rand(-5,5),y:PS.y+rand(-18,2),vx:rand(-4,4),vy:rand(-16,-6),life:0.9,max:0.9,col:pick(['#ffd27a','#fff0a8','#ff9a3c']),s:1,g:0})}
   if(PS.cd<=0){let b=null,bd=135;for(const e of enemies){if(e.hp<=0||e.dead)continue;const d=hyp(e.x-PS.x,e.y-PS.y);if(d<bd){bd=d;b=e}}
     if(b){const st=stats(),a=Math.atan2(b.y-(PS.y-8),b.x-PS.x);projs.push({x:PS.x+Math.cos(a)*6,y:PS.y-8+Math.sin(a)*6,vx:Math.cos(a)*260,vy:Math.sin(a)*260,r:2.5,dmg:Math.max(1,Math.round(st.atk*0.6)),owner:'p',kind:'parrow',col:'#ffd27a',life:1.4,crit:Math.min(0.5,(st.crit||0)+0.1),ls:0,tgt:b,paulo:1});PS.cd=0.85;PS.atk=0.34;PS.dn=dirOf(b.x-PS.x,b.y-PS.y);PS.dir=b.x>=PS.x?1:-1}else PS.cd=0.25}}
@@ -2502,7 +2502,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v27 · 04/11/2026';
+const ELD_VER='v28 · 04/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
