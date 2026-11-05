@@ -2507,7 +2507,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v33 · 05/11/2026';
+const ELD_VER='v34 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3031,7 +3031,7 @@ function accList(){try{return JSON.parse(localStorage.getItem('eldmor-accs')||'[
 function accStore(){try{localStorage.setItem('eldmor-acc',JSON.stringify(ACC));const L=accList().filter(a=>ACC&&a.id!==ACC.id);if(ACC)L.unshift({id:ACC.id,name:ACC.name,tok:ACC.tok});localStorage.setItem('eldmor-accs',JSON.stringify(L.slice(0,6)))}catch(_){}}
 function accName(){return ACC&&ACC.name||''}
 function accTok(){return ACC&&ACC.tok||undefined}
-async function api(path,body,tok){const r=await fetch(apiBase()+'/api/'+path,{method:body?'POST':'GET',headers:Object.assign({'content-type':'application/json'},tok||accTok()?{authorization:'Bearer '+(tok||accTok())}:{}),body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(_){}if(!r.ok){const e=new Error(j.err||('Erro '+r.status));e.code=r.status;throw e}return j}
+async function api(path,body,tok){const r=await fetch(apiBase()+'/api/'+path+(body?'':(path.includes('?')?'&':'?')+'t='+Date.now()),{cache:'no-store',method:body?'POST':'GET',headers:Object.assign({'content-type':'application/json'},tok||accTok()?{authorization:'Bearer '+(tok||accTok())}:{}),body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(_){}if(!r.ok){const e=new Error(j.err||('Erro '+r.status));e.code=r.status;throw e}return j}
 const escA=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 /* ---- dados vindos do servidor aplicados ao jogo ---- */
 function accApply(acc){if(!acc)return;ACC=Object.assign(ACC||{},{id:acc.id,name:acc.realName||acc.name,shown:acc.name,dia:acc.dia,owned:acc.owned||{},op:acc.op});accStore();accOwned()}
