@@ -2301,13 +2301,13 @@ function pauloHTML(){const d=pauloD(),on=buffOn('paulo'),own=pauloOwned();const 
   return`<div class="mhead"><h2>Memorial do Paulo</h2><button class="btn s" data-act="close">Fechar</button></div>
   <div class="npc"><canvas id="pauloPor" width="46" height="46"></canvas><div style="min-width:0"><p><b style="color:#ff9a3c">Paulo, o Arqueiro Eterno</b></p><p>${PAULO_TXT}</p></div></div>
   <p class="muted" style="font-style:italic">Ele adorava os jogos da Nintendo, Mario, Pokémon e Zelda, passava horas no Minecraft e, aqui em Eldmor, nunca largava o Arqueiro.</p>
-  ${d.msg?`<div class="qbox"><div class="muted" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase">Sua mensagem na placa</div><p style="font-style:italic">“${esc(d.msg)}”</p></div>`:''}
+  <div class="qbox"><div class="muted" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase">Mensagem na placa</div><p style="font-style:italic">“Grande guerreiro que, depois de vencer diversas batalhas, foi descansar no céu.”</p></div>
   <h3>Prestar homenagem</h3><p class="muted">Deixe uma flor na estátua. O Espírito do Paulo luta ao seu lado por 15 minutos, atirando flechas douradas nos monstros por perto, e você ganha +10% de ataque (+20% jogando de Arqueiro, como ele gostava).</p>
   <div class="tlist"><button class="btn${on||pauloWait()?'':' pri'}" data-act="pauloPray" ${on||pauloWait()?'disabled':''}><b>${on?'O Paulo está com você':pauloWait()?'O Paulo está descansando':'Deixar uma flor'}</b><span>${on?'Ainda restam '+buffLeft('paulo'):pauloWait()?'Ele volta a ajudar em '+pauloWaitTxt()+' · a ajuda dura 15 minutos, de 1 em 1 hora':'A ajuda dura 15 minutos e pode ser pedida de 1 em 1 hora · Homenagens: '+d.n}</span></button>
   <button class="btn" data-act="pauloBow" ${own?'disabled':''}><b><span class="r4">Arco Eterno do Paulo</span></b><span>${own?'Você já carrega o arco dele':'Um presente do Paulo. Lendário, cresce com o seu nível. Grátis.'}</span></button></div>
-  <h3>Deixar uma mensagem</h3><p class="muted">Escreva algo para o Paulo. A mensagem fica gravada na placa da estátua.</p>
-  <textarea id="pauloMsg" maxlength="160" rows="2" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:8px;background:rgba(0,0,0,.35);color:inherit;border:1px solid rgba(255,255,255,.18);resize:none">${esc(d.msg||'')}</textarea>
-  <div class="row" style="margin-top:8px"><button class="btn" data-act="pauloMsg">Gravar na placa</button></div>`}
+
+
+`}
 function openPaulo(){mode='modal';P.path=null;openModal(pauloHTML());const c=$('pauloPor');if(c){const g=c.getContext('2d'),fr=pauloSheet().down.idle[0];g.imageSmoothingEnabled=false;g.clearRect(0,0,46,46);{const b=fr._bk||1;g.drawImage(fr,(fr.width-46*b)/2,4*b,46*b,46*b,0,0,46,46)}}
   const ta=$('pauloMsg');if(ta)['keydown','keyup','keypress'].forEach(t=>ta.addEventListener(t,e=>e.stopPropagation()));
   const d=pauloD();if(!d.seen){d.seen=1;save()}}
@@ -2510,7 +2510,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v39 · 05/11/2026';
+const ELD_VER='v40 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
