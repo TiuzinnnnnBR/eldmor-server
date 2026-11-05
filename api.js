@@ -39,7 +39,8 @@ const db = {
     if (process.env.DATABASE_URL) {
       try {
         pg = require('pg');
-        pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 5 });
+        const url = String(process.env.DATABASE_URL).trim().replace(/^['"]|['"]$/g, '').replace(/([?&])channel_binding=[^&]*&?/, '$1').replace(/([?&])sslmode=[^&]*&?/, '$1').replace(/[?&]$/, '');
+        pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 5 });
         await pool.query(`create table if not exists accounts(id serial primary key, name text not null, lname text unique not null, ph text not null, salt text not null,
           dia int not null default 0, owned jsonb not null default '{}', save jsonb, lvl int not null default 1, txp bigint not null default 0, cls text, op boolean not null default false,
           earn_day text, earned int not null default 0, created timestamptz default now(), updated timestamptz default now())`);
