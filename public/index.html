@@ -2513,7 +2513,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v42 · 05/11/2026';
+const ELD_VER='v43 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3764,7 +3764,7 @@ function startGame(saved){S=Object.assign(freshState(),saved||{});S.eq=Object.as
 let isTouch=false,drag=null;
 function setTouch(v){if(isTouch===v)return;isTouch=v;document.body.classList.toggle('touch',v)}
 try{if(matchMedia('(pointer:coarse)').matches)setTouch(true)}catch(e){}
-addEventListener('keydown',e=>{const c=e.code;if(mode==='cine'){e.preventDefault();if(c==='Escape')endCine();else if(c==='Space'||c==='Enter'||c==='ArrowRight')cineNext();return}if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(c)&&mode!=='title')e.preventDefault();unlockAudio();
+addEventListener('keydown',e=>{const c=e.code;{const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'||tg.isContentEditable)){if(c==='Escape')tg.blur();return}}if(mode==='cine'){e.preventDefault();if(c==='Escape')endCine();else if(c==='Space'||c==='Enter'||c==='ArrowRight')cineNext();return}if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(c)&&mode!=='title')e.preventDefault();unlockAudio();
   if(mode==='modal'||mode==='title'){if(mode==='modal'&&!menuEl.hidden){if(['Escape','KeyI','Tab','KeyM','KeyC'].includes(c))closeMenu();return}if((c==='Escape')&&mode==='modal'&&!$('m-respawn'))closeModal();return}
   keys[c]=true;if(e.repeat)return;setTouch(false);
   switch(c){case'KeyQ':cast(0);break;case'KeyE':cast(1);break;case'KeyR':cast(2);break;case'Digit1':setClass('warrior');break;case'Digit2':setClass('mage');break;case'Digit3':setClass('archer');break;case'KeyF':interactNearest();break;case'Enter':if(!P2.on)interactNearest();break;case'Space':doDash();break;case'KeyZ':usePotion('hp');break;case'KeyX':usePotion('mp');break;case'KeyT':useScroll();break;case'KeyI':case'Tab':openMenu('inv');break;case'KeyC':openMenu('stats');break;case'KeyM':openMenu('map');break;case'KeyH':openMenu('skills');break;case'Escape':openMenu('opts');break}});
@@ -3808,7 +3808,7 @@ let FRAMEERR=0;function frame(now){let dt=(now-last)/1000;last=now;if(!(dt>0))dt
 requestAnimationFrame(frame);
 
 });
-(function(){const C={};const AR=typeof ART==='object'?ART:{};const ks=Object.keys(AR);const N=ks.length;let n=N,done=false;
+(function(){const C={};let AUTO=false;try{AUTO=!!sessionStorage.getItem('eldmor-autostart')}catch(_){}const AR=typeof ART==='object'?ART:{};const ks=Object.keys(AR);const N=ks.length;let n=N,done=false;
 /* vinheta de abertura enquanto carrega: céu estrelado, floresta, os três heróis e o título */
 const st=document.createElement('style');st.textContent=`
 #eldload{position:fixed;inset:0;z-index:999999;overflow:hidden;background:linear-gradient(180deg,#0b0820 0%,#1c1440 38%,#3a2456 62%,#6a3a4a 78%,#1a1220 100%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f2c14e;transition:opacity .6s}
@@ -3847,11 +3847,11 @@ h+=`<div class="mid">${window.ELD_COVER?`<img class="cover" src="${window.ELD_CO
 const hs=[AR.h2_a_front||AR.h_a_front,AR.h2_w_front||AR.h_w_front,AR.h2_m_front||AR.h_m_front].filter(Boolean);
 if(hs.length)h+=`<div class="heroes">${hs.map(s=>`<img src="${s}" alt="">`).join('')}</div>`;
 h+='<div class="load"><div class="bar"><i id="eldbar"></i></div><div class="txt" id="eldtxt">Carregando o reino...</div></div>';
-ov.innerHTML=h;(document.body||document.documentElement).appendChild(ov);
+if(AUTO)h='<div class="load" style="bottom:46%"><div class="txt">Entrando no mundo...</div></div>';ov.innerHTML=h;if(AUTO)ov.style.background='#0b0820';(document.body||document.documentElement).appendChild(ov);
 const T0=Date.now(),MINV=3000;/* a vinheta aparece pelo menos ~2 s */
 const bar=()=>{const b=document.getElementById('eldbar');if(b)b.style.width=Math.round((N-n)/Math.max(1,N)*100)+'%'};
 const msgs=['Carregando o reino...','Afiando as espadas...','Acendendo as tochas da vila...','Chamando os heróis...','Quase pronto...'];let mi=0;const mt=setInterval(()=>{const t=document.getElementById('eldtxt');if(t&&!done)t.textContent=msgs[Math.min(msgs.length-1,++mi)]},1100);
-const fin=()=>{if(done)return;done=true;clearInterval(mt);window.ARTC=C;try{window.__ELDMAIN()}finally{const w=Math.max(0,3200-performance.now(),900-(Date.now()-T0));setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();st.remove()},650)},w)}};
+const fin=()=>{if(done)return;done=true;clearInterval(mt);window.ARTC=C;try{window.__ELDMAIN()}finally{const w=AUTO?700:Math.max(0,3200-performance.now(),900-(Date.now()-T0));setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();st.remove()},AUTO?300:650)},w)}};
 if(!n){fin();return}
 const one=k=>{const im=new Image();im.decoding='async';let fired=false;const step=()=>{if(fired)return;fired=true;n--;bar();if(n===0)fin()};
   const ok=()=>{if(!C[k]){try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);C[k]=c}catch(e){}}step()};
