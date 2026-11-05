@@ -36,7 +36,7 @@ for (const k in COSP) SHOP['cos:' + k] = { p: COSP[k], kind: 'perm' };
 /* ---------- armazenamento ---------- */
 let pg = null, pool = null;
 const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
-let MEM = { accs: [], toks: {}, pays: {}, next: 1 };
+let MEM = { accs: [], toks: {}, pays: {}, next: 1, sup: [] };
 const db = {
   async init() {
     if (process.env.DATABASE_URL) {
@@ -48,6 +48,7 @@ const db = {
           dia int not null default 0, owned jsonb not null default '{}', save jsonb, lvl int not null default 1, txp bigint not null default 0, cls text, op boolean not null default false,
           earn_day text, earned int not null default 0, created timestamptz default now(), updated timestamptz default now())`);
         await pool.query(`create table if not exists tokens(tok text primary key, acc int not null references accounts(id) on delete cascade, created timestamptz default now())`);
+        await pool.query(`create table if not exists support(id serial primary key, acc int, name text, contact text, msg text not null, done boolean not null default false, at timestamptz default now())`);
         await pool.query(`create table if not exists payments(id text primary key, acc int not null, dia int not null, status text, at timestamptz default now())`);
         console.log('Banco de dados Postgres conectado.'); return;
       } catch (e) { console.log('Não consegui usar o Postgres (' + e.message + '). Usando arquivo local.'); pool = null; }
@@ -71,6 +72,10 @@ const db = {
   async dropToks(id) { if (pool) await pool.query('delete from tokens where acc=$1', [id]); else { for (const k in MEM.toks) if (MEM.toks[k] === id) delete MEM.toks[k]; db.saveMem(); } },
   async rank(n) { if (pool) return (await pool.query('select name,lvl,txp,cls from accounts where op=false and lvl>1 order by lvl desc, txp desc, id asc limit $1', [n])).rows; return MEM.accs.filter(a => !a.op && a.lvl > 1).sort((a, b) => b.lvl - a.lvl || b.txp - a.txp || a.id - b.id).slice(0, n).map(a => ({ name: a.name, lvl: a.lvl, txp: a.txp, cls: a.cls })); },
   async payNew(pid, acc, dia, status) { if (pool) { const r = await pool.query('insert into payments(id,acc,dia,status) values($1,$2,$3,$4) on conflict (id) do nothing returning id', [pid, acc, dia, status]); return r.rowCount > 0; } if (MEM.pays[pid]) return false; MEM.pays[pid] = { acc, dia, status, at: Date.now() }; db.saveMem(); return true; },
+  async supAdd(o) { if (pool) { await pool.query('insert into support(acc,name,contact,msg) values($1,$2,$3,$4)', [o.acc, o.name, o.contact, o.msg]); return; } MEM.sup = MEM.sup || []; MEM.sup.push(Object.assign({ id: Date.now(), done: false, at: new Date().toISOString() }, o)); db.saveMem(); },
+  async supList() { if (pool) return (await pool.query('select id,acc,name,contact,msg,done,at from support order by done asc, at desc limit 100')).rows; return (MEM.sup || []).slice().reverse().slice(0, 100); },
+  async supDone(id) { if (pool) await pool.query('update support set done=true where id=$1', [id]); else { const x = (MEM.sup || []).find(m => m.id === id); if (x) x.done = true; db.saveMem(); } },
+  async delAcc(id) { if (pool) { await pool.query('delete from tokens where acc=$1', [id]); await pool.query('delete from accounts where id=$1', [id]); return; } MEM.accs = MEM.accs.filter(a => a.id !== id); for (const k in MEM.toks) if (MEM.toks[k] === id) delete MEM.toks[k]; db.saveMem(); },
   // soma diamantes de forma segura (sem corrida entre duas compras)
   async addDia(id, n) { if (pool) return (await pool.query('update accounts set dia=dia+$2,updated=now() where id=$1 returning dia', [id, n])).rows[0].dia; const a = MEM.accs.find(x => x.id === id); a.dia += n; db.saveMem(); return a.dia; },
   async spendDia(id, n) { if (pool) { const r = await pool.query('update accounts set dia=dia-$2,updated=now() where id=$1 and dia>=$2 returning dia', [id, n]); return r.rowCount ? r.rows[0].dia : null; } const a = MEM.accs.find(x => x.id === id); if (a.dia < n) return null; a.dia -= n; db.saveMem(); return a.dia; },
@@ -107,7 +112,7 @@ async function mpCheck(pid) {
 async function handle(req, res, u) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
   try {
-    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, payHint: MP_HINT, mpKey: MP_KEY ? JSON.stringify(MP_KEY) : '', packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY });
+    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, payHint: MP_HINT, supportEmail: (process.env.SUPPORT_EMAIL || 'reinosdeeldmor@gmail.com').trim(), mpKey: MP_KEY ? JSON.stringify(MP_KEY) : '', packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY });
     if (u === '/api/register' && req.method === 'POST') {
       if (limited(req, 'reg', +(process.env.REG_LIMIT || 6), 3600e3)) return send(res, 429, { err: 'Muitas contas criadas daqui. Tente mais tarde.' });
       const b = await body(req); const name = cleanName(b.name), pw = String(b.pass || '');
@@ -117,6 +122,7 @@ async function handle(req, res, u) {
       if (!op && /operador/i.test(name)) return send(res, 400, { err: 'Esse nome é reservado.' });
       const ln = name.toLowerCase(); if (await db.byName(ln)) return send(res, 409, { err: 'Esse nome já está em uso. Escolha outro.' });
       const salt = crypto.randomBytes(12).toString('hex'); const a = await db.create({ name, lname: ln, ph: hashPw(pw, salt), salt, op });
+      if (b.terms) { a.owned = Object.assign({}, a.owned, { terms: today() }); await db.set(a.id, { owned: a.owned }); }
       return send(res, 200, { tok: await db.addTok(a.id), acc: pubAcc(a), save: null });
     }
     if (u === '/api/login' && req.method === 'POST') {
@@ -136,6 +142,12 @@ async function handle(req, res, u) {
       const q = new URL(req.url, 'http://x').searchParams; const pid = q.get('payment_id'); if (pid) mpCheck(pid).catch(() => { });
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><body style="font-family:system-ui;background:#141a2c;color:#fff;text-align:center;padding:40px"><h2>${q.get('status') === 'approved' || q.get('collection_status') === 'approved' ? 'Pagamento aprovado!' : 'Pagamento em andamento'}</h2><p>Os diamantes aparecem no jogo em instantes. Pode fechar esta página e voltar para o Reinos de Eldmor.</p></body>`);
+    }
+    if (u === '/api/support' && req.method === 'POST') {
+      if (limited(req, 'sup', 5, 3600e3)) return send(res, 429, { err: 'Você já mandou várias mensagens. Espere um pouco.' });
+      const b = await body(req); const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 2000); if (msg.length < 5) return send(res, 400, { err: 'Escreva sua mensagem (pelo menos 5 letras).' });
+      const who = await auth(req); await db.supAdd({ acc: who ? who.id : null, name: who ? who.name : cleanName(b.name) || null, contact: String(b.contact || '').replace(/[<>]/g, '').trim().slice(0, 120) || null, msg });
+      return send(res, 200, { ok: true });
     }
     const a = await auth(req); if (!a) return send(res, 401, { err: 'Entre na sua conta de novo.' });
     if (u === '/api/me') return send(res, 200, { acc: pubAcc(a), save: a.save || null });
@@ -182,6 +194,9 @@ async function handle(req, res, u) {
         statement_descriptor: 'ELDMOR', metadata: { acc: a.id, pack: b.pack } }) });
       return send(res, 200, { url: pref.init_point });
     }
+    if (u === '/api/support/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: await db.supList() }); }
+    if (u === '/api/support/done' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); await db.supDone(+b.id); return send(res, 200, { ok: true }); }
+    if (u === '/api/delete' && req.method === 'POST') { const b = await body(req); if (hashPw(b.pass || '', a.salt) !== a.ph) return send(res, 401, { err: 'Senha errada.' }); await db.delAcc(a.id); return send(res, 200, { ok: true }); }
     if (u === '/api/logout' && req.method === 'POST') { await db.dropToks(a.id); return send(res, 200, { ok: true }); }
     return send(res, 404, { err: 'rota desconhecida' });
   } catch (e) { console.log('api erro', u, e.message); return send(res, 500, { err: 'Erro no servidor. Tente de novo.' }); }
