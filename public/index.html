@@ -2508,7 +2508,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v36 · 05/11/2026';
+const ELD_VER='v37 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -2529,7 +2529,7 @@ function respTick(){if(NET.role==='guest'||mode==='title')return;const now=Date.
 {const _up=update;update=function(dt){_up(dt);respTick()}}
 
 /* ================= Modo Deus (só o criador) ================= */
-const GOD={on:false,srv:false,inv:true,mana:true,fast:false,ghost:false,one:true,hide:false,btn:null};
+const GOD={on:false,srv:false,inv:true,mana:true,nocd:false,fast:false,ghost:false,one:true,hide:false,btn:null};
 const GOD_H='5baf53334a1b7c526e4c1be9117271c600da5f8a52a6a9d44dc2ac5f0fde6ce1';
 async function godHash(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('eldmor:'+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(_){return''}}
 async function godCheck(name){if(!name)return false;const h=await godHash(name.trim());if(h&&h===GOD_H){godOn();return true}return false}
@@ -2540,7 +2540,7 @@ function godPlaces(){const a=[['Vila de Eldmor',SPAWN.x,SPAWN.y],['Memorial do P
 function openGod(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.test(k)).sort((a,b)=>ED[a].lvl-ED[b].lvl);const pl=SRV.on?[...SRV.players.values()]:[];
   openModal(`<div class="mhead"><h2 style="color:#ffd040">⚡ Painel do Operador</h2><button class="btn s" data-act="close">Fechar</button></div>
   <p class="muted">Você está como <b>Operador level 0</b>. ${GOD.srv?'O servidor reconheceu você: os poderes valem para todos.':'Poderes locais ativos. Entre no servidor para ter os poderes online.'}</p>
-  <h3>Poderes</h3><div class="row" style="flex-wrap:wrap;gap:6px">${GT_('inv','Invencível')}${GT_('mana','Mana infinita')}${GT_('one','Matar com 1 golpe')}${GT_('fast','Super velocidade')}${GT_('ghost','Atravessar paredes')}${GOD.srv?GT_('hide','Invisível para jogadores'):''}</div>
+  <h3>Poderes</h3><div class="row" style="flex-wrap:wrap;gap:6px">${GT_('inv','Invencível')}${GT_('mana','Mana infinita')}${GT_('nocd','Sem recarga')}${GT_('one','Matar com 1 golpe')}${GT_('fast','Super velocidade')}${GT_('ghost','Atravessar paredes')}${GOD.srv?GT_('hide','Invisível para jogadores'):''}</div>
   <h3>Criar monstros e chefes</h3><div class="row" style="gap:6px;flex-wrap:wrap"><select id="gmob" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${mobs.map(k=>`<option value="${k}">${ED[k].n} (nv ${ED[k].lvl})</option>`).join('')}</select><select id="gqty" class="ninput" style="width:80px;letter-spacing:0">${[1,5,10,25].map(n=>`<option>${n}</option>`).join('')}</select><button class="btn" data-act="god" data-id="spawn">Criar</button></div>
   <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><select id="gboss" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${BD.map((d,i)=>`<option value="${i}">${d.name} (nv ${d.lvl})</option>`).join('')}</select><button class="btn" data-act="god" data-id="boss">Chamar chefe</button>${GOD.srv?'<button class="btn" data-act="god" data-id="sboss">Chefe para todos</button>':''}</div>
   <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn" data-act="god" data-id="killnear">Matar monstros perto</button><button class="btn" data-act="god" data-id="killall">Matar todos os monstros</button><button class="btn" data-act="god" data-id="clearboss">Sumir com os chefes</button></div>
@@ -2550,7 +2550,7 @@ function openGod(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
   ${GOD.srv?`<h3>Jogadores online</h3>${pl.length?pl.map(p=>`<div class="row" style="gap:6px;align-items:center;margin:4px 0"><b style="flex:1;color:#6ad8ff">${esc(p.name)} · Nv ${p.lv||1}</b><button class="btn s" data-act="god" data-id="goto:${p.id}">Ir até</button><button class="btn s" data-act="god" data-id="smite:${p.id}" style="border-color:#ff5a4a;color:#ff7a6e">Matar</button></div>`).join(''):'<p class="muted">Ninguém mais online.</p>'}`:''}`)
   mbox.querySelectorAll('select').forEach(el=>['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation())))}
 function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.value:''};const[a,b]=id.split(':');let keep=true;
-  if(a==='t'){GOD[b]=!GOD[b];if(b==='hide'&&GOD.srv)srvSend({t:'op',c:'hide',v:GOD.hide});toast(`${b==='inv'?'Invencível':b==='mana'?'Mana infinita':b==='one'?'Matar com 1 golpe':b==='fast'?'Super velocidade':b==='ghost'?'Atravessar paredes':'Invisível'}: ${GOD[b]?'ligado':'desligado'}`,'#ffd040')}
+  if(a==='t'){GOD[b]=!GOD[b];if(b==='hide'&&GOD.srv)srvSend({t:'op',c:'hide',v:GOD.hide});toast(`${b==='inv'?'Invencível':b==='mana'?'Mana infinita':b==='nocd'?'Sem recarga':b==='one'?'Matar com 1 golpe':b==='fast'?'Super velocidade':b==='ghost'?'Atravessar paredes':'Invisível'}: ${GOD[b]?'ligado':'desligado'}`,'#ffd040')}
   else if(a==='spawn'){const k=v('gmob'),n=+v('gqty')||1;for(let i=0;i<n;i++){const ang=Math.random()*7,r=rand(30,70);const e=makeEnemy(k,P.x+Math.cos(ang)*r,P.y+Math.sin(ang)*r);e.sz=e.z;e.aggro=true;enemies.push(e)}toast(`${n} × ${ED[k].n} criados.`,'#ffd040')}
   else if(a==='boss'){const i=+v('gboss');const old=enemies.find(e=>e.boss&&e.bi===i);if(old)enemies.splice(enemies.indexOf(old),1);const c=AC_(i);P.x=c.x;P.y=c.y+50;P.path=null;cam.x=P.x;cam.y=P.y;spawnBoss(i);keep=false}
   else if(a==='sboss'){srvSend({t:'op',c:'boss',bi:+v('gboss')});toast('Chefe chamado para todos no servidor.','#ffd040')}
@@ -2571,7 +2571,7 @@ function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.val
 {const _hp=hurtPlayer;hurtPlayer=function(d,x,y){if(GOD.on&&GOD.inv)return;return _hp(d,x,y)}}
 {const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(GOD.on&&GOD.one&&e&&!(opt&&opt.remote)&&!e.dummy)base=Math.max(base,(e.max||e.hp||1)*(e.srv?0.08:1.2));return _de(e,base,ang,opt)}}
 {const _mv=moveEnt;moveEnt=function(e,dx,dy){if(GOD.on&&e===P){if(GOD.fast){dx*=2.5;dy*=2.5}if(GOD.ghost){P.x=clamp(P.x+dx,8,MW*T-8);P.y=clamp(P.y+dy,8,MH*T-8);return!!(dx||dy)}}return _mv(e,dx,dy)}}
-{const _up=update;update=function(dt){_up(dt);if(!GOD.on)return;const st=stats();if(GOD.inv){if(S.hp<st.mhp)S.hp=st.mhp;if(P.dead&&mode!=='title'){P.dead=false}}if(GOD.mana&&S.mp<st.mmp)S.mp=st.mmp;if(GOD.mana)P.cd={}}}
+{const _up=update;update=function(dt){_up(dt);if(!GOD.on)return;const st=stats();if(GOD.inv){if(S.hp<st.mhp)S.hp=st.mhp;if(P.dead&&mode!=='title'){P.dead=false}}if(GOD.mana&&S.mp<st.mmp)S.mp=st.mmp;if(GOD.nocd)P.cd={}}}
 {const _sc=srvConnect;srvConnect=function(name,url){godCheck(name).then(ok=>{if(ok){const k=(name||'').trim();SRV.opKey=k;_sc('Operador',url)}else _sc(name,url)})}}
 {const _sd=srvData;srvData=function(m){if(m&&m.t==='welcome'&&m.op){GOD.srv=true;godOn()}if(m&&m.t==='smite'){if(GOD.on)return;S.hp=0;P.invT=0;burst(P.x,P.y-10,['#ffffff','#ffd040','#8ad8ff'],60,140,0.8,2);shake(8);sfx('boom');toast('Um raio do Operador caiu sobre você!','#ffd040');try{die()}catch(_){}return}return _sd(m)}}
 try{if(sessionStorage.getItem('eldmor-op')==='1'){GOD.on=true;setTimeout(godButton,500)}}catch(_){}
