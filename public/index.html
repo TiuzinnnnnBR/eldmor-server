@@ -1643,7 +1643,7 @@ const QUESTS=[
 ];
 const REPEAT={t:'Caçador de Eldmor',d:'Derrote 40 inimigos em qualquer região. Missão repetível.',k:'kill',m:'any',n:40,rw:{g:150,xp:800,hp:2,mp:2}};
 const curQuest=()=>S.q<QUESTS.length?QUESTS[S.q]:REPEAT;
-const LVCAP=1000;const xpNeed=l=>Math.round(40*Math.pow(l,1.78));
+const LVCAP=1000;const xpNeed=l=>Math.round(45*Math.pow(l,2.05));
 const msNeed=l=>Math.round(12*Math.pow(l,1.55));
 const NPCS=[
   {id:'elder',name:'Ancião Bram',role:'Missões',x:8.3*T,y:(VY-3.4)*T,spr:'sage',icon:'quest'},
@@ -1727,11 +1727,11 @@ function gainMs(k,n){const m=S.ms[k];m.x+=n;let up=false;while(m.x>=msNeed(m.l))
 const CONS=[['hp','Poção de Vida','php','Recupera 50% da vida. Toque na barra de vida para usar rápido.'],['mp','Poção de Mana','pmp','Recupera 60% da mana. Toque na barra de mana para usar rápido.'],['scroll','Pergaminho de Retorno','scroll','Leva você de volta para a vila depois de um instante.'],['keys','Chave de Cripta','key','Abre os baús trancados espalhados pelo mundo.']];
 const consCount=k=>k==='hp'?S.pot.hp:k==='mp'?S.pot.mp:k==='scroll'?S.scroll:S.keys;
 function consStacks(){const a=[];for(const[k,n,ic,d]of CONS){let c=consCount(k),i=0;while(c>0){const q=Math.min(200,c);a.push({cons:ic,ck:k,name:n,desc:d,count:q,id:k+i});c-=q;i++}}return a}
-const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0);
+const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0)+(S.bagX||0);
 const bagUsed=()=>S.inv.length+consStacks().length;
 const bagFull=()=>bagUsed()>=bagCap();
 const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
-const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('egg:'))return'Segredo';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
+const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
 
 const KEY='eldmor-save-v4',OLDKEYS=['eldmor-save-v3','eldmor-save-v2','eldmor-save-v1'];
 function save(){try{S.x=P.x;S.y=P.y;S.ground=ground.map(g=>({it:g.it,x:g.x,y:g.y}));localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -2424,13 +2424,13 @@ const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(_){return''}},lsSet
 function srvDefaultUrl(){if(window.ELD_SAME)return location.origin.replace(/^http/,'ws');return lsGet('eldmor-srv')||'wss://eldmor-server.onrender.com'}
 function srvNorm(u){u=(u||'').trim();if(!u)return'';if(!/^wss?:\/\//.test(u))u=(/^http:/.test(u)?u.replace(/^http/,'ws'):'wss://'+u.replace(/^https?:\/\//,''));return u.replace(/\/+$/,'')}
 function srvSend(o){try{if(SRV.ws&&SRV.ws.readyState===1)SRV.ws.send(JSON.stringify(o))}catch(_){}}
-function srvConnect(name,url){name=(name||'').trim().replace(/[<>]/g,'').slice(0,16);url=srvNorm(url);
+function srvConnect(name,url){if(typeof accName==='function'&&accName()&&accTok())name=accName();name=(name||'').trim().replace(/[<>]/g,'').slice(0,16);url=srvNorm(url);
   if(name.length<2){netStat('Escolha um nome de usuário com pelo menos 2 letras.');return}if(!url){netStat('Coloque o endereço do servidor.');return}
   if(NET.role){netStat('Saia da sala com código antes de entrar no servidor.');return}
   SRV.name=name;SRV.url=url;SRV.want=true;lsSet('eldmor-name',name);if(!window.ELD_SAME)lsSet('eldmor-srv',url);S.uname=name;srvOpen()}
 function srvDid(){let d=lsGet('eldmor-did');if(!d){d=Math.random().toString(36).slice(2)+Date.now().toString(36);lsSet('eldmor-did',d)}return d}
 function srvOpen(){if(!SRV.want)return;clearTimeout(SRV.rt);if(SRV.ws){const o=SRV.ws;SRV.ws=null;o.onclose=o.onmessage=o.onerror=null;try{o.close()}catch(_){}}netStat('Conectando ao servidor... (se ele estava dormindo, pode levar uns 30 segundos)');let ws;try{ws=new WebSocket(SRV.url)}catch(e){netStat('Endereço do servidor inválido.');SRV.want=false;return}SRV.ws=ws;
-  ws.onopen=()=>{if(ws!==SRV.ws){try{ws.close()}catch(_){}return}SRV.retry=0;srvSend({t:'join',name:SRV.name,did:srvDid(),k:SRV.opKey||undefined,h:srvHero()})};
+  ws.onopen=()=>{if(ws!==SRV.ws){try{ws.close()}catch(_){}return}SRV.retry=0;srvSend({t:'join',name:SRV.name,did:srvDid(),tok:typeof accTok==='function'?accTok():undefined,k:SRV.opKey||undefined,h:srvHero()})};
   ws.onmessage=ev=>{if(ws!==SRV.ws)return;let m;try{m=JSON.parse(ev.data)}catch(_){return}srvData(m)};
   ws.onclose=()=>{if(ws!==SRV.ws)return;const was=SRV.on;srvDrop();if(SRV.want){SRV.retry++;if(was)toast('A conexão com o servidor caiu. Tentando voltar...','#a597bd');clearTimeout(SRV.rt);SRV.rt=setTimeout(srvOpen,Math.min(15000,1500*SRV.retry))}};
   ws.onerror=()=>{if(!SRV.on)netStat('Não consegui falar com o servidor. Confira o endereço e a internet. Tentando de novo...')}}
@@ -2486,7 +2486,7 @@ function srvHTML(){const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<'
     <div class="row" style="margin-top:8px"><button class="btn" data-act="sleave">Sair do servidor</button></div><hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:14px 0"></div>`}
   const nm=esc(S.uname||lsGet('eldmor-name')||''),url=esc((lsGet('eldmor-srv')||'eldmor-server.onrender.com').replace(/^wss?:\/\//,''));
   return`<div id="srvbox"><h3>Servidor Eldmor (recomendado)</h3><p class="muted">Todo mundo entra no mesmo mundo fixo, com o próprio nome de usuário. Os chefes do servidor são raros e aparecem para todos ao mesmo tempo.</p>
-  <div class="row"><input id="sname" class="ninput" maxlength="16" placeholder="Seu nome de usuário" value="${nm}" autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>
+  <div class="row"><input id="sname" class="ninput" maxlength="16" placeholder="Seu nome de usuário" value="${typeof accName==='function'&&accName()&&accTok()?esc(accName()):nm}" ${typeof accName==='function'&&accName()&&accTok()?'readonly title="Nome da sua conta"':''} autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>
   ${window.ELD_SAME?'':`<div class="row" style="margin-top:8px"><input id="surl" class="ninput" placeholder="Endereço do servidor (ex.: eldmor.onrender.com)" value="${url}" autocomplete="off" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>`}
   <div class="row" style="margin-top:8px"><button class="btn pri" data-act="sjoin">Entrar no servidor</button></div><hr style="border:0;border-top:1px solid rgba(255,255,255,.12);margin:14px 0"><h3>Sala com código</h3></div>`}
 {const _oo=openOnline;openOnline=function(){_oo();const h=mbox.querySelector('.mhead');if(h){h.insertAdjacentHTML('afterend',srvHTML());mbox.querySelectorAll('#sname,#surl,#schat').forEach(el=>['keydown','keyup','keypress'].forEach(t=>el.addEventListener(t,e=>{e.stopPropagation();if(t==='keydown'&&e.key==='Enter'){const b=mbox.querySelector(el.id==='schat'?'[data-act=schat]':'[data-act=sjoin]');b&&b.click()}})))}
@@ -2506,7 +2506,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v30 · 05/11/2026';
+const ELD_VER='v31 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3008,6 +3008,163 @@ function audPanel(){return`<div id="audpnl" style="margin:12px 0 4px;padding:10p
   $('aud-sv').oninput=e=>{AUD.sv=+e.target.value/100;$('aud-svt').textContent=e.target.value+'%'};
   $('aud-sv').onchange=()=>{audSave();unlockAudio();sfx('coin')}}}
 
+/* ================= contas, loja de diamantes, ranking, mascotes por raridade ================= */
+function apiBase(){if(window.ELD_SAME)return location.origin;const u=lsGet('eldmor-srv')||'wss://eldmor-server.onrender.com';return u.replace(/^ws/,'http').replace(/\/+$/,'')}
+var ACC=(()=>{try{return JSON.parse(localStorage.getItem('eldmor-acc')||'null')}catch(_){return null}})();
+function accList(){try{return JSON.parse(localStorage.getItem('eldmor-accs')||'[]')}catch(_){return[]}}
+function accStore(){try{localStorage.setItem('eldmor-acc',JSON.stringify(ACC));const L=accList().filter(a=>ACC&&a.id!==ACC.id);if(ACC)L.unshift({id:ACC.id,name:ACC.name,tok:ACC.tok});localStorage.setItem('eldmor-accs',JSON.stringify(L.slice(0,6)))}catch(_){}}
+function accName(){return ACC&&ACC.name||''}
+function accTok(){return ACC&&ACC.tok||undefined}
+async function api(path,body,tok){const r=await fetch(apiBase()+'/api/'+path,{method:body?'POST':'GET',headers:Object.assign({'content-type':'application/json'},tok||accTok()?{authorization:'Bearer '+(tok||accTok())}:{}),body:body?JSON.stringify(body):undefined});let j={};try{j=await r.json()}catch(_){}if(!r.ok){const e=new Error(j.err||('Erro '+r.status));e.code=r.status;throw e}return j}
+const escA=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+/* ---- dados vindos do servidor aplicados ao jogo ---- */
+function accApply(acc){if(!acc)return;ACC=Object.assign(ACC||{},{id:acc.id,name:acc.realName||acc.name,shown:acc.name,dia:acc.dia,owned:acc.owned||{},op:acc.op});accStore();accOwned()}
+function accOwned(){if(!ACC||typeof S==='undefined'||!S)return;const o=ACC.owned||{};S.owned=S.owned||{};
+  for(const k in o){if(!k.startsWith('cos:'))continue;const[c,cat,i]=k.slice(4).split('.');for(const cl of(c==='any'?CLS_ORDER:[c]))S.owned[cl+'.'+cat+'.'+i]=true}
+  S.bagX=(o.bag||0)*10;if(typeof S.dia==='number')S.dia=ACC.dia;PORT_K=''}
+/* ---- salvar na nuvem ---- */
+let accSaveT=0,accSaving=false;
+function accPush(now){if(!ACC||!ACC.tok||typeof S==='undefined'||!S||mode==='title')return;if(S.acc!==ACC.id)return;const go=async()=>{if(accSaving)return;accSaving=true;try{const s=JSON.parse(JSON.stringify(S));delete s.dia;await api('save',{save:s})}catch(e){if(e.code===401)accExpired()}accSaving=false};if(now)go();else{clearTimeout(accSaveT);accSaveT=setTimeout(go,12000)}}
+{const _sv=save;save=function(){if(window.__NOSAVE)return;_sv();accPush(false)}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ACC&&S&&S.acc===ACC.id){try{const s=JSON.parse(JSON.stringify(S));delete s.dia;fetch(apiBase()+'/api/save',{method:'POST',keepalive:true,headers:{'content-type':'application/json',authorization:'Bearer '+ACC.tok},body:JSON.stringify({save:s})})}catch(_){}}});
+function accExpired(){toast('Sua sessão expirou. Entre na conta de novo pelo menu Opções.','#ff7a6e')}
+/* ---- diamantes: os ganhos no jogo vão para a conta (limite diário), os gastos passam pelo servidor ---- */
+let accEarnBusy=false;
+setInterval(async()=>{if(!ACC||!ACC.tok||typeof S==='undefined'||!S||mode==='title'||S.acc!==ACC.id||accEarnBusy)return;const d=(S.dia|0)-(ACC.dia|0);if(d===0)return;if(d<0){S.dia=ACC.dia;return}
+  accEarnBusy=true;try{const sendN=Math.min(d,60);const r=await api('earn',{n:sendN});ACC.dia=r.dia;S.dia=r.dia+(r.cap?0:d-sendN);accStore();if(r.cap&&!accEarnBusy.warned){toast('Você já ganhou o máximo de diamantes jogando hoje. Amanhã tem mais!','#a597bd')}}catch(e){S.dia=ACC.dia}accEarnBusy=false},3000);
+async function accSpend(item,label){if(!ACC||!ACC.tok){openLogin('Entre na sua conta para usar diamantes.');return null}
+  try{const r=await api('spend',{item});ACC.dia=r.dia;ACC.owned=r.owned;accStore();accOwned();S.dia=r.dia;sfx('lvl');toast('Comprado: '+label,'#6ad8ff');save();return r}catch(e){toast(e.message,'#ff7a6e');return null}}
+/* ---- login, criar conta, trocar de conta ---- */
+function loginHTML(msg){const L=accList();return`<div class="mhead"><h2>Conta</h2><button class="btn s" data-act="close">Fechar</button></div>
+  ${msg?`<p class="up">${escA(msg)}</p>`:''}<p class="muted">Com a conta, seu progresso fica salvo no servidor: dá para jogar no celular e no PC, trocar de personagem e aparecer no ranking. O nome é único no jogo.</p>
+  ${L.length?`<h3>Contas neste aparelho</h3><div class="row" style="flex-wrap:wrap">${L.map(a=>`<button class="btn${ACC&&ACC.id===a.id?' pri':''}" data-accsw="${a.id}">${escA(a.name)}${ACC&&ACC.id===a.id?' (atual)':''}</button>`).join('')}</div>`:''}
+  <h3>Entrar ou criar conta</h3><div class="row"><input id="lname" class="ninput" maxlength="16" placeholder="Nome de usuário" autocomplete="username" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>
+  <div class="row" style="margin-top:8px"><input id="lpass" class="ninput" type="password" maxlength="64" placeholder="Senha" autocomplete="current-password" style="flex:1;min-width:0;text-transform:none;letter-spacing:0;font-size:16px"></div>
+  <div class="row" style="margin-top:10px"><button class="btn pri" id="lgo">Entrar</button><button class="btn" id="lnew">Criar conta</button></div><p id="lmsg" class="muted" style="min-height:1.2em"></p>
+  <p class="muted" style="font-size:12px">Ao criar uma conta neste aparelho, o progresso que já está aqui vai junto para ela.</p>`}
+function openLogin(msg){const prev=mode;mode='modal';openModal(loginHTML(msg),false,'small');
+  const m=t=>{const e=$('lmsg');if(e)e.textContent=t};
+  const go=async reg=>{const name=($('lname').value||'').trim(),pass=$('lpass').value||'';if(name.length<3){m('O nome precisa ter pelo menos 3 letras.');return}if(pass.length<4){m('A senha precisa ter pelo menos 4 caracteres.');return}
+    m(reg?'Criando conta... (se o servidor estava dormindo, pode levar uns 30 segundos)':'Entrando... (se o servidor estava dormindo, pode levar uns 30 segundos)');
+    try{const r=await api(reg?'register':'login',{name,pass},'-');await accEnter(r,reg)}catch(e){m(e.message==='Failed to fetch'?'Não consegui falar com o servidor. Confira a internet.':e.message)}};
+  $('lgo').onclick=()=>go(false);$('lnew').onclick=()=>go(true);$('lpass').onkeydown=e=>{if(e.key==='Enter')go(false)};
+  document.querySelectorAll('[data-accsw]').forEach(b=>b.onclick=async()=>{const a=accList().find(x=>x.id===+b.dataset.accsw);if(!a)return;if(ACC&&a.id===ACC.id){closeModal();return}m('Trocando de conta...');try{const r=await api('me',null,a.tok);r.tok=a.tok;await accEnter(r,false)}catch(e){m(e.code===401?'Essa conta pediu login de novo. Digite nome e senha.':e.message);if(e.code===401){$('lname').value=a.name}}})}
+async function accEnter(r,isNew){/* guarda o progresso da conta atual antes de trocar */
+  if(ACC&&ACC.tok&&S&&S.acc===ACC.id&&mode!=='title'){try{const s=JSON.parse(JSON.stringify(S));delete s.dia;await api('save',{save:s})}catch(_){}}
+  ACC={id:r.acc.id,name:r.acc.realName||r.acc.name,tok:r.tok,dia:r.acc.dia,owned:r.acc.owned||{},op:r.acc.op};accStore();
+  window.__NOSAVE=true;let sv=r.save;const local=loadSave();
+  if(!sv&&local&&(local.acc===ACC.id||local.acc===undefined)){sv=local}
+  if(sv){sv.acc=ACC.id;sv.uname=ACC.name;try{localStorage.setItem(KEY,JSON.stringify(sv))}catch(_){}try{const s=JSON.parse(JSON.stringify(sv));delete s.dia;await api('save',{save:s})}catch(_){}}
+  else wipeSave();
+  try{sessionStorage.setItem('eldmor-autostart','1')}catch(_){}location.reload()}
+/* volta direto para o jogo depois de trocar de conta */
+setTimeout(()=>{let a=null;try{a=sessionStorage.getItem('eldmor-autostart');sessionStorage.removeItem('eldmor-autostart')}catch(_){}if(a&&mode==='title'){const s=loadSave();startGame(s);if(!s)toast('Conta nova! Boa aventura, '+accName()+'.','#8bd86a')}},600);
+/* atualiza diamantes e itens ao abrir o jogo */
+setTimeout(async()=>{if(!ACC||!ACC.tok)return;try{const r=await api('me');accApply(r.acc);if(S&&S.acc===ACC.id){S.dia=ACC.dia}}catch(e){if(e.code===401){ACC.tok=null;accStore()}}},1200);
+{const _sg=startGame;startGame=function(saved){_sg(saved);if(ACC&&ACC.tok){if(S.acc===undefined||S.acc===ACC.id){S.acc=ACC.id;S.uname=ACC.name;accOwned()}}}}
+/* tela inicial com a conta */
+{const _ot=openTitle;openTitle=function(){_ot();try{const box=document.createElement('div');box.className='pnl';box.style.cssText='margin:10px 0;padding:10px 12px';
+  box.innerHTML=ACC&&ACC.tok?`<b>Conta:</b> ${escA(ACC.name)} · <span style="color:#6ad8ff">${ACC.dia|0} diamantes</span> <button class="btn s" id="tacc" style="margin-left:8px">Trocar de conta</button>`:`<b>Entre ou crie sua conta</b> para salvar na nuvem, usar a loja e aparecer no ranking. <button class="btn s pri" id="tacc" style="margin-left:8px">Entrar / Criar conta</button>`;
+  const row=mbox.querySelector('.row');(row||mbox).insertAdjacentElement(row?'beforebegin':'beforeend',box);$('tacc').onclick=()=>openLogin()}catch(_){}}}
+/* ---- mascotes de todas as classes, com raridade ---- */
+const RARN=['Comum','Raro','Épico','Lendário','Mítico'],RARC=['#c8c8c8','#4aa8ff','#c36bff','#ffb43c','#ff4a6a'];
+const PETDEF=[null,
+ {n:'Gatinho',r:0,q:'free'},{n:'Sapinho',r:0,q:'free'},{n:'Corujinha',r:0,q:'dia:60'},{n:'Coelhinho',r:0,q:'dia:60'},{n:'Pintinho',r:0,q:'lvl:6'},
+ {n:'Slime Bebê',r:1,q:'boss:0'},{n:'Dragãozinho de Magma',r:2,q:'boss:2'},{n:'Peixe Dourado',r:1,q:'egg:fonte'},{n:'Fantasminha',r:2,q:'egg:lapide'},
+ {n:'Raposinha de Fogo',r:1,q:'dia:150',a:'x_wolf',t:[[255,120,30],0.55]},{n:'Pinguim Glacial',r:1,q:'dia:150',a:'x_yeti',t:[[90,170,255],0.4]},
+ {n:'Golem de Cristal',r:2,q:'dia:400',a:'x_crystalgolem'},{n:'Morceguinho Lunar',r:2,q:'dia:400',a:'x_bat',t:[[170,110,255],0.4]},
+ {n:'Fênix Bebê',r:3,q:'dia:900',a:'b_phoenix'},{n:'Grifo Real',r:3,q:'dia:900',a:'b_firedragon',t:[[255,215,120],0.6]},{n:'Unicórnio Arco-Íris',r:3,q:'bosses:10',a:'x_wolf',t:[[255,240,255],0.7]},
+ {n:'Dragão Celestial',r:4,q:'dia:2000',a:'b_darkdragon',t:[[80,180,255],0.55]},{n:'Lobo Estelar',r:4,q:'dia:2000',a:'x_wolf',t:[[90,70,220],0.6]},
+ {n:'Espírito da Floresta',r:4,q:'lvl:300',a:'b_treant',t:[[120,255,140],0.35]},{n:'Pequeno Arqueiro de Luz',r:4,q:'pray:100',a:'p_paulo_front',t:[[255,215,90],0.45]}];
+const PETB=[[0.02,0,false],[0.04,0,true],[0.06,0.03,true],[0.08,0.05,true],[0.10,0.07,true]];/* ouro, xp, coleta moedas */
+{const A=window.ARTC||{};for(let k=10;k<PETDEF.length;k++){const d=PETDEF[k];let src=A[d.a];if(!src){PETSPR[k]=PETSPR[(k%9)+1];continue}if(d.t)src=artTint(src,d.t[0],d.t[1]);const fr=artFrames(src,d.a.startsWith('b_')?13:11,'float',4);PETSPR[k]=[fr[0],fr[2]]}
+ const po=PETDEF.map((d,i)=>i?[d.n,d.q]:['Nenhum','free']);for(const c of CLS_ORDER)COS[c].pet={n:'Mascote',o:po.map(x=>x.slice())}}
+function petCur(){const L=S&&S.look&&S.look[S.cls];const k=L&&L.pet|0;return k&&PETSPR[k]&&skinOwned(S.cls,'pet',k)?k:0}
+function petBonus(){const k=petCur();return k?PETB[PETDEF[k].r]:[0,0,false]}
+/* requisitos especiais dos mascotes */
+setInterval(()=>{if(!S||mode==='title')return;S.owned=S.owned||{};const nb=(S.bosses||[]).filter(Boolean).length,pr=(S.paulo&&S.paulo.pray)||S.pray||0;for(const c of CLS_ORDER){if(nb>=10)S.owned[c+'.pet.16']=true;if(pr>=100)S.owned[c+'.pet.20']=true}},4000);
+{const _pp=typeof pauloPray==='function'?pauloPray:null;if(_pp)pauloPray=function(){S.pray=(S.pray||0)+1;return _pp.apply(this,arguments)}}
+/* bônus leves: ouro, XP e ímã de moedas */
+{const _dg=dropGold;dropGold=function(x,y,g){const b=petBonus();let m=1+b[0];if(S.buffs&&S.buffs.bgold>Date.now())m+=0.5;return _dg(x,y,Math.max(1,Math.round(g*m)))}}
+{const _gx=gainXP;gainXP=function(n){const b=petBonus();let m=1+b[1];if(S.buffs&&S.buffs.bxp>Date.now())m+=0.5;return _gx(Math.max(1,Math.round(n*m)))}}
+{const _up=update;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;const b=petBonus();if(b[2])for(const d of drops){if(d.kind!=='gold'||d.t<0.4)continue;const dx=P.x-d.x,dy=P.y-d.y,dd=Math.hypot(dx,dy);if(dd<70&&dd>2){d.x+=dx/dd*Math.min(dd,140*dt);d.y+=dy/dd*Math.min(dd,140*dt)}}
+  const L=S.look&&S.look[S.cls];if(!L||GFX.lo)return;const au=L.aura|0,tr=L.trail|0;
+  if(tr&&skinOwned(S.cls,'trail',tr)&&P.walk>0&&Math.random()<dt*22){const T2=TRAILS[tr];parts.push({x:P.x+rand(-3,3),y:P.y+P.r-1,vx:rand(-4,4),vy:rand(-10,-2),life:0.7,max:0.7,col:pick(T2.c),s:T2.s,g:T2.g||0,nog:T2.nog})}
+  if(au&&skinOwned(S.cls,'aura',au)&&Math.random()<dt*10){const A2=AURAS[au];const a=Math.random()*7;parts.push({x:P.x+Math.cos(a)*9,y:P.y-6+Math.sin(a)*5,vx:0,vy:-12,life:0.8,max:0.8,col:pick(A2.c),s:1.2,g:0})}}}
+/* auras e rastros (visual) */
+const AURAS=[null,{n:'Brilho Azul',c:['#6ad8ff','#bff2ff']},{n:'Chamas',c:['#ff8a2a','#ffd04a','#ff4a2a']},{n:'Gelo',c:['#bfe8ff','#ffffff','#7ac8ff']},{n:'Sombras',c:['#6a3aa0','#2a1a40','#c36bff']},{n:'Dourada',c:['#ffd04a','#fff0a8','#e0a020']},{n:'Arco-Íris',c:['#ff4a4a','#ffb43c','#ffe04a','#6ad85a','#4aa8ff','#c36bff']}];
+const TRAILS=[null,{n:'Poeira',c:['#c8b090','#a89070'],s:1.4,g:-2},{n:'Faíscas',c:['#ffe04a','#ff9a3c'],s:1,nog:0},{n:'Pétalas',c:['#ff9ac8','#ffd0e0','#ffffff'],s:1.3},{n:'Estrelas',c:['#fff6b0','#bff2ff','#ffffff'],s:1.2},{n:'Fogo',c:['#ff7a2a','#ffd04a','#ff3a1a'],s:1.5}];
+for(const c of CLS_ORDER){COS[c].aura={n:'Aura',o:[['Nenhuma','free'],['Brilho Azul','lvl:10'],['Chamas','lvl:50'],['Gelo','lvl:100'],['Sombras','dia:250'],['Dourada','dia:250'],['Arco-Íris','dia:500']]};COS[c].trail={n:'Rastro',o:[['Nenhum','free'],['Poeira','free'],['Faíscas','lvl:20'],['Pétalas','dia:150'],['Estrelas','dia:150'],['Fogo','dia:200']]}}
+{const _dp=drawPlayer;drawPlayer=function(){const L=S&&S.look&&S.look[S.cls];if(L&&mode!=='title'&&!P.dead){const au=L.aura|0;if(au&&skinOwned(S.cls,'aura',au)){const c=AURAS[au].c,fy=P.y+P.r,pu=0.35+0.2*Math.sin(time*4);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(P.x,fy-8,1,P.x,fy-8,16);g.addColorStop(0,c[0]+'00');g.addColorStop(0.6,c[0]+Math.round(pu*120).toString(16).padStart(2,'0'));g.addColorStop(1,c[0]+'00');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(P.x,fy-8,14,17,0,0,7);ctx.fill();ctx.restore()}}_dp()}}
+/* ícones das peças novas e borda colorida da raridade */
+setTimeout(()=>{const _ci=cosIcon;cosIcon=function(cls,cat,i){if(cat==='pet'&&i){const k='pt'+i;if(COSI[k])return COSI[k];const fr=PETSPR[i]&&PETSPR[i][0];if(!fr)return _ci(cls,cat,i);const c=cnv(40,40),g=c.getContext('2d');g.imageSmoothingEnabled=true;const s=Math.min(36/fr.width,36/fr.height);g.drawImage(fr,(40-fr.width*s)/2,(40-fr.height*s)/2,fr.width*s,fr.height*s);return COSI[k]=c.toDataURL()}
+  if(cat==='aura'||cat==='trail'){const k=cat+i;if(COSI[k])return COSI[k];const c=cnv(40,40),g=c.getContext('2d');const D=(cat==='aura'?AURAS:TRAILS)[i];if(D){if(cat==='aura'){const gr=g.createRadialGradient(20,20,2,20,20,18);gr.addColorStop(0,D.c[0]);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(20,20,18,0,7);g.fill()}else{for(let j=0;j<9;j++){g.fillStyle=D.c[j%D.c.length];g.fillRect(6+j*3.2,30-j*2.4-(j%2)*3,4,4)}}}else{g.strokeStyle='#666';g.lineWidth=2;g.beginPath();g.arc(20,20,12,0,7);g.moveTo(11,29);g.lineTo(29,11);g.stroke()}return COSI[k]=c.toDataURL()}
+  return _ci(cls,cat,i)};for(const k in COSI)delete COSI[k]},0);
+/* paleta maior de cores (e paleta neon na loja) */
+{const add=[];const Ls=[0.9,0.76,0.62,0.48,0.34,0.2];for(const l of Ls)for(let h=10;h<360;h+=20){const[r,g,b]=hsl2rgb(h,0.75,l);add.push('#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''))}
+ for(const c of add)if(!COLORS.includes(c))COLORS.push(c);for(const c of['#000000','#ffffff','#1a1a1a','#e8e0d0','#8a6a4a','#5a3a22','#c8a070','#f2c79b'])if(!COLORS.includes(c))COLORS.push(c)}
+const NEON=['#39ff14','#ff073a','#00f0ff','#ff00ff','#fff01f','#ff6ec7','#7df9ff','#ccff00','#ff9933','#bc13fe','#00ff9f','#fe019a'];
+setInterval(()=>{if(ACC&&ACC.owned&&ACC.owned['pal:neon'])for(const c of NEON)if(!COLORS.includes(c))COLORS.push(c)},2000);
+/* ---- compras de peças por diamantes passam pelo servidor ---- */
+setTimeout(()=>{mbody.addEventListener('click',async e=>{const b=e.target.closest('[data-act=cosbuy]');if(!b||!buyAsk)return;if(!ACC||!ACC.tok){e.stopPropagation();e.preventDefault();openLogin('Entre na sua conta para comprar com diamantes.');closeMenu();return}
+  e.stopPropagation();e.preventDefault();const{cls,cat,i}=buyAsk;const key='cos:'+(cat==='pet'||cat==='aura'||cat==='trail'?'any':cls)+'.'+cat+'.'+i;const nm=COS[cls][cat].o[i][0];buyAsk=null;const r=await accSpend(key,nm);if(r){S.look[cls][cat]=i;save()}renderMenu()},true)},0);
+/* ---- loja ---- */
+let SHOPINFO=null;async function shopInfo(){if(SHOPINFO)return SHOPINFO;try{SHOPINFO=await api('info')}catch(_){SHOPINFO={packs:{},pay:false}}return SHOPINFO}
+const brl=v=>'R$ '+v.toFixed(2).replace('.',',');
+function shopHTML(){const I=SHOPINFO||{packs:{}},o=(ACC&&ACC.owned)||{};const logged=ACC&&ACC.tok;const dia=logged?(ACC.dia|0):0;
+  const card=(t,d,p,act,dis)=>`<div class="pnl shopc"><b>${t}</b><span class="muted">${d}</span><button class="btn ${dis?'':'pri'}" ${act} ${dis?'disabled':''}>${p}</button></div>`;
+  const pets=PETDEF.map((d,i)=>d&&d.q.startsWith('dia:')?{i,d,p:+d.q.slice(4)}:null).filter(Boolean);
+  const own=i=>skinOwned(S.cls,'pet',i);
+  return`<div class="shop">${logged?`<p class="up" style="text-align:center">Conta <b>${escA(ACC.name)}</b> · <b style="color:#6ad8ff">${dia} diamantes</b></p>`:`<div class="pnl" style="text-align:center"><p>Entre na sua conta para comprar e guardar seus diamantes no servidor.</p><button class="btn pri" id="shoplogin">Entrar / Criar conta</button></div>`}
+  <h3>Diamantes</h3><div class="shopg">${Object.entries(I.packs||{}).map(([k,p])=>card(`💎 ${p.n}`,'Pix ou cartão pelo Mercado Pago',brl(p.price),`data-shbuy="${k}"`,!logged||!I.pay)).join('')||'<p class="muted">Carregando...</p>'}</div>
+  ${I.pay?'':'<p class="muted" style="font-size:12px">As compras com dinheiro serão ativadas em breve.</p>'}
+  <h3>Mascotes</h3><div class="shopg">${pets.map(x=>card(`<span style="color:${RARC[x.d.r]}">${RARN[x.d.r]}</span> · ${x.d.n}`,`+${Math.round(PETB[x.d.r][0]*100)}% ouro${PETB[x.d.r][1]?` · +${Math.round(PETB[x.d.r][1]*100)}% XP`:''}${PETB[x.d.r][2]?' · coleta moedas':''}`,own(x.i)?'Já é seu':`${x.p} 💎`,`data-shpet="${x.i}"`,!logged||own(x.i))).join('')}</div>
+  <h3>Bônus</h3><div class="shopg">${card('XP +50% por 1 hora','Soma com a comida da taverna','80 💎','data-shit="boost:xp"',!logged)}${card('Ouro +50% por 1 hora','Mais ouro de monstros e baús','60 💎','data-shit="boost:gold"',!logged)}</div>
+  <h3>Itens</h3><div class="shopg">${card('Baú Raro','1 item épico do seu nível · até 3 por dia','150 💎','data-shit="chest:rare"',!logged)}${card('Bolsa Extra',`+10 espaços no inventário (${o.bag||0}/5)`,'120 💎','data-shit="bag"',!logged||(o.bag||0)>=5)}${card('5 Pergaminhos de Retorno','Voltam para a vila de qualquer lugar','30 💎','data-shit="scroll5"',!logged)}</div>
+  <h3>Visual</h3><div class="shopg">${card('Paleta Neon','12 cores neon para a aparência',o['pal:neon']?'Já é sua':'200 💎','data-shit="pal:neon"',!logged||o['pal:neon'])}${card('Auras e rastros','Veja na aba Aparência','Abrir','data-shlook="1"',false)}</div>
+  <p class="muted" style="font-size:12px;text-align:center">Nada da loja dá força de combate: mascotes dão no máximo +10% de ouro e +7% de XP, e os baús só têm itens épicos (nunca lendários). Diamantes também caem de chefes, baús e missões (até ${I.earnDay||150} por dia).</p></div>`}
+async function shopBind(){const q=s=>mbody.querySelectorAll(s);if($('shoplogin'))$('shoplogin').onclick=()=>{closeMenu();openLogin()};
+  q('[data-shbuy]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent='Abrindo...';try{const r=await api('buy',{pack:b.dataset.shbuy});window.open(r.url,'_blank');toast('Termine o pagamento na página do Mercado Pago. Os diamantes chegam sozinhos quando for aprovado.','#6ad8ff');accPoll()}catch(e){toast(e.message,'#ff7a6e')}renderMenu()});
+  q('[data-shpet]').forEach(b=>b.onclick=async()=>{const i=+b.dataset.shpet;const r=await accSpend('cos:any.pet.'+i,PETDEF[i].n);if(r){S.look[S.cls].pet=i;save();toast(PETDEF[i].n+' agora segue você!','#8bd86a')}renderMenu()});
+  q('[data-shit]').forEach(b=>b.onclick=async()=>{const k=b.dataset.shit;const nm={'boost:xp':'XP +50% (1 h)','boost:gold':'Ouro +50% (1 h)','chest:rare':'Baú Raro','bag':'Bolsa Extra','scroll5':'5 Pergaminhos','pal:neon':'Paleta Neon'}[k];const r=await accSpend(k,nm);if(!r){renderMenu();return}
+    S.buffs=S.buffs||{};const now=Date.now();if(k==='boost:xp')S.buffs.bxp=Math.max(now,S.buffs.bxp||0)+3600e3;if(k==='boost:gold')S.buffs.bgold=Math.max(now,S.buffs.bgold||0)+3600e3;if(k==='scroll5')S.scroll=(S.scroll||0)+5;
+    if(k==='chest:rare'){const T=pick(['sword','bow','staff','shield','quiver','helm','hood','hat','chest_h','chest_l','robe','legs','boots','gloves','cape','belt','ring','amulet']);const it=genItem(T,null,3,Math.max(1,S.lvl));S.inv.unshift(it);toast('O baú tinha: '+dname(it),RCOL[3]);sfx('chest')}
+    save();renderMenu()});
+  q('[data-shlook]').forEach(b=>b.onclick=()=>{menuTab='look';renderMenu()})}
+let accPollT=0;function accPoll(){clearInterval(accPollT);let n=0;accPollT=setInterval(async()=>{if(++n>60){clearInterval(accPollT);return}try{const r=await api('me');if(r.acc.dia!==ACC.dia){const add=r.acc.dia-ACC.dia;accApply(r.acc);if(add>0){toast('+'+add+' diamantes na sua conta!','#6ad8ff');sfx('lvl')}clearInterval(accPollT)}}catch(_){}},5000)}
+/* diamantes chegando pelo servidor online */
+{const _sd=srvData;srvData=function(m){if(m&&m.t==='dia'){if(ACC){ACC.dia=m.dia;accStore();if(S)S.dia=m.dia}toast(m.why||'Diamantes recebidos','#6ad8ff');sfx('lvl');return}return _sd(m)}}
+/* ---- ranking ---- */
+let RANK=null,RANKT=0;async function rankLoad(){try{RANK=(await api('rank')).list;RANKT=Date.now()}catch(e){RANK=RANK||[]}if(!menuEl.hidden&&menuTab==='rank')renderMenu()}
+function rankHTML(){const me=accName().toLowerCase();if(!RANK)return'<p class="muted" style="text-align:center">Carregando o ranking...</p>';
+  return`<div class="pnl" style="max-width:640px;margin:0 auto"><h4>Ranking de nível</h4><p class="muted" style="font-size:12px">Os jogadores mais fortes do servidor. Atualiza sozinho a cada 30 segundos.${ACC&&ACC.tok?'':' Entre numa conta para aparecer aqui.'}</p>
+  <table class="rank"><thead><tr><th>#</th><th>Jogador</th><th>Classe</th><th>Nível</th></tr></thead><tbody>${RANK.map(r=>`<tr class="${r.name.toLowerCase()===me?'me':''}"><td>${r.pos<=3?['🥇','🥈','🥉'][r.pos-1]:r.pos}</td><td>${escA(r.name)}</td><td>${({warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'})[r.cls]||'-'}</td><td><b>${r.lvl}</b></td></tr>`).join('')||'<tr><td colspan="4" class="muted">Ninguém no ranking ainda.</td></tr>'}</tbody></table></div>`}
+setInterval(()=>{if(!menuEl.hidden&&menuTab==='rank')rankLoad()},30000);
+/* ---- conta nas Opções ---- */
+function accPanel(){if(!ACC||!ACC.tok)return`<div id="accpnl" class="accp"><h4>Conta</h4><p class="muted">Você está jogando sem conta. Crie uma para salvar na nuvem, usar a loja e entrar no ranking.</p><div class="row"><button class="btn pri" id="acc-login">Entrar / Criar conta</button></div></div>`;
+  const fr=ACC.owned&&ACC.owned.freeRename;return`<div id="accpnl" class="accp"><h4>Conta</h4><p>Conectado como <b>${escA(ACC.name)}</b> · <span style="color:#6ad8ff">${ACC.dia|0} diamantes</span></p>
+  <div class="row" style="flex-wrap:wrap"><button class="btn" id="acc-switch">Trocar de conta</button><button class="btn" id="acc-rename">Trocar de nome (${fr?'grátis':(SHOPINFO&&SHOPINFO.rename||300)+' 💎'})</button><button class="btn" id="acc-reset">Excluir personagem</button><button class="btn" id="acc-out">Sair da conta</button></div>
+  <p class="muted" style="font-size:12px">Trocar de conta guarda o progresso desta conta no servidor antes. Excluir personagem apaga o progresso desta conta (os diamantes e itens comprados continuam) e libera uma troca de nome grátis.</p></div>`}
+function accBind(){const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+  on('acc-login',()=>{closeMenu();openLogin()});on('acc-switch',()=>{closeMenu();openLogin()});
+  on('acc-out',async()=>{if(S&&S.acc===ACC.id){accPush(true)}const L=accList().filter(a=>a.id!==ACC.id);try{localStorage.setItem('eldmor-accs',JSON.stringify(L))}catch(_){}ACC=null;try{localStorage.removeItem('eldmor-acc')}catch(_){}window.__NOSAVE=true;wipeSave();location.reload()});
+  on('acc-rename',()=>{const n=prompt('Novo nome (3 a 16 letras ou números):',ACC.name);if(!n)return;api('rename',{name:n}).then(r=>{ACC.name=r.name;ACC.dia=r.dia;ACC.owned=r.owned;accStore();S.uname=r.name;S.dia=r.dia;save();toast('Agora você se chama '+r.name,'#8bd86a');renderMenu()}).catch(e=>toast(e.message,'#ff7a6e'))});
+  on('acc-reset',()=>{const p=prompt('Isso apaga todo o progresso desta conta (nível, itens e missões). Os diamantes continuam. Digite sua senha para confirmar:');if(!p)return;api('reset',{pass:p}).then(r=>{ACC.owned=r.owned;accStore();window.__NOSAVE=true;wipeSave();try{sessionStorage.setItem('eldmor-autostart','1')}catch(_){}location.reload()}).catch(e=>toast(e.message,'#ff7a6e'))})}
+/* ---- abas novas no menu: Loja e Ranking ---- */
+(function(){const st=document.createElement('style');st.textContent=`.shopg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:8px}.shopc{display:flex;flex-direction:column;gap:6px;padding:10px!important}.shopc .muted{font-size:12px;flex:1}.shop h3{margin:14px 0 8px;color:#f2c14e;font-family:var(--display);letter-spacing:.06em;font-size:14px}
+table.rank{width:100%;border-collapse:collapse}table.rank th,table.rank td{padding:7px 8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}table.rank th{color:#f2c14e;font-size:12px;letter-spacing:.06em}table.rank tr.me td{background:rgba(106,216,255,.12);color:#bff2ff}.accp{margin:12px 0 4px;padding:10px 12px;border:1px solid rgba(106,216,255,.35);border-radius:9px;background:rgba(0,0,0,.18)}
+.cos.r1{box-shadow:inset 0 0 0 2px #4aa8ff!important}.cos.r2{box-shadow:inset 0 0 0 2px #c36bff!important}.cos.r3{box-shadow:inset 0 0 0 2px #ffb43c!important}.cos.r4{box-shadow:inset 0 0 0 2px #ff4a6a,0 0 10px rgba(255,74,106,.5)!important}.cos small.rar{display:block;font-size:10px;font-weight:800}#hud .dia,#tl .dia{cursor:pointer;pointer-events:auto}`;document.head.appendChild(st)})();
+{const _rm=renderMenu;renderMenu=function(){_rm();try{const tabs=$('tabs');if(tabs&&!tabs.querySelector('[data-tab=shop]')){const mk=(k,n,ic)=>{const b=document.createElement('button');b.className='tab'+(menuTab===k?' on':'');b.dataset.tab=k;b.innerHTML=`<span style="font-size:20px;line-height:1">${ic}</span><span>${n}</span>`;b.onclick=e=>{e.stopPropagation();menuTab=k;renderMenu()};return b};const op=tabs.querySelector('[data-tab=opts]');tabs.insertBefore(mk('shop','Loja','💎'),op);tabs.insertBefore(mk('rank','Ranking','🏆'),op)}
+    if(menuTab==='shop'||menuTab==='rank'){tabs.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===menuTab))}}catch(_){}
+  if(menuTab==='shop'){mbody.innerHTML=shopHTML();shopBind();if(!SHOPINFO)shopInfo().then(()=>{if(menuTab==='shop'&&!menuEl.hidden)renderMenu()});return}
+  if(menuTab==='rank'){mbody.innerHTML=rankHTML();if(!RANK||Date.now()-RANKT>30000)rankLoad();return}
+  if(menuTab==='opts'){const host=mbody.querySelector('.pnl');if(host&&!$('accpnl')){const row=host.querySelector('.row');(row||host).insertAdjacentHTML(row?'afterend':'beforeend',accPanel());accBind();if(!SHOPINFO)shopInfo()}}
+  if(menuTab==='look'){mbody.querySelectorAll('[data-act=cos][data-cat=pet]').forEach(b=>{const i=+b.dataset.i,d=PETDEF[i];if(!d)return;b.classList.add('r'+d.r);if(!b.querySelector('.rar'))b.insertAdjacentHTML('beforeend',`<small class="rar" style="color:${RARC[d.r]}">${RARN[d.r]}</small>`)})}}}
+setTimeout(()=>{const d=document.querySelector('#tl .dia');if(d)d.addEventListener('click',e=>{e.stopPropagation();if(mode==='play')openMenu('shop')})},0);
+/* bolsa extra e bônus da loja aparecendo nos buffs */
+{const _hud=hud;hud=function(){_hud();try{const bf=$('buffs');if(!bf)return;const now=Date.now();let h='';if(S.buffs&&S.buffs.bxp>now)h+=`<span class="buff" title="XP +50%">XP+ ${buffLeft('bxp')}</span>`;if(S.buffs&&S.buffs.bgold>now)h+=`<span class="buff" title="Ouro +50%">Ouro+ ${buffLeft('bgold')}</span>`;let x=bf.querySelector('.shopbuffs');if(!x){x=document.createElement('span');x.className='shopbuffs';bf.appendChild(x)}if(x.innerHTML!==h)x.innerHTML=h}catch(_){}}}
+window.__A={acc:()=>ACC,push:accPush,login:openLogin,petCur,menu:t=>{menuTab=t;renderMenu()},close:closeMenu};
+
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
 if(window.ARTC&&window.ARTC.v_banner){const bn=window.ARTC.v_banner;for(const o of STRO)if(o.kind==='deco'&&o.img&&o.img!==bn&&o.img.height>o.img.width*1.8&&o.img.width<80){const h=o.h;bn._bk=bn.height/(G*h);o.img=bn;o.w=bn.width/G/bn._bk}}
@@ -3031,7 +3188,7 @@ function update(dt){
   for(const d of dummies){d.flash=Math.max(0,d.flash-dt);d.wob=Math.max(0,d.wob-dt)}
   if(P.mark){P.mark.t-=dt;if(P.mark.t<=0)P.mark=null}
   // mascote segue o mago
-  const pk=S.cls==='mage'?S.look.mage.pet||0:0;if(pk){const tx=P.x-(P.dir>0?11:-11),ty=P.y+3,dx=tx-P.pet.x,dy=ty-P.pet.y,d=hyp(dx,dy);if(d>60){P.pet.x=tx;P.pet.y=ty}else if(d>3){const s=Math.min(d,(40+d*3)*dt);P.pet.x+=dx/d*s;P.pet.y+=dy/d*s;P.pet.h+=dt*10}else P.pet.h=0}
+  const pk=petCur();if(pk){const tx=P.x-(P.dir>0?11:-11),ty=P.y+3,dx=tx-P.pet.x,dy=ty-P.pet.y,d=hyp(dx,dy);if(d>60){P.pet.x=tx;P.pet.y=ty}else if(d>3){const s=Math.min(d,(40+d*3)*dt);P.pet.x+=dx/d*s;P.pet.y+=dy/d*s;P.pet.h+=dt*10}else P.pet.h=0}
   const w=W/SCALE,h=H/SCALE;
   if(curZone===1&&Math.random()<dt*8)parts.push({x:cam.x+rand(-w/2,w/2),y:cam.y+rand(-h/2,h/2),vx:rand(-6,6),vy:rand(-8,-2),life:3,max:3,col:'rgba(180,160,230,0.55)',s:1,g:0});
   if(curZone===2&&Math.random()<dt*14)parts.push({x:cam.x+rand(-w/2,w/2),y:cam.y+h/2*rand(-0.2,1),vx:rand(-5,5),vy:rand(-28,-12),life:2.5,max:2.5,col:pick(['#ff8a3d','#ffc04a']),s:1,g:0});
@@ -3160,7 +3317,7 @@ function render(){
   for(const d of dummies)if(d.x>x0-20&&d.x<x1+20&&d.y>y0-20&&d.y<y1+40)list.push({y:d.y+d.r,f:()=>drawDummy(d)});
   for(const e of enemies)if(e.x>x0-40&&e.x<x1+40&&e.y>y0-40&&e.y<y1+60)list.push({y:e.y+e.r,f:()=>drawEnemy(e)});
   if(P2.on&&mode!=='title')list.push({y:P2.y+P2.r,f:drawP2});
-  if(mode!=='title'){list.push({y:P.y+P.r,f:drawPlayer});const pk=S.cls==='mage'?S.look.mage.pet||0:0;if(pk&&PETSPR[pk])list.push({y:P.pet.y,f:()=>drawPet(pk)})}
+  if(mode!=='title'){list.push({y:P.y+P.r,f:drawPlayer});const pk=petCur();if(pk&&PETSPR[pk])list.push({y:P.pet.y,f:()=>drawPet(pk)})}
   if(cine){const s=CINE[cine.i];if(s.boss!==undefined)list.push({y:s.by*T,f:drawCineExtras});else drawCineExtras()}
   list.sort((a,b)=>a.y-b.y);
   for(const it of list){if(it.f){it.f();continue}const o=it.o;let al=1;if((o.kind==='tree'||o.kind==='wall'||o.kind==='dead'||o.kind==='pillar'||o.kind==='crystal'||o.kind==='bank'||o.kind==='armory'||o.kind==='forge')&&mode!=='title'&&P.y<o.y-2&&P.y>o.y-o.h+4&&Math.abs(P.x-o.x)<o.w/2-2)al=0.5;if(al<1)ctx.globalAlpha=al;drawObj(o);if(al<1)ctx.globalAlpha=1;

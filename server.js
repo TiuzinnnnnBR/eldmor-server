@@ -17,11 +17,13 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const ADMIN_HASH = process.env.ADMIN_HASH || '5baf53334a1b7c526e4c1be9117271c600da5f8a52a6a9d44dc2ac5f0fde6ce1'; // nome secreto do Operador (hash)
 const isOp = k => typeof k === 'string' && k.length < 64 && crypto.createHash('sha256').update('eldmor:' + k).digest('hex') === ADMIN_HASH;
 const MIN = 60e3;
+const API = require('./api');
 
 /* ---------- arquivos do jogo (pasta public) ---------- */
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.css': 'text/css', '.txt': 'text/plain; charset=utf-8' };
 const server = http.createServer((req, res) => {
   let u = decodeURIComponent((req.url || '/').split('?')[0]);
+  if (u.startsWith('/api/')) return API.handle(req, res, u);
   if (u === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end('ok ' + clients.size); }
   if (u === '/') u = '/index.html';
   const f = path.normalize(path.join(PUB, u));
@@ -85,10 +87,30 @@ const W = { tiles: new Map(), boss: null, nextBoss: Date.now() + (process.env.BO
 function pub(c) { if (!c.h) return c.h; return c.op ? Object.assign({}, c.h, { lv: 0, op: 1 }) : c.h; }
 function bossMsg() { const b = W.boss; return b ? { t: 'boss', bi: b.bi, hp: Math.ceil(b.hp), max: b.max } : null; }
 
+async function onJoin(c, m) {
+  if (c.dead) return;
+  let acc = null; if (m.tok) acc = await API.db.tokAcc(String(m.tok));
+  const did = String(m.did || '').slice(0, 40);
+  let name = clean(m.name) || 'Herói';
+  if (acc) { name = acc.op ? 'Operador level 0' : acc.name; c.op = !!acc.op; c.acc = acc.id; }
+  else { const taken = await API.db.byName(name.toLowerCase()).catch(() => null); if (taken) name = name.slice(0, 11) + ' (vis.)'; }
+  const nm0 = name.toLowerCase();
+  for (const x of [...clients.values()]) if (x !== c && !x.dead && ((c.acc && x.acc === c.acc) || (did && x.did === did) || (!did && !x.did && !c.acc && x.ip === c.ip && x.base === nm0))) { send(x, { t: 'kicked' }); if (x.joined) { x.joined = false; all({ t: 'pl', id: x.id }); } x.did = ''; x.acc = 0; setTimeout(() => drop(x), 400); }
+  c.did = did; c.base = nm0;
+  if (!acc) { const taken = n => [...clients.values()].some(x => x.joined && x !== c && x.name.toLowerCase() === n.toLowerCase()); let base = name, k = 2; while (taken(name)) name = (base.slice(0, 13) + ' ' + k++); if (isOp(m.k)) { c.op = true; name = 'Operador level 0'; } }
+  if (c.dead) return;
+  c.name = name; c.h = m.h || null; c.joined = true;
+  send(c, { t: 'welcome', id: c.id, name, acc: !!acc, op: !!c.op, tiles: [...W.tiles], players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
+  all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c);
+  console.log('entrou:', name, '| online:', online());
+}
 function onMsg(c, m) {
   if (!m || typeof m.t !== 'string') return;
   if (m.t === 'join') {
-    if (c.joined) return;
+    if (c.joined || c.joining) return; c.joining = true;
+    (async () => { try { await onJoin(c, m); } catch (e) { console.log('join erro', e.message); } c.joining = false; })(); return;
+  }
+  if (m.t === 'join_old') {
     const did = String(m.did || '').slice(0, 40);
     const nm0 = (clean(m.name) || 'Herói').toLowerCase();
     for (const x of [...clients.values()]) if (x !== c && !x.dead && ((did && x.did === did) || (!did && !x.did && x.ip === c.ip && x.base === nm0))) { send(x, { t: 'kicked' }); if (x.joined) { x.joined = false; all({ t: 'pl', id: x.id }); } x.did = ''; setTimeout(() => drop(x), 400); }
@@ -144,4 +166,5 @@ setInterval(() => {
   for (const c of clients.values()) if (now - c.last > 45e3) drop(c);
 }, 100);
 
-server.listen(PORT, () => console.log('Servidor Eldmor ligado na porta ' + PORT));
+API.setHooks({ isOpName: n => isOp(n), notify: (acc, o) => { for (const c of clients.values()) if (c.acc === acc) send(c, o); } });
+API.db.init().catch(e => console.log('banco:', e.message)).finally(() => server.listen(PORT, () => console.log('Servidor Eldmor ligado na porta ' + PORT)));
