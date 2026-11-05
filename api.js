@@ -4,7 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const MP_TOKEN = process.env.MP_ACCESS_TOKEN || '';
+const MP_KEY = Object.keys(process.env).find(k => /^\s*MP_?ACCESS_?TOKEN\s*$/i.test(k)) || Object.keys(process.env).find(k => /mercado.?pago|^\s*MP_/i.test(k)) || '';
+const MP_RAW = String(MP_KEY ? process.env[MP_KEY] : '').trim().replace(/^['"]|['"]$/g, '').replace(/^Bearer\s+/i, '');
+const MP_TOKEN = /^(APP_USR|TEST)-/.test(MP_RAW) ? MP_RAW : '';
+const MP_HINT = !MP_KEY ? 'sem variável' : !MP_RAW ? 'variável vazia' : !MP_TOKEN ? 'token em formato estranho' : /^TEST-/.test(MP_TOKEN) ? 'token de teste' : 'ok';
 const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://eldmor-server.onrender.com').replace(/\/+$/, '');
 const EARN_DAY = 150;      // diamantes que dá para ganhar jogando por dia (chefes, baús, missões)
 const RENAME_COST = 300;
@@ -104,7 +107,7 @@ async function mpCheck(pid) {
 async function handle(req, res, u) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
   try {
-    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY });
+    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, payHint: MP_HINT, mpKey: MP_KEY ? JSON.stringify(MP_KEY) : '', packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY });
     if (u === '/api/register' && req.method === 'POST') {
       if (limited(req, 'reg', +(process.env.REG_LIMIT || 6), 3600e3)) return send(res, 429, { err: 'Muitas contas criadas daqui. Tente mais tarde.' });
       const b = await body(req); const name = cleanName(b.name), pw = String(b.pass || '');
