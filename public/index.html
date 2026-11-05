@@ -2303,7 +2303,7 @@ function pauloHTML(){const d=pauloD(),on=buffOn('paulo'),own=pauloOwned();const 
   <p class="muted" style="font-style:italic">Ele adorava os jogos da Nintendo, Mario, Pokémon e Zelda, passava horas no Minecraft e, aqui em Eldmor, nunca largava o Arqueiro.</p>
   ${d.msg?`<div class="qbox"><div class="muted" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase">Sua mensagem na placa</div><p style="font-style:italic">“${esc(d.msg)}”</p></div>`:''}
   <h3>Prestar homenagem</h3><p class="muted">Deixe uma flor na estátua. O Espírito do Paulo luta ao seu lado por 15 minutos, atirando flechas douradas nos monstros por perto, e você ganha +10% de ataque (+20% jogando de Arqueiro, como ele gostava).</p>
-  <div class="tlist"><button class="btn${on?'':' pri'}" data-act="pauloPray" ${on?'disabled':''}><b>${on?'O Paulo está com você':'Deixar uma flor'}</b><span>${on?'Ainda restam '+buffLeft('paulo'):'Homenagens prestadas: '+d.n}</span></button>
+  <div class="tlist"><button class="btn${on||pauloWait()?'':' pri'}" data-act="pauloPray" ${on||pauloWait()?'disabled':''}><b>${on?'O Paulo está com você':pauloWait()?'O Paulo está descansando':'Deixar uma flor'}</b><span>${on?'Ainda restam '+buffLeft('paulo'):pauloWait()?'Ele volta a ajudar em '+pauloWaitTxt()+' · a ajuda dura 15 minutos, de 1 em 1 hora':'A ajuda dura 15 minutos e pode ser pedida de 1 em 1 hora · Homenagens: '+d.n}</span></button>
   <button class="btn" data-act="pauloBow" ${own?'disabled':''}><b><span class="r4">Arco Eterno do Paulo</span></b><span>${own?'Você já carrega o arco dele':'Um presente do Paulo. Lendário, cresce com o seu nível. Grátis.'}</span></button></div>
   <h3>Deixar uma mensagem</h3><p class="muted">Escreva algo para o Paulo. A mensagem fica gravada na placa da estátua.</p>
   <textarea id="pauloMsg" maxlength="160" rows="2" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:8px;background:rgba(0,0,0,.35);color:inherit;border:1px solid rgba(255,255,255,.18);resize:none">${esc(d.msg||'')}</textarea>
@@ -2311,7 +2311,9 @@ function pauloHTML(){const d=pauloD(),on=buffOn('paulo'),own=pauloOwned();const 
 function openPaulo(){mode='modal';P.path=null;openModal(pauloHTML());const c=$('pauloPor');if(c){const g=c.getContext('2d'),fr=pauloSheet().down.idle[0];g.imageSmoothingEnabled=false;g.clearRect(0,0,46,46);{const b=fr._bk||1;g.drawImage(fr,(fr.width-46*b)/2,4*b,46*b,46*b,0,0,46,46)}}
   const ta=$('pauloMsg');if(ta)['keydown','keyup','keypress'].forEach(t=>ta.addEventListener(t,e=>e.stopPropagation()));
   const d=pauloD();if(!d.seen){d.seen=1;save()}}
-function pauloPray(){if(buffOn('paulo'))return;const d=pauloD();if(!S.buffs)S.buffs={};S.buffs.paulo=Date.now()+15*60e3;d.n++;PS.x=P.x;PS.y=P.y-4;PS.cd=0.4;
+function pauloWait(){const ms=(S.pauloNext||0)-Date.now();return ms>0&&!buffOn('paulo')?ms:0}
+function pauloWaitTxt(){const m=Math.ceil(pauloWait()/60e3);return m>=60?'1 hora':m+' min'}
+function pauloPray(){if(buffOn('paulo'))return;if(pauloWait()){toast('O Paulo está descansando. Ele volta a lutar ao seu lado em '+pauloWaitTxt()+'.','#ffb46a');return}const d=pauloD();if(!S.buffs)S.buffs={};S.buffs.paulo=Date.now()+15*60e3;S.pauloNext=Date.now()+60*60e3;d.n++;PS.x=P.x;PS.y=P.y-4;PS.cd=0.4;
   sfx('lvl');shake(2);for(let i=0;i<60;i++)parts.push({x:PAULO.x+rand(-18,18),y:PAULO.y-rand(4,70),vx:rand(-16,16),vy:rand(-40,-10),life:1.8,max:1.8,col:pick(['#ffd27a','#ff9a3c','#ffffff','#fff0a8']),s:1.5,g:-4});
   banner('Paulo está com você','O Espírito do Paulo vai lutar ao seu lado');toast('Você deixou uma flor para o Paulo. Ele vai cuidar de você pelos próximos 15 minutos.','#ffb46a');checkAch&&checkAch();save()}
 function pauloGiveBow(){if(pauloOwned())return;if(bagFull()){toast('Sua mochila está cheia. Abra espaço para receber o arco.','#ff7a6e');return}const it=pauloBow();S.inv.unshift(it);pauloD().bow++;sfx('chest');burst(PAULO.x,PAULO.y-20,['#ffd27a','#ff9a3c','#ffffff'],40,110,0.8,2);toast('Você recebeu o Arco Eterno do Paulo. Ele está na sua mochila.','#ff9a3c');save()}
@@ -2508,7 +2510,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v38 · 05/11/2026';
+const ELD_VER='v39 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3104,7 +3106,7 @@ const PETDEF=[null,
  {n:'Golem de Cristal',r:2,q:'dia:400',a:'x_crystalgolem'},{n:'Morceguinho Lunar',r:2,q:'dia:400',a:'x_bat',t:[[170,110,255],0.4]},
  {n:'Fênix Bebê',r:3,q:'dia:900',a:'b_phoenix'},{n:'Grifo Real',r:3,q:'dia:900',a:'b_firedragon',t:[[255,215,120],0.6]},{n:'Unicórnio Arco-Íris',r:3,q:'bosses:10',a:'x_wolf',t:[[255,240,255],0.7]},
  {n:'Dragão Celestial',r:4,q:'dia:2000',a:'b_darkdragon',t:[[80,180,255],0.55]},{n:'Lobo Estelar',r:4,q:'dia:2000',a:'x_wolf',t:[[90,70,220],0.6]},
- {n:'Espírito da Floresta',r:4,q:'lvl:300',a:'b_treant',t:[[120,255,140],0.35]},{n:'Pequeno Arqueiro de Luz',r:4,q:'pray:100',a:'p_paulo_front',t:[[255,215,90],0.45]}];
+ {n:'Espírito da Floresta',r:4,q:'lvl:300',a:'b_treant',t:[[120,255,140],0.35]},{n:'Pequeno Arqueiro de Luz',r:4,q:'pray:30',a:'p_paulo_front',t:[[255,215,90],0.45]}];
 const PETB=[[0.02,0,false],[0.04,0,true],[0.06,0.03,true],[0.08,0.05,true],[0.10,0.07,true]];/* ouro, xp, coleta moedas */
 {const A=window.ARTC||{};for(let k=10;k<PETDEF.length;k++){const d=PETDEF[k];let src=A[d.a];if(!src){PETSPR[k]=PETSPR[(k%9)+1];continue}if(d.t)src=artTint(src,d.t[0],d.t[1]);const fr=artFrames(src,d.a.startsWith('b_')?13:11,'float',4);PETSPR[k]=[fr[0],fr[2]]}
  const po=PETDEF.map((d,i)=>i?[d.n,d.q]:['Nenhum','free']);for(const c of CLS_ORDER)COS[c].pet={n:'Mascote',o:po.map(x=>x.slice())}}
@@ -3223,6 +3225,12 @@ window.__A={acc:()=>ACC,push:accPush,login:openLogin,petCur,menu:t=>{menuTab=t;r
    delete d.pack;BD.push(d);ARC.push(ARC[18+i]||'rgba(255,255,255,.4)');ARENAS.push(ARENAS[18+i]);window.__ARTBOSS(BD.length-1,art,h)});
  setTimeout(()=>{for(const k in COSI)if(k.startsWith('pt'))delete COSI[k];for(const k in MOBICON)delete MOBICON[k]},0);}
 window.__B3={SP2,SPR,PETSPR};
+/* o herói aparece desenhado no minimapa e no mapa grande */
+let MAPHK='',MAPHI=null;
+function mapHero(){if(!S||!S.look)return null;const lk=S.look[S.cls],k=S.cls+JSON.stringify(lk&&lk.c)+(lk&&lk.hat);if(k===MAPHK&&MAPHI)return MAPHI;const A=window.ARTC||{},p={warrior:'w',mage:'m',archer:'a'}[S.cls];
+  const base=A[S.cls==='archer'&&lk&&![0,3,5].includes(lk.hat|0)&&A.h2_a_front_nohood?'h2_a_front_nohood':'h2_'+p+'_front'];if(!base)return null;
+  const im=typeof recolor==='function'?recolor(typeof heroDecor==='function'?heroDecor(base,S.cls,lk):base,S.cls,lk):base;const c=cnv(48,48),g=c.getContext('2d'),sz=im.width*0.82;g.imageSmoothingEnabled=true;g.drawImage(im,(im.width-sz)/2,im.height*0.01,sz,sz,0,0,48,48);MAPHK=k;MAPHI=c;return c}
+{const _mm=drawMapMarkers;drawMapMarkers=function(g,s,big){_mm(g,s,big);try{const hi=mapHero();if(!hi)return;const px=P.x/T*s,py=P.y/T*s,r=big?13:9;g.save();g.beginPath();g.arc(px,py,r+2,0,7);g.fillStyle=Math.floor(time*3)%2?'#ffffff':'#ffe49a';g.fill();g.beginPath();g.arc(px,py,r,0,7);g.fillStyle='#16203a';g.fill();g.clip();g.imageSmoothingEnabled=true;g.drawImage(hi,px-r,py-r,r*2,r*2);g.restore()}catch(_){}}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
