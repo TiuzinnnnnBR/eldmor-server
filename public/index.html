@@ -2508,7 +2508,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v37 · 05/11/2026';
+const ELD_VER='v38 · 05/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -2533,13 +2533,16 @@ const GOD={on:false,srv:false,inv:true,mana:true,nocd:false,fast:false,ghost:fal
 const GOD_H='5baf53334a1b7c526e4c1be9117271c600da5f8a52a6a9d44dc2ac5f0fde6ce1';
 async function godHash(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('eldmor:'+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(_){return''}}
 async function godCheck(name){if(!name)return false;const h=await godHash(name.trim());if(h&&h===GOD_H){godOn();return true}return false}
-function godOn(){if(GOD.on)return;GOD.on=true;try{sessionStorage.setItem('eldmor-op','1')}catch(_){}godButton();toast('Modo Deus ativado. Toque no raio dourado para abrir o painel.','#ffd040');sfx('lvl')}
+function godAllowed(){return GOD.ok||(typeof ACC!=='undefined'&&ACC&&ACC.op)}
+function godOff(){if(!GOD.on)return;GOD.on=false;try{sessionStorage.setItem('eldmor-op','0')}catch(_){}if(GOD.hide&&SRV.on){GOD.hide=false;srvSend({t:'op',c:'hide',v:false})}if(GOD.btn){GOD.btn.remove();GOD.btn=null}toast('Modo Operador desligado. Você está jogando como um jogador normal.','#a597bd')}
+function godOn(){GOD.ok=true;try{sessionStorage.setItem('eldmor-op-ok','1')}catch(_){}if(GOD.on)return;GOD.on=true;try{sessionStorage.setItem('eldmor-op','1')}catch(_){}godButton();toast('Modo Operador ligado. Toque no raio dourado para abrir o painel.','#ffd040');sfx('lvl')}
 function godButton(){if(GOD.btn)return;const b=document.createElement('button');b.textContent='⚡';b.title='Painel do Operador';b.style.cssText='position:fixed;left:50%;top:calc(6px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;width:38px;height:38px;border-radius:50%;border:2px solid #ffd040;background:rgba(20,14,30,.85);color:#ffd040;font-size:20px;cursor:pointer;pointer-events:auto';b.onclick=e=>{e.stopPropagation();if(mode==='play'||mode==='modal')openGod()};document.body.appendChild(b);GOD.btn=b}
 const GT_=(k,l)=>`<button class="btn s${GOD[k]?' pri':''}" data-act="god" data-id="t:${k}">${l}: ${GOD[k]?'Ligado':'Desligado'}</button>`;
 function godPlaces(){const a=[['Vila de Eldmor',SPAWN.x,SPAWN.y],['Memorial do Paulo',PAULO.x,PAULO.y+20]];for(let z=0;z<6;z++)a.push([ZN[z],KX[z]*T+8,roadY(KX[z])*T+8]);for(const C of CAVES)a.push([ZN[C.cz],(C.ex+1)*T+8,C.ey*T+8]);BD.forEach((d,i)=>{const c=AC_(i);a.push(['Arena: '+d.name,c.x,c.y+40])});return a}
 function openGod(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.test(k)).sort((a,b)=>ED[a].lvl-ED[b].lvl);const pl=SRV.on?[...SRV.players.values()]:[];
   openModal(`<div class="mhead"><h2 style="color:#ffd040">⚡ Painel do Operador</h2><button class="btn s" data-act="close">Fechar</button></div>
   <p class="muted">Você está como <b>Operador level 0</b>. ${GOD.srv?'O servidor reconheceu você: os poderes valem para todos.':'Poderes locais ativos. Entre no servidor para ter os poderes online.'}</p>
+  <div class="row"><button class="btn" data-act="god" data-id="off:1" style="border-color:#a03030">Sair do modo Operador</button></div>
   <h3>Poderes</h3><div class="row" style="flex-wrap:wrap;gap:6px">${GT_('inv','Invencível')}${GT_('mana','Mana infinita')}${GT_('nocd','Sem recarga')}${GT_('one','Matar com 1 golpe')}${GT_('fast','Super velocidade')}${GT_('ghost','Atravessar paredes')}${GOD.srv?GT_('hide','Invisível para jogadores'):''}</div>
   <h3>Criar monstros e chefes</h3><div class="row" style="gap:6px;flex-wrap:wrap"><select id="gmob" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${mobs.map(k=>`<option value="${k}">${ED[k].n} (nv ${ED[k].lvl})</option>`).join('')}</select><select id="gqty" class="ninput" style="width:80px;letter-spacing:0">${[1,5,10,25].map(n=>`<option>${n}</option>`).join('')}</select><button class="btn" data-act="god" data-id="spawn">Criar</button></div>
   <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><select id="gboss" class="ninput" style="flex:1;min-width:180px;text-transform:none;letter-spacing:0">${BD.map((d,i)=>`<option value="${i}">${d.name} (nv ${d.lvl})</option>`).join('')}</select><button class="btn" data-act="god" data-id="boss">Chamar chefe</button>${GOD.srv?'<button class="btn" data-act="god" data-id="sboss">Chefe para todos</button>':''}</div>
@@ -2549,7 +2552,7 @@ function openGod(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
   <h3>Mundo</h3><div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(EVD).map(k=>`<button class="btn s" data-act="god" data-id="ev:${k}">${EVD[k].n}</button>`).join('')}<button class="btn s" data-act="god" data-id="ev:none">Parar evento</button></div>
   ${GOD.srv?`<h3>Jogadores online</h3>${pl.length?pl.map(p=>`<div class="row" style="gap:6px;align-items:center;margin:4px 0"><b style="flex:1;color:#6ad8ff">${esc(p.name)} · Nv ${p.lv||1}</b><button class="btn s" data-act="god" data-id="goto:${p.id}">Ir até</button><button class="btn s" data-act="god" data-id="smite:${p.id}" style="border-color:#ff5a4a;color:#ff7a6e">Matar</button></div>`).join(''):'<p class="muted">Ninguém mais online.</p>'}`:''}`)
   mbox.querySelectorAll('select').forEach(el=>['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation())))}
-function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.value:''};const[a,b]=id.split(':');let keep=true;
+function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.value:''};const[a,b]=id.split(':');let keep=true;if(a==='off'){closeModal();godOff();return}
   if(a==='t'){GOD[b]=!GOD[b];if(b==='hide'&&GOD.srv)srvSend({t:'op',c:'hide',v:GOD.hide});toast(`${b==='inv'?'Invencível':b==='mana'?'Mana infinita':b==='nocd'?'Sem recarga':b==='one'?'Matar com 1 golpe':b==='fast'?'Super velocidade':b==='ghost'?'Atravessar paredes':'Invisível'}: ${GOD[b]?'ligado':'desligado'}`,'#ffd040')}
   else if(a==='spawn'){const k=v('gmob'),n=+v('gqty')||1;for(let i=0;i<n;i++){const ang=Math.random()*7,r=rand(30,70);const e=makeEnemy(k,P.x+Math.cos(ang)*r,P.y+Math.sin(ang)*r);e.sz=e.z;e.aggro=true;enemies.push(e)}toast(`${n} × ${ED[k].n} criados.`,'#ffd040')}
   else if(a==='boss'){const i=+v('gboss');const old=enemies.find(e=>e.boss&&e.bi===i);if(old)enemies.splice(enemies.indexOf(old),1);const c=AC_(i);P.x=c.x;P.y=c.y+50;P.path=null;cam.x=P.x;cam.y=P.y;spawnBoss(i);keep=false}
@@ -2574,7 +2577,12 @@ function godCmd(id){if(!GOD.on)return;const v=s=>{const el=$(s);return el?el.val
 {const _up=update;update=function(dt){_up(dt);if(!GOD.on)return;const st=stats();if(GOD.inv){if(S.hp<st.mhp)S.hp=st.mhp;if(P.dead&&mode!=='title'){P.dead=false}}if(GOD.mana&&S.mp<st.mmp)S.mp=st.mmp;if(GOD.nocd)P.cd={}}}
 {const _sc=srvConnect;srvConnect=function(name,url){godCheck(name).then(ok=>{if(ok){const k=(name||'').trim();SRV.opKey=k;_sc('Operador',url)}else _sc(name,url)})}}
 {const _sd=srvData;srvData=function(m){if(m&&m.t==='welcome'&&m.op){GOD.srv=true;godOn()}if(m&&m.t==='smite'){if(GOD.on)return;S.hp=0;P.invT=0;burst(P.x,P.y-10,['#ffffff','#ffd040','#8ad8ff'],60,140,0.8,2);shake(8);sfx('boom');toast('Um raio do Operador caiu sobre você!','#ffd040');try{die()}catch(_){}return}return _sd(m)}}
-try{if(sessionStorage.getItem('eldmor-op')==='1'){GOD.on=true;setTimeout(godButton,500)}}catch(_){}
+try{if(sessionStorage.getItem('eldmor-op-ok')==='1')GOD.ok=true;if(sessionStorage.getItem('eldmor-op')==='1'){GOD.on=true;GOD.ok=true;setTimeout(godButton,500)}}catch(_){}
+/* entrar e sair do modo Operador pelo menu Opções */
+setTimeout(()=>{try{if(typeof ACC!=='undefined'&&ACC&&ACC.op&&sessionStorage.getItem('eldmor-op')!=='0')godOn()}catch(_){}},1500);
+{const _rm=renderMenu;renderMenu=function(){_rm();if(menuTab!=='opts'||!godAllowed()||$('godtog'))return;const host=mbody.querySelector('.pnl');if(!host)return;const row=host.querySelector('.row');
+  (row||host).insertAdjacentHTML(row?'afterend':'beforeend',`<div id="godtog" class="accp" style="border-color:rgba(255,208,64,.5)"><h4 style="color:#ffd040">Modo Operador</h4><p class="muted" style="font-size:13px">Só você vê esta opção. Desligado, você joga como um jogador normal, sem poderes.</p><div class="row"><button class="btn ${GOD.on?'':'pri'}" id="godtgb">${GOD.on?'Sair do modo Operador':'Entrar no modo Operador'}</button></div></div>`);
+  $('godtgb').onclick=e=>{e.stopPropagation();if(GOD.on)godOff();else godOn();renderMenu()}}}
 
 /* ================= arte desenhada (enviada pelo criador) ================= */
 const ARTC_=window.ARTC||{};const HASART=!!ARTC_.h_w_front;
@@ -3772,15 +3780,56 @@ let FRAMEERR=0;function frame(now){let dt=(now-last)/1000;last=now;if(!(dt>0))dt
 requestAnimationFrame(frame);
 
 });
-(function(){const C={};const ks=Object.keys(typeof ART==='object'?ART:{});const N=ks.length;let n=N,done=false;
-const ov=document.createElement('div');ov.id='eldload';ov.style.cssText='position:fixed;inset:0;z-index:999999;background:#0d0b14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 16px system-ui,sans-serif;color:#f2c14e';
-ov.innerHTML=(window.ELD_COVER?'<img src="'+window.ELD_COVER+'" style="width:120px;height:120px;border-radius:16px;border:3px solid #c9932e">':'')+'<div>Reinos de Eldmor</div><div style="width:220px;height:10px;border:2px solid #c9932e;border-radius:6px;overflow:hidden"><i id="eldbar" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#f2a63a,#ffe49a)"></i></div><div id="eldtxt" style="font-weight:600;font-size:13px;color:#a9a7b8">Carregando...</div>';
-(document.body||document.documentElement).appendChild(ov);
+(function(){const C={};const AR=typeof ART==='object'?ART:{};const ks=Object.keys(AR);const N=ks.length;let n=N,done=false;
+/* vinheta de abertura enquanto carrega: céu estrelado, floresta, os três heróis e o título */
+const st=document.createElement('style');st.textContent=`
+#eldload{position:fixed;inset:0;z-index:999999;overflow:hidden;background:linear-gradient(180deg,#0b0820 0%,#1c1440 38%,#3a2456 62%,#6a3a4a 78%,#1a1220 100%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f2c14e;transition:opacity .6s}
+#eldload .star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:eltw 2.4s ease-in-out infinite}
+@keyframes eltw{0%,100%{opacity:.25}50%{opacity:1}}
+#eldload .moon{position:absolute;right:12%;top:9%;width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#fff8dc,#f2d79a 55%,#c9a45a);box-shadow:0 0 40px 12px rgba(255,230,160,.35);animation:elmoon 6s ease-in-out infinite}
+@keyframes elmoon{50%{transform:translateY(-6px)}}
+#eldload .hill{position:absolute;left:-10%;right:-10%;border-radius:50% 50% 0 0}
+#eldload .h1{bottom:-8%;height:34%;background:#1d1830}#eldload .h2{bottom:-14%;height:30%;background:#120f20}
+#eldload .tree{position:absolute;bottom:13%;filter:brightness(.32) saturate(.6);image-rendering:auto}
+#eldload .fly{position:absolute;width:4px;height:4px;border-radius:50%;background:#e8ff8a;box-shadow:0 0 8px 3px rgba(220,255,120,.7);animation:elfly 7s ease-in-out infinite}
+@keyframes elfly{0%{transform:translate(0,0);opacity:0}15%{opacity:1}50%{transform:translate(40px,-60px)}85%{opacity:1}100%{transform:translate(-20px,-120px);opacity:0}}
+#eldload .heroes{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:2vmin;animation:elin 1.4s cubic-bezier(.2,.8,.2,1) both .3s}
+#eldload .heroes img{height:min(20vh,150px);filter:drop-shadow(0 6px 6px rgba(0,0,0,.6));animation:elbob 1.6s ease-in-out infinite}
+#eldload .heroes img:nth-child(2){height:min(23vh,170px);animation-delay:.25s}#eldload .heroes img:nth-child(3){animation-delay:.5s}
+@keyframes elbob{50%{transform:translateY(-4px)}}
+@keyframes elin{from{opacity:0;transform:translate(-50%,40px)}to{opacity:1;transform:translate(-50%,0)}}
+#eldload .mid{position:absolute;left:0;right:0;top:9%;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:0 16px}
+#eldload .cover{width:min(26vmin,150px);height:min(26vmin,150px);border-radius:18px;border:3px solid #c9932e;box-shadow:0 0 0 3px #2a1a08,0 0 40px rgba(242,193,78,.45);animation:elzoom 1.6s cubic-bezier(.2,.8,.2,1) both,elglow 3s ease-in-out infinite 1.6s}
+@keyframes elzoom{from{opacity:0;transform:scale(.4) rotate(-6deg)}to{opacity:1;transform:none}}
+@keyframes elglow{50%{box-shadow:0 0 0 3px #2a1a08,0 0 70px rgba(242,193,78,.75)}}
+#eldload h1{margin:0;font-size:min(9vw,54px);letter-spacing:.04em;font-weight:900;background:linear-gradient(90deg,#c9932e,#ffe49a,#f2a63a,#ffe49a,#c9932e);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #2a1406);animation:elshine 3s linear infinite,elfade 1.2s both .6s}
+@keyframes elshine{to{background-position:200% 0}}@keyframes elfade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#eldload .sub{font-style:italic;color:#ffb46a;font-size:min(3.6vw,15px);animation:elfade 1.2s both 1.1s}
+#eldload .load{position:absolute;left:50%;bottom:3.2%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(80vw,280px)}
+#eldload .bar{width:100%;height:10px;border:2px solid #c9932e;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.45)}#eldload .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f2a63a,#ffe49a);transition:width .2s}
+#eldload .txt{font-size:12px;font-weight:600;color:#d8d0e8;text-shadow:0 1px 0 #000}`;
+document.head.appendChild(st);
+const ov=document.createElement('div');ov.id='eldload';
+let h='';for(let i=0;i<70;i++)h+=`<i class="star" style="left:${Math.random()*100}%;top:${Math.random()*55}%;animation-delay:${(Math.random()*2.4).toFixed(2)}s;opacity:${(0.3+Math.random()*0.7).toFixed(2)}"></i>`;
+h+='<div class="moon"></div><div class="hill h1"></div>';
+const tr=[AR.v_pine,AR.v_tree,AR.v_pine,AR.v_tree,AR.v_pine,AR.v_tree,AR.v_pine];tr.forEach((s,i)=>{if(s)h+=`<img class="tree" src="${s}" style="left:${i*15-4}%;height:${18+((i*7)%3)*4}vh;bottom:${11+(i%2)*2}%" alt="">`});
+h+='<div class="hill h2"></div>';
+for(let i=0;i<14;i++)h+=`<i class="fly" style="left:${8+Math.random()*84}%;top:${45+Math.random()*40}%;animation-delay:${(Math.random()*7).toFixed(2)}s"></i>`;
+h+=`<div class="mid">${window.ELD_COVER?`<img class="cover" src="${window.ELD_COVER}" alt="">`:''}<h1>Reinos de Eldmor</h1><div class="sub">Em memória de Paulo, o Arqueiro Eterno</div></div>`;
+const hs=[AR.h2_a_front||AR.h_a_front,AR.h2_w_front||AR.h_w_front,AR.h2_m_front||AR.h_m_front].filter(Boolean);
+if(hs.length)h+=`<div class="heroes">${hs.map(s=>`<img src="${s}" alt="">`).join('')}</div>`;
+h+='<div class="load"><div class="bar"><i id="eldbar"></i></div><div class="txt" id="eldtxt">Carregando o reino...</div></div>';
+ov.innerHTML=h;(document.body||document.documentElement).appendChild(ov);
+const T0=Date.now(),MINV=3000;/* a vinheta aparece pelo menos ~2 s */
 const bar=()=>{const b=document.getElementById('eldbar');if(b)b.style.width=Math.round((N-n)/Math.max(1,N)*100)+'%'};
-const fin=()=>{if(done)return;done=true;window.ARTC=C;try{window.__ELDMAIN()}finally{ov.style.transition='opacity .35s';ov.style.opacity='0';setTimeout(()=>ov.remove(),400)}};if(!n){fin();return}
-const one=k=>{const im=new Image();im.decoding='async';const ok=()=>{try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);C[k]=c}catch(e){}step()};let fired=false;const step=()=>{if(fired)return;fired=true;n--;bar();if(n===0)fin()};
-  im.onload=()=>{if(im.decode)im.decode().then(ok,ok);else ok()};im.onerror=step;im.src=ART[k];if(im.decode)im.decode().then(ok,()=>{});};
-ks.forEach(one);setTimeout(()=>{const t=document.getElementById('eldtxt');if(t&&!done)t.textContent='Quase pronto...'},2500);setTimeout(fin,8000)})();
+const msgs=['Carregando o reino...','Afiando as espadas...','Acendendo as tochas da vila...','Chamando os heróis...','Quase pronto...'];let mi=0;const mt=setInterval(()=>{const t=document.getElementById('eldtxt');if(t&&!done)t.textContent=msgs[Math.min(msgs.length-1,++mi)]},1100);
+const fin=()=>{if(done)return;done=true;clearInterval(mt);window.ARTC=C;try{window.__ELDMAIN()}finally{const w=Math.max(0,3200-performance.now(),900-(Date.now()-T0));setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();st.remove()},650)},w)}};
+if(!n){fin();return}
+const one=k=>{const im=new Image();im.decoding='async';let fired=false;const step=()=>{if(fired)return;fired=true;n--;bar();if(n===0)fin()};
+  const ok=()=>{if(!C[k]){try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);C[k]=c}catch(e){}}step()};
+  im.onload=()=>{if(im.decode)im.decode().then(ok,ok);else ok()};im.onerror=step;im.src=AR[k];if(im.decode)im.decode().then(ok,()=>{})};
+ks.forEach(one);setTimeout(fin,8000)})();
+
 </script>
 
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>{let rl=false;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),10*60e3)}).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=true;try{if(typeof save==='function')save()}catch(e){}location.reload()})});</script>
