@@ -1737,7 +1737,7 @@ function consStacks(){const a=[];for(const[k,n,ic,d]of CONS){let c=consCount(k),
 const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0)+(S.bagX||0);
 const bagUsed=()=>S.inv.length+consStacks().length;
 const bagFull=()=>bagUsed()>=bagCap();
-const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
+const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;if(S.owned&&S.owned[cls+'.'+cat+'.'+i])return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
 const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
 
 const KEY='eldmor-save-v4',OLDKEYS=['eldmor-save-v3','eldmor-save-v2','eldmor-save-v1'];
@@ -2515,7 +2515,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v45 · 06/11/2026';
+const ELD_VER='v46 · 06/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3458,6 +3458,96 @@ window.__GLD={load:guildLoad,war:warLoad,redeem:redeemCode,gifts:giftsTake,G:()=
  /* círculo das auras especiais embaixo do herói */
  {const _dp=drawPlayer;drawPlayer=function(){try{const L=S&&S.look&&S.look[S.cls];const au=L&&L.aura|0;const im=RING[au];if(im&&mode!=='title'&&!P.dead&&skinOwned(S.cls,'aura',au)&&!GFX.lo){const w=34,h=im.height*w/im.width,pu=0.75+0.25*Math.sin(time*3);ctx.save();ctx.globalAlpha=pu;ctx.imageSmoothingEnabled=true;ctx.drawImage(im,P.x-w/2,P.y+P.r-h*0.72,w,h);ctx.restore()}}catch(_){}return _dp.apply(this,arguments)}}
 }
+
+/* ================= painel do Operador com visual novo + todos os itens especiais sem código ================= */
+const OPANY={pet:1,aura:1,trail:1,acc:1};
+const RARN2=['Comum','Raro','Épico','Lendário','Mítico'],RARC2=['#c8c8c8','#4aa8ff','#c36bff','#ffb43c','#ff4a6a'];
+function opSpecials(){const L=[],seen={};for(const cls of CLS_ORDER)for(const cat of Object.keys(COS[cls])){const o=COS[cls][cat].o;for(let i=1;i<o.length;i++){if(!o[i]||o[i][1]==='free')continue;const any=OPANY[cat];const key=(any?'any':cls)+'.'+cat+'.'+i;if(seen[key])continue;seen[key]=1;
+  let r=1;if(cat==='pet')r=(PETDEF[i]&&PETDEF[i].r)||0;else if(String(o[i][1]).startsWith('ev:'))r=4;else if(cat==='aura')r=i>=6?3:2;else if(cat==='acc'||cat==='ws')r=4;
+  const grp=String(o[i][1]).startsWith('ev:')?'ev':cat==='pet'?'pet':(cat==='aura'||cat==='trail')?'vis':'eq';L.push({cls:any?null:cls,cat,i,n:o[i][0],q:o[i][1],r,grp,key})}}return L}
+const opHas=it=>skinOwned(it.cls||S.cls,it.cat,it.i);
+function opGrant(list){const keys=[];for(const it of list){for(const c of(it.cls?[it.cls]:CLS_ORDER))if(COS[c][it.cat]&&COS[c][it.cat].o[it.i])S.owned[c+'.'+it.cat+'.'+it.i]=true;keys.push('cos:'+it.key)}
+  if(list.some(it=>it.q==='dia:200'&&/Neon/.test(it.n)))keys.push('pal:neon');PORT_K='';save();
+  if(typeof ACC!=='undefined'&&ACC&&ACC.tok&&ACC.op)api('op/grant',{keys}).then(r=>{if(r&&r.owned){ACC.owned=r.owned;accStore();accOwned()}}).catch(()=>{})}
+let OPCAT='all';const GIFT={on:false,name:'',dia:0,gold:0,hp:0,mp:0,sel:{}};
+const opAcc=()=>typeof ACC!=='undefined'&&ACC&&ACC.tok&&ACC.op;
+async function opGift(){const keys=Object.keys(GIFT.sel);const L=opSpecials();const names={};for(const k of keys){const it=L.find(x=>'cos:'+x.key===k);if(it)names[k]=it.n}
+  if(!GIFT.name.trim()){toast('Digite o nome do jogador.','#ff7a6e');return}if(!opAcc()){toast('Entre na conta de Operador (Opções → Conta) para mandar presentes.','#ff7a6e');return}
+  try{const r=await api('op/gift',{name:GIFT.name.trim(),keys,names,dia:GIFT.dia,gold:GIFT.gold,hp:GIFT.hp,mp:GIFT.mp});toast('🎁 Presente enviado para '+r.name+': '+r.text,'#ffd040');sfx('lvl');GIFT.sel={};openGodItems()}catch(e){toast(e.message,'#ff7a6e')}}
+function openGodItems(){mode='modal';const L=opSpecials();const own=L.filter(opHas).length;
+  const cats=[['all','✨','Todos'],['ev','🎁','Eventos'],['pet','🐾','Mascotes'],['vis','🌈','Auras e rastros'],['eq','👑','Elmos e chapéus']];const V=L.filter(it=>OPCAT==='all'||it.grp===OPCAT);
+  const nsel=Object.keys(GIFT.sel).length;
+  const gbar=`<div class="gp-mode"><button class="gp-b${GIFT.on?'':' gold'}" data-act="god" data-id="gmode:0">✨ Liberar para mim</button><button class="gp-b${GIFT.on?' gold':''}" data-act="god" data-id="gmode:1">🎁 Presentear um jogador</button></div>
+  ${GIFT.on?`<div class="gp-gift"><label class="w">Nome do jogador<input id="gf-name" class="gp-sel" maxlength="16" placeholder="Digite o nome exato" value="${esc(GIFT.name)}"></label><label>💎 Diamantes<input id="gf-dia" class="gp-sel" type="number" min="0" value="${GIFT.dia}"></label><label>🪙 Ouro<input id="gf-gold" class="gp-sel" type="number" min="0" value="${GIFT.gold}"></label><label>❤️ Poções de vida<input id="gf-hp" class="gp-sel" type="number" min="0" value="${GIFT.hp}"></label><label>💧 Poções de mana<input id="gf-mp" class="gp-sel" type="number" min="0" value="${GIFT.mp}"></label>
+   <button class="gp-b gold" data-act="god" data-id="gsend">Enviar presente${nsel?' ('+nsel+' itens)':''}</button><p class="gp-tip" style="flex-basis:100%">Toque nos itens abaixo para escolher o que vai no presente (pode escolher vários). O jogador recebe na hora, mesmo se estiver jogando. ${opAcc()?'':'<b style="color:#ff9a8a">Para presentear, entre na conta de Operador em Opções → Conta.</b>'}</p></div>`:''}`;
+  openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">🧰</div><div style="flex:1"><h2>Itens especiais</h2><p>Tudo que existe de visual no jogo: eventos, mascotes, auras, rastros, acessórios e visuais de arma. Libere para você ou presenteie um jogador pelo nome.</p></div><button class="gp-x" data-act="god" data-id="back">← Voltar</button></div>${gbar}
+  <div class="gp-items"><div class="gp-side">${cats.map(([k,ic,n])=>`<button class="gp-cat${OPCAT===k?' on':''}" data-act="god" data-id="spc:${k}"><span>${ic}</span>${n}</button>`).join('')}<div class="gp-cnt"><b>${own}/${L.length}</b>liberados</div>${GIFT.on?'<button class="gp-b" data-act="god" data-id="gclear">Limpar escolha</button>':'<button class="gp-b gold" data-act="god" data-id="spall">Liberar tudo</button>'}</div>
+  <div class="gp-grid">${V.map(it=>{const has=opHas(it);let ic=cosIcon(it.cls||S.cls,it.cat,it.i);if(it.cat==='pet'&&PETSPR[it.i]&&PETSPR[it.i][0]){const c=PETSPR[it.i][0];ic=c._u||(c._u=c.toDataURL())}const sel=GIFT.on&&GIFT.sel['cos:'+it.key];return`<button class="gp-card${GIFT.on?(sel?' sel':''):(has?' has':'')}" style="--rc:${RARC2[it.r]}" data-act="god" data-id="sp:${it.key}"><span class="gp-img">${ic?`<img src="${ic}" alt="">`:''}</span><b>${esc(it.n)}</b><small>${it.cls?({warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'})[it.cls]+' · ':''}${COS[it.cls||'warrior'][it.cat].n}</small><span class="gp-rar">${GIFT.on?(sel?'🎁 No presente':RARN2[it.r]):has?'✔ Liberado':RARN2[it.r]}</span></button>`}).join('')}</div></div>
+  <p class="gp-foot">Os itens liberados ficam na conta e podem ser usados na aba Aparência.</p></div>`);mbox.classList.add('godm');
+  for(const[id,k,num]of[['gf-name','name',0],['gf-dia','dia',1],['gf-gold','gold',1],['gf-hp','hp',1],['gf-mp','mp',1]]){const el=$(id);if(!el)continue;el.addEventListener('input',()=>{GIFT[k]=num?Math.max(0,+el.value||0):el.value});['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation()))}}
+/* inventário criativo com ícones */
+openAllItems=function(){mode='modal';const L=DB.slice().sort((a,b)=>b.rar-a.rar);
+  openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">⚔️</div><div style="flex:1"><h2>Todos os equipamentos</h2><p>Toque num item para colocar na mochila. O item vem no seu nível (${S.lvl}).</p></div><button class="gp-x" data-act="god" data-id="back">← Voltar</button></div>
+  <div class="gp-grid eq">${L.map(b=>`<button class="gp-card row" style="--rc:${RCOL[b.rar]}" data-act="god" data-id="give:${b.id}">${iconBox({ref:b.id,rar:b.rar},'gp-ico')}<b style="color:${RCOL[b.rar]}">${esc(b.nome)}</b></button>`).join('')}</div>
+  <h3 class="gp-h">🔮 Itens gerados lendários</h3><div class="gp-row">${Object.keys(GT).map(t=>`<button class="gp-b" data-act="god" data-id="gen:${t}">${GT[t].n}</button>`).join('')}</div></div>`);mbox.classList.add('godm')};
+{const _om=openModal;openModal=function(h){mbox.classList.remove('godm');return _om.apply(this,arguments)}}
+/* painel principal */
+openGod=function(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.test(k)).sort((a,b)=>ED[a].lvl-ED[b].lvl);const pl=SRV.on?[...SRV.players.values()]:[];
+  const T=(k,l)=>`<button class="gp-b${GOD[k]?' gold':''}" data-act="god" data-id="t:${k}">${l}: ${GOD[k]?'Ligado':'Desligado'}</button>`;const B=(id,l,x)=>`<button class="gp-b${x||''}" data-act="god" data-id="${id}">${l}</button>`;
+  const sec=(ic,t,body)=>`<section class="gp-sec"><h3 class="gp-h"><span>${ic}</span>${t}</h3>${body}</section>`;
+  openModal(`<div class="gp"><div class="gp-head big"><div class="gp-ic">⚡</div><div style="flex:1"><h2>Painel do Operador</h2><p>Você está como <b>Operador level 0</b>. ${GOD.srv?'O servidor reconheceu você: os poderes valem para todos.':'Poderes locais ativos. Entre no servidor para ter os poderes online.'}</p></div><button class="gp-x" data-act="close">✕ Fechar</button></div>
+  <div class="gp-row" style="margin:0 0 10px">${B('off:1','🚪 Sair do modo Operador',' red')}${B('items2','🧰 Itens especiais',' gold')}${B('gift','🎁 Presentear jogador',' gold')}${B('items','⚔️ Todos os equipamentos')}</div>
+  <div class="gp-cols">
+  ${sec('🛠️','Modo criativo',`<div class="gp-row">${B('build',GOD.build?'Construção: ligada':'Construir e quebrar blocos',GOD.build?' gold':'')}${B('fly',GOD.ghost&&GOD.fast?'Voar: ligado':'Voar (atravessa tudo)',GOD.ghost&&GOD.fast?' gold':'')}${B('max','Nível 300')}</div><div class="gp-row">${B('day:0.25','☀️ Dia',' s')}${B('day:0.62','🌇 Entardecer',' s')}${B('day:0.8','🌙 Noite',' s')}${B('day:auto','Tempo normal',' s')}${B('undo','Desfazer construções',' s')}</div><p class="gp-tip">No mapa grande, toque em qualquer lugar para se teletransportar.</p>`)}
+  ${sec('⚡','Poderes',`<div class="gp-row">${T('inv','Invencível')}${T('mana','Mana infinita')}${T('nocd','Sem recarga')}${T('one','Matar com 1 golpe')}${T('fast','Super velocidade')}${T('ghost','Atravessar paredes')}${GOD.srv?T('hide','Invisível'):''}</div>`)}
+  ${sec('👾','Criar monstros e chefes',`<div class="gp-row"><select id="gmob" class="gp-sel">${mobs.map(k=>`<option value="${k}">${ED[k].n} (nv ${ED[k].lvl})</option>`).join('')}</select><select id="gqty" class="gp-sel" style="flex:0 0 76px">${[1,3,5,10,20].map(n=>`<option>${n}</option>`).join('')}</select>${B('spawn','Criar')}</div>
+    <div class="gp-row"><select id="gboss" class="gp-sel">${BD.map((d,i)=>`<option value="${i}">${d.name} (nv ${d.lvl})</option>`).join('')}</select>${B('boss','Chamar chefe')}${GOD.srv?B('sboss','Chamar para todos'):''}</div>
+    <div class="gp-row">${B('killnear','Matar monstros perto',' s')}${B('killall','Matar todos',' s')}${B('clearboss','Sumir com os chefes',' s')}</div>`)}
+  ${sec('🌀','Teleporte',`<div class="gp-row"><select id="gtp" class="gp-sel">${godPlaces().map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('')}</select>${B('tp','Ir')}</div>`)}
+  ${sec('🎁','Dar para mim',`<div class="gp-row">${B('gold','+100 mil de ouro',' s')}${B('dia','+500 diamantes',' s')}${B('lvl','+10 níveis',' s')}${B('leg','Item lendário',' s')}${B('pot','+100 poções',' s')}${B('heal','Curar tudo',' s')}</div>`)}
+  ${sec('🌍','Mundo',`<div class="gp-row">${Object.keys(EVD).map(k=>B('ev:'+k,EVD[k].n,' s')).join('')}${B('ev:none','Parar evento',' s')}</div>`)}
+  ${GOD.srv?sec('👥','Jogadores online',pl.length?pl.map(p=>`<div class="gp-row" style="align-items:center"><b style="flex:1;color:#6ad8ff">${esc(p.name)} · Nv ${p.lv||1}</b>${B('goto:'+p.id,'Ir até',' s')}${B('smite:'+p.id,'⚡ Raio',' s')}</div>`).join(''):'<p class="gp-tip">Ninguém online agora.</p>'):''}
+  </div></div>`);mbox.classList.add('godm');
+  mbox.querySelectorAll('select').forEach(el=>['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation())))};
+{const _gc=godCmd;godCmd=function(id){const[a,b]=id.split(':');
+  if(a==='items2'){openGodItems();return}
+  if(a==='gift'){GIFT.on=true;openGodItems();return}
+  if(a==='gmode'){GIFT.on=b==='1';openGodItems();return}
+  if(a==='gclear'){GIFT.sel={};openGodItems();return}
+  if(a==='gsend'){opGift();return}
+  if(a==='sp'&&GIFT.on){const k='cos:'+id.slice(3);if(GIFT.sel[k])delete GIFT.sel[k];else GIFT.sel[k]=1;const g=mbox.querySelector('.gp-grid');const sc=g?g.scrollTop:0;openGodItems();const g2=mbox.querySelector('.gp-grid');if(g2)g2.scrollTop=sc;return}
+  if(a==='spc'){OPCAT=b;openGodItems();return}
+  if(a==='sp'){const it=opSpecials().find(x=>x.key===id.slice(3));if(it){opGrant([it]);toast('Liberado: '+it.n,'#ffd040');sfx('lvl')}openGodItems();return}
+  if(a==='spall'){const L=opSpecials().filter(x=>!opHas(x));opGrant(L);toast(L.length?L.length+' itens liberados!':'Você já tem tudo.','#ffd040');sfx('lvl');openGodItems();return}
+  if(a==='give'||a==='gen'){_gc(id);return}
+  return _gc(id)}}
+(function(){const st=document.createElement('style');st.textContent=`
+#mbox.godm{max-width:1100px!important;width:min(1100px,100%)!important;padding:0!important;border:3px solid #c9932e!important;border-radius:16px!important;background:radial-gradient(circle at 50% -10%,rgba(90,110,220,.25),transparent 45%),linear-gradient(180deg,#141a36,#0c1024)!important;box-shadow:0 0 0 3px #2a1406,0 0 40px rgba(242,193,78,.25),inset 0 0 40px rgba(0,0,0,.5)!important}
+.gp{padding:14px 16px 16px}.gp-head{display:flex;gap:12px;align-items:center;margin:-14px -16px 14px;padding:14px 16px;border-bottom:2px solid rgba(242,193,78,.45);background:linear-gradient(90deg,rgba(242,193,78,.16),transparent 55%),linear-gradient(180deg,#232c5a,#161d3e);border-radius:13px 13px 0 0;position:relative;overflow:hidden}
+.gp-head.big::after{content:"";position:absolute;right:120px;bottom:0;width:260px;height:56px;opacity:.25;background:linear-gradient(transparent,transparent);-webkit-mask:linear-gradient(#000,#000);background-image:radial-gradient(circle at 20% 100%,#c9932e 0 18px,transparent 19px),radial-gradient(circle at 50% 100%,#c9932e 0 28px,transparent 29px),radial-gradient(circle at 80% 100%,#c9932e 0 18px,transparent 19px)}
+.gp-head h2{margin:0;font-family:var(--display);font-size:clamp(20px,3vw,28px);background:linear-gradient(90deg,#ffe49a,#f2a63a,#ffe49a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #2a1406);letter-spacing:.03em}
+.gp-head p{margin:2px 0 0;font-size:13px;color:#c8c0d8}.gp-ic{width:52px;height:52px;flex:none;display:grid;place-items:center;font-size:28px;border-radius:12px;background:radial-gradient(circle,#3a4a8a,#1a2246);border:2px solid #c9932e;box-shadow:0 0 14px rgba(242,193,78,.35)}
+.gp-x{flex:none;font:700 13px system-ui,sans-serif;color:#fff;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.35);cursor:pointer}
+.gp-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gp-sec{padding:10px 12px;border-radius:12px;background:linear-gradient(180deg,rgba(40,52,110,.35),rgba(10,14,34,.5));border:1px solid rgba(110,140,255,.25)}
+.gp-h{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#f2c14e}.gp-h span{font-size:18px}
+.gp-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.gp-row:first-child{margin-top:0}
+.gp-b{font:700 13px system-ui,sans-serif;color:#e8eeff;padding:9px 12px;border-radius:9px;border:1.5px solid #5a7ae8;background:linear-gradient(180deg,#2a3a7a,#1a2450);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 8px rgba(90,122,232,.25);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.gp-b:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(90,140,255,.55)}.gp-b.s{padding:7px 10px;font-size:12px}
+.gp-b.gold{color:#2a1406;border-color:#ffe49a;background:linear-gradient(180deg,#ffe49a,#f2a63a);box-shadow:0 0 12px rgba(255,200,90,.45)}.gp-b.red{border-color:#ff6a5a;background:linear-gradient(180deg,#8a2020,#5a1010);color:#fff}
+.gp-sel{flex:1;min-width:150px;font:600 14px system-ui,sans-serif;color:#fff;padding:8px 10px;border-radius:9px;border:1.5px solid #5a7ae8;background:#141c40}
+.gp-tip{font-size:12px;color:#a8a3bd;margin:6px 0 0}.gp-foot{font-size:12px;color:#a8a3bd;margin:10px 0 0;text-align:center}
+.gp-items{display:grid;grid-template-columns:150px 1fr;gap:12px}.gp-side{display:flex;flex-direction:column;gap:6px}
+.gp-cat{display:flex;align-items:center;gap:8px;font:700 13px system-ui,sans-serif;color:#d8e0ff;padding:10px;border-radius:10px;border:1.5px solid rgba(110,140,255,.35);background:#18204a;cursor:pointer;text-align:left}.gp-cat span{font-size:18px}.gp-cat.on{border-color:#ffe49a;background:linear-gradient(180deg,#3a3420,#241e10);color:#ffe49a;box-shadow:0 0 12px rgba(255,200,90,.3)}
+.gp-cnt{margin-top:6px;text-align:center;font-size:12px;color:#a8a3bd}.gp-cnt b{display:block;font-size:20px;color:#ffe49a}
+.gp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:62vh;overflow:auto;padding:2px 4px 2px 2px}.gp-grid.eq{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));max-height:58vh}
+.gp-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 8px 8px;border-radius:12px;border:2px solid var(--rc);background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--rc) 22%,transparent),transparent 70%),linear-gradient(180deg,#1c2450,#10153a);color:#fff;cursor:pointer;font:600 12px system-ui,sans-serif;text-align:center;box-shadow:0 0 10px color-mix(in srgb,var(--rc) 25%,transparent)}
+.gp-card:hover{transform:translateY(-2px)}.gp-card.row{flex-direction:row;justify-content:flex-start;text-align:left;padding:8px;gap:10px}.gp-card b{font-size:12.5px;line-height:1.2}.gp-card small{color:#a8a3bd;font-size:10.5px}
+.gp-img{height:58px;display:grid;place-items:center}.gp-img img{max-height:56px;max-width:90px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.6))}
+.gp-rar{margin-top:3px;font-size:11px;font-weight:800;padding:2px 10px;border-radius:8px;color:#fff;background:color-mix(in srgb,var(--rc) 70%,#000);border:1px solid var(--rc)}.gp-card.has .gp-rar{background:#2a6a2a;border-color:#6ad86a}
+.gp-mode{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 10px}.gp-gift{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1.5px dashed #ffd040;background:rgba(255,208,64,.07)}.gp-gift label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#d8d4ea;flex:0 0 110px}.gp-gift label.w{flex:1 1 200px}.gp-gift .gp-sel{min-width:0;width:100%}
+.gp-card.sel{outline:3px solid #ffd040;outline-offset:2px}.gp-card.sel .gp-rar{background:#8a6a10;border-color:#ffd040}
+.gp-card .gp-ico{flex:none;width:48px!important;height:48px!important}
+@media(max-width:760px){.gp-cols{grid-template-columns:1fr}.gp-items{grid-template-columns:1fr}.gp-side{flex-direction:row;flex-wrap:wrap}.gp-cat{flex:1 1 40%}.gp-cnt{flex:1 1 100%}.gp-head.big::after{display:none}}`;document.head.appendChild(st)})();
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}

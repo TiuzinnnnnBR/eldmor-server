@@ -268,7 +268,7 @@ async function handleExtra(req, res, u, a) {
     notify(a.id, { t: 'gift' });
     return send(res, 200, { ok: true, dia, owned, text: rewardText(r), note: c.note || '' });
   }
-  if (u === '/api/gifts/take' && req.method === 'POST') { const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const gifts = owned.gifts || []; if (!gifts.length) return send(res, 200, { gifts: [] }); delete owned.gifts; await db.set(a.id, { owned }); return send(res, 200, { gifts, owned }); }
+  if (u === '/api/gifts/take' && req.method === 'POST') { const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const gifts = owned.gifts || []; if (!gifts.length) return send(res, 200, { gifts: [], owned }); delete owned.gifts; await db.set(a.id, { owned }); return send(res, 200, { gifts, owned }); }
   if (u === '/api/code/create' && req.method === 'POST') {
     if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const n = Math.max(1, Math.min(200, b.count | 0 || 1)); const r = b.reward || {};
     const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)).slice(0, 10) };
@@ -279,6 +279,19 @@ async function handleExtra(req, res, u, a) {
       await G.codeAdd({ h, plain, reward: rw, max, until, note }); out.push(plain.startsWith('ELD') && plain.length === 11 ? plain.slice(0, 3) + '-' + plain.slice(3, 7) + '-' + plain.slice(7) : plain); }
     return send(res, 200, { codes: out, text: rewardText(rw) });
   }
+  if (u === '/api/op/gift' && req.method === 'POST') {
+    if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req);
+    const t = await db.byName(cleanName(b.name || '').toLowerCase()); if (!t) return send(res, 404, { err: 'Não achei nenhum jogador com esse nome.' });
+    const owned = t.owned || {}; const keys = (b.keys || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)).slice(0, 200); for (const k of keys) owned[k] = 1;
+    const g = { gold: Math.max(0, Math.min(1e8, b.gold | 0)), hp: Math.max(0, Math.min(5000, b.hp | 0)), mp: Math.max(0, Math.min(5000, b.mp | 0)), scroll: 0, from: 'Presente do Operador' };
+    if (g.gold || g.hp || g.mp) owned.gifts = (owned.gifts || []).concat([g]).slice(-20);
+    await db.set(t.id, { owned }); let dia = t.dia; const nd = Math.max(0, Math.min(100000, b.dia | 0)); if (nd) dia = await db.addDia(t.id, nd);
+    const parts = []; if (nd) parts.push(nd + ' diamantes'); if (g.gold) parts.push(g.gold + ' de ouro'); if (g.hp) parts.push(g.hp + ' poções de vida'); if (g.mp) parts.push(g.mp + ' poções de mana'); for (const k of keys) parts.push(ITEMNAME[k] || b.names && b.names[k] || k.split('.').pop());
+    if (!parts.length) return send(res, 400, { err: 'Escolha pelo menos um presente.' });
+    const txt = parts.join(', '); notify(t.id, { t: 'gmsg', msg: '🎁 O Operador te deu um presente: ' + txt + '!' }); notify(t.id, { t: 'gift' }); if (nd) notify(t.id, { t: 'dia', dia, add: nd, why: 'Presente do Operador' });
+    console.log('presente do operador para', t.name, txt); return send(res, 200, { ok: true, name: t.name, text: txt });
+  }
+  if (u === '/api/op/grant' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const fresh = await db.byId(a.id); const owned = fresh.owned || {}; for (const k of (b.keys || []).slice(0, 500)) if (typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)) owned[k] = 1; await db.set(a.id, { owned }); return send(res, 200, { owned }); }
   if (u === '/api/code/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: (await G.codeList()).map(c => ({ code: c.plain || '(código pronto)', text: rewardText(typeof c.reward === 'string' ? JSON.parse(c.reward) : c.reward), max: c.max, uses: c.uses, until: c.until, note: c.note })) }); }
   /* ---------- loja pelo site (só itens que ficam na conta) ---------- */
   return null;
