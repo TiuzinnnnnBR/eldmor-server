@@ -191,8 +191,9 @@ function rewardText(r) {
   const t = []; if (r.dia) t.push(r.dia + ' diamantes'); if (r.gold) t.push(r.gold + ' de ouro'); if (r.hp) t.push(r.hp + ' poções de vida'); if (r.mp) t.push(r.mp + ' poções de mana'); if (r.scroll) t.push(r.scroll + ' pergaminhos');
   for (const k of r.items || []) t.push(ITEMNAME[k] || k); return t.join(', ');
 }
-const ITEMNAME = { 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro de Cometa', 'pal:neon': 'Paleta Neon',
-  'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda' };
+const ITEMNAME = { 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro Cometa Arco-Íris', 'pal:neon': 'Paleta Neon',
+  'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda',
+  'ev:coelho_pascoa': 'Coelho da Páscoa', 'ev:abobora': 'Abóbora Assombrada', 'ev:rena': 'Rena de Natal', 'ev:gorro_natal': 'Gorro de Natal', 'ev:chapeu_bruxa': 'Chapéu de Bruxa', 'ev:espada_alada': 'Espada Alada de Fogo', 'ev:arco_gelo': 'Arco do Relâmpago Gelado', 'ev:cajado_galaxia': 'Cajado da Galáxia' };
 for (let i = 1; i <= 20; i++) ITEMNAME['cos:any.pet.' + i] = 'Mascote nº ' + i;
 async function handleExtra(req, res, u, a) {
   /* ---------- públicas ---------- */
@@ -320,7 +321,7 @@ async function handle(req, res, u) {
     }
     if (u === '/api/support' && req.method === 'POST') {
       if (limited(req, 'sup', 5, 3600e3)) return send(res, 429, { err: 'Você já mandou várias mensagens. Espere um pouco.' });
-      const b = await body(req); const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 2000); if (msg.length < 5) return send(res, 400, { err: 'Escreva sua mensagem (pelo menos 5 letras).' });
+      const b = await body(req); const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 2000); if (msg.length < 2) return send(res, 400, { err: 'Escreva sua mensagem.' });
       const who = await auth(req); await db.supAdd({ acc: who ? who.id : null, name: who ? who.name : cleanName(b.name) || null, contact: String(b.contact || '').replace(/[<>]/g, '').trim().slice(0, 120) || null, msg });
       return send(res, 200, { ok: true });
     }
