@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loja e códigos · Reinos de Eldmor</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1426;--card:#1c2442;--ink:#ece6d8;--muted:#a8a3bd;--gold:#f2c14e;--gold2:#ffe49a;--blue:#6ad8ff;--line:rgba(242,193,78,.28)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,rgba(255,215,120,.12),transparent 40%),radial-gradient(circle at 90% 30%,rgba(106,216,255,.1),transparent 40%),var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;min-height:100vh}
+a{color:var(--blue)}.wrap{max-width:1000px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 16px}header .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--gold2);font-family:Cinzel,serif;font-weight:900;font-size:20px}header .logo img{width:40px;height:40px;border-radius:10px;border:2px solid var(--gold)}
+.acc{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.dia{font-weight:800;color:#bff2ff;padding:6px 12px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid rgba(106,216,255,.4)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:800 14px Inter,sans-serif;padding:10px 16px;border-radius:11px;cursor:pointer;border:2px solid var(--gold);color:var(--gold2);background:rgba(0,0,0,.25);text-decoration:none}
+.btn.pri{color:#2a1406;background:linear-gradient(180deg,#ffe49a,#f2a63a);border-color:#ffe49a}.btn:disabled{opacity:.45;cursor:default}.btn.s{padding:6px 12px;font-size:13px}
+h1{font-family:Cinzel,serif;color:var(--gold2);margin:0 0 4px;font-size:clamp(26px,5vw,38px)}h2{font-family:Cinzel,serif;color:var(--gold);font-size:18px;letter-spacing:.04em;margin:22px 0 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.tabs button{font:700 14px Inter,sans-serif;padding:8px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--ink);cursor:pointer}.tabs button.on{background:linear-gradient(90deg,#ffe49a,#f2a63a);color:#2a1406;border-color:#ffe49a}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:14px 12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.12)}
+.card .ic{font-size:40px;height:54px;display:grid;place-items:center}.card b{font-size:15px}.card .d{font-size:12px;color:var(--muted);flex:1}.card .btn{width:100%}
+.card.hot{border-color:var(--gold2);box-shadow:0 0 16px rgba(255,215,120,.3)}.badge{position:absolute;top:-9px;font:800 10px Inter,sans-serif;color:#2a1406;background:linear-gradient(90deg,#ffe49a,#f2a63a);padding:2px 8px;border-radius:9px}
+.r1{border-color:rgba(74,168,255,.6)}.r2{border-color:rgba(195,107,255,.6)}.r3{border-color:rgba(255,180,60,.7)}.r4{border-color:#ff4a6a;box-shadow:0 0 12px rgba(255,74,106,.25)}
+.panel{padding:18px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+input{font:16px Inter,sans-serif;padding:11px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:var(--ink);min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row input{flex:1}.msg{min-height:1.4em;font-size:14px;margin-top:8px}
+.ok{color:#8bd86a}.err{color:#ff8a7a}.muted{color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px;z-index:20}.modal[hidden]{display:none}.modal .panel{width:min(420px,100%)}
+.redeem{border:1px dashed rgba(255,215,120,.6);background:radial-gradient(circle at 0 0,rgba(255,215,120,.14),transparent 60%),var(--card)}
+.big{font-size:22px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;text-align:center}
+footer{margin-top:30px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><a class="logo" href="site.html"><img src="icons/icon-192.png" alt="">Reinos de Eldmor</a><div class="acc" id="acc"></div></header>
+<h1>Loja do Reino</h1><p class="muted" style="margin:0">Tudo que você compra aqui chega na sua conta do jogo. Nada da loja dá força de combate.</p>
+<div class="tabs"><button data-t="loja" class="on">💎 Loja</button><button data-t="resgatar">🎁 Resgatar código</button></div>
+<div id="t-resgatar" hidden><div class="panel redeem"><h2 style="margin-top:0">Resgatar código</h2><p class="muted">Digite o código que você ganhou em eventos, lives ou sorteios. Cada código só pode ser usado uma vez por conta. Ouro e poções aparecem na próxima vez que você entrar no jogo.</p>
+<div class="row"><input id="code" class="big" maxlength="24" placeholder="ELD-XXXX-XXXX" autocomplete="off"><button class="btn pri" id="rd">Resgatar</button></div><div class="msg" id="rdmsg"></div></div></div>
+<div id="t-loja"><h2>💎 Diamantes</h2><div class="grid" id="packs"><p class="muted">Carregando...</p></div><p class="muted" id="paynote"></p>
+<h2>🐾 Mascotes</h2><div class="grid" id="pets"></div>
+<h2>✨ Visual e bolsa</h2><div class="grid" id="vis"></div>
+<p class="muted" style="margin-top:14px">Bônus de XP, Baú Raro e pergaminhos são comprados dentro do jogo, na aba Loja. Pagamentos pelo Mercado Pago (Pix ou cartão). Direito de arrependimento de 7 dias para diamantes não usados, conforme os <a href="termos.html">Termos de Uso</a>.</p></div>
+<footer><a href="site.html">Início</a> · <a href="termos.html">Termos</a> · <a href="privacidade.html">Privacidade</a> · <a href="mailto:reinosdeeldmor@gmail.com">reinosdeeldmor@gmail.com</a></footer>
+</div>
+<div class="modal" id="login" hidden><div class="panel"><h2 style="margin-top:0">Entrar na conta do jogo</h2><p class="muted">Use o mesmo nome e senha da sua conta no Reinos de Eldmor. Ainda não tem conta? Crie dentro do jogo.</p>
+<div class="row" style="flex-direction:column"><input id="ln" maxlength="16" placeholder="Nome de usuário" autocomplete="username"><input id="lp" type="password" maxlength="64" placeholder="Senha" autocomplete="current-password"></div>
+<div class="row" style="margin-top:12px"><button class="btn pri" id="lgo">Entrar</button><button class="btn" id="lx">Cancelar</button></div><div class="msg" id="lmsg"></div></div></div>
+<script>
+const API=(window.ELD_SAME?location.origin:'https://eldmor-server.onrender.com')+'/api/';
+const $=id=>document.getElementById(id);const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let ACC=null,TOK=null,INFO=null,after=null;try{const s=JSON.parse(localStorage.getItem('eldsite-acc')||'null');if(s){TOK=s.tok}}catch(_){}
+async function api(p,b){const r=await fetch(API+p+(b?'':(p.includes('?')?'&':'?')+'t='+Date.now()),{method:b?'POST':'GET',cache:'no-store',headers:Object.assign({'content-type':'application/json'},TOK?{authorization:'Bearer '+TOK}:{}),body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.err||'Erro '+r.status);e.code=r.status;throw e}return j}
+const RAR=['Comum','Raro','Épico','Lendário','Mítico'],RC=['#c8c8c8','#4aa8ff','#c36bff','#ffb43c','#ff4a6a'],GOLD=[2,4,6,8,10],XP=[0,0,3,5,7];
+const PETS=[[3,'Corujinha',0,'🦉'],[4,'Coelhinho',0,'🐰'],[10,'Raposinha de Fogo',1,'🦊'],[11,'Pinguim Glacial',1,'🐧'],[12,'Golem de Cristal',2,'💠'],[13,'Morceguinho Lunar',2,'🦇'],[14,'Fênix Bebê',3,'🔥'],[15,'Grifo Real',3,'🦅'],[17,'Dragão Celestial',4,'🐉'],[18,'Lobo Estelar',4,'🐺']];
+const VIS=[['cos:any.aura.4','Aura Sombras','Brilho roxo em volta do herói','🌑','r2'],['cos:any.aura.5','Aura Dourada','Brilho dourado em volta do herói','🌟','r2'],['cos:any.aura.6','Aura Arco-Íris','Todas as cores em volta do herói','🌈','r3'],
+ ['cos:any.trail.3','Rastro de Pétalas','Pétalas quando você anda','🌸','r1'],['cos:any.trail.4','Rastro de Estrelas','Estrelinhas quando você anda','✨','r1'],['cos:any.trail.5','Rastro de Fogo','Fagulhas quando você anda','🔥','r1'],['pal:neon','Paleta Neon','12 cores neon para a aparência','🎨','r2'],['bag','Bolsa Extra','+10 espaços no inventário (até 5)','🎒','r1']];
+const brl=v=>'R$ '+v.toFixed(2).replace('.',',');
+function head(){$('acc').innerHTML=ACC?`<span>Olá, <b>${esc(ACC.name)}</b></span><span class="dia">💎 ${ACC.dia|0}</span><button class="btn s" id="out">Sair</button>`:`<button class="btn pri s" id="in">Entrar</button>`;
+  if($('in'))$('in').onclick=()=>openLogin();if($('out'))$('out').onclick=async()=>{try{await api('logout',{})}catch(_){}TOK=null;ACC=null;localStorage.removeItem('eldsite-acc');render()}}
+function openLogin(fn){after=fn||null;$('login').hidden=false;$('lmsg').textContent='';setTimeout(()=>$('ln').focus(),50)}
+$('lx').onclick=()=>{$('login').hidden=true};
+async function doLogin(){const name=$('ln').value.trim(),pass=$('lp').value;if(!name||!pass){$('lmsg').textContent='Digite nome e senha.';return}$('lmsg').className='msg';$('lmsg').textContent='Entrando... (se o servidor estava dormindo, pode levar uns 30 segundos)';
+  try{TOK=null;const r=await api('login',{name,pass});TOK=r.tok;ACC=r.acc;localStorage.setItem('eldsite-acc',JSON.stringify({tok:TOK}));$('login').hidden=true;render();if(after){const f=after;after=null;f()}}catch(e){$('lmsg').className='msg err';$('lmsg').textContent=e.message==='Failed to fetch'?'Não consegui falar com o servidor.':e.message}}
+$('lgo').onclick=doLogin;$('lp').onkeydown=e=>{if(e.key==='Enter')doLogin()};
+const owned=k=>ACC&&ACC.owned&&ACC.owned[k];
+function render(){head();if(!INFO)return;const pay=INFO.pay;const best={p3:'Mais vendido',p5:'Melhor valor'};
+  $('packs').innerHTML=Object.entries(INFO.packs).map(([k,p],i)=>`<div class="card${best[k]?' hot':''}">${best[k]?`<span class="badge">${best[k]}</span>`:''}<div class="ic" style="font-size:${22+i*5}px">${'💎'.repeat(Math.min(3,i+1))}</div><b>${p.n.replace(/ \(.*/,'')}</b><span class="d">${(p.n.match(/\+\d+%/)||[''])[0]?'Bônus de '+p.n.match(/\+\d+%/)[0]+' · ':''}Pix ou cartão</span><button class="btn pri" data-pack="${k}" ${pay?'':'disabled'}>${brl(p.price)}</button></div>`).join('');
+  $('paynote').textContent=pay?'':'As compras com dinheiro estão temporariamente desligadas.';
+  $('pets').innerHTML=PETS.map(([i,n,r,ic])=>{const k='cos:any.pet.'+i,p=INFO.shop[k]&&INFO.shop[k].p;const has=owned(k);return`<div class="card r${r}"><div class="ic">${ic}</div><b>${n}</b><span class="d"><b style="color:${RC[r]}">${RAR[r]}</b> · +${GOLD[r]}% ouro${XP[r]?' · +'+XP[r]+'% XP':''}${r?' · pega moedas':''}</span><button class="btn ${has?'':'pri'}" data-item="${k}" data-name="${esc(n)}" ${has?'disabled':''}>${has?'Já é seu':p+' 💎'}</button></div>`}).join('');
+  $('vis').innerHTML=VIS.map(([k,n,d,ic,c])=>{const it=INFO.shop[k];if(!it)return'';const has=k==='bag'?(ACC&&ACC.owned&&(ACC.owned.bag||0)>=5):owned(k);return`<div class="card ${c}"><div class="ic">${ic}</div><b>${n}</b><span class="d">${d}${k==='bag'&&ACC?` (${(ACC.owned&&ACC.owned.bag)||0}/5)`:''}</span><button class="btn ${has?'':'pri'}" data-item="${k}" data-name="${esc(n)}" ${has?'disabled':''}>${has?(k==='bag'?'Máximo':'Já é seu'):it.p+' 💎'}</button></div>`}).join('');
+  document.querySelectorAll('[data-pack]').forEach(b=>b.onclick=()=>buyPack(b));document.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>buyItem(b))}
+async function buyPack(b){if(!ACC)return openLogin(()=>buyPack(b));const t=b.textContent;b.disabled=true;b.textContent='Abrindo...';try{const r=await api('buy',{pack:b.dataset.pack});location.href=r.url}catch(e){alert(e.message);b.disabled=false;b.textContent=t}}
+async function buyItem(b){if(!ACC)return openLogin(()=>buyItem(b));const k=b.dataset.item,it=INFO.shop[k];if(!confirm(`Comprar ${b.dataset.name} por ${it.p} diamantes?`))return;b.disabled=true;
+  try{const r=await api('spend',{item:k});ACC.dia=r.dia;ACC.owned=r.owned;render();alert(b.dataset.name+' é seu! Já aparece no jogo (na aba Aparência).')}catch(e){alert(e.message+(e.need?' Compre diamantes acima.':''));b.disabled=false}}
+async function redeem(){if(!ACC)return openLogin(redeem);const m=$('rdmsg');m.className='msg';m.textContent='Resgatando...';
+  try{const r=await api('redeem',{code:$('code').value});ACC.dia=r.dia;ACC.owned=r.owned;m.className='msg ok';m.textContent='🎁 Resgatado: '+r.text+'! Já está na sua conta.';$('code').value='';render()}catch(e){m.className='msg err';m.textContent=e.message}}
+$('rd').onclick=redeem;$('code').onkeydown=e=>{if(e.key==='Enter')redeem()};
+function tab(t){document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('t-loja').hidden=t!=='loja';$('t-resgatar').hidden=t!=='resgatar';if(location.hash!=='#'+t)history.replaceState(null,'','#'+t)}
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>tab(b.dataset.t));tab(location.hash==='#resgatar'?'resgatar':'loja');
+const q=new URLSearchParams(location.search);if(q.get('codigo')){$('code').value=q.get('codigo');tab('resgatar')}
+(async()=>{try{INFO=await api('info')}catch(_){$('packs').innerHTML='<p class="muted">O servidor está acordando. Recarregue a página em alguns segundos.</p>'}
+  if(TOK){try{const r=await api('me');ACC=r.acc}catch(e){if(e.code===401){TOK=null;localStorage.removeItem('eldsite-acc')}}}render()})();
+</script>
+</body>
+</html>

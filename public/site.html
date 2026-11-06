@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reinos de Eldmor · RPG de ação em pixel art</title>
+<meta name="description" content="Reinos de Eldmor: RPG de ação 2D em pixel art. Jogue no navegador, no Android, no PC e no iPhone. Guildas, chefes, mascotes e eventos com códigos especiais.">
+<meta property="og:title" content="Reinos de Eldmor">
+<meta property="og:description" content="RPG de ação 2D em pixel art. Guerreiro, Mago e Arqueiro, guildas, chefes e mascotes.">
+<meta property="og:image" content="https://eldmor-server.onrender.com/img/capa.jpg">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1426;--bg2:#161d36;--card:#1c2442;--ink:#ece6d8;--muted:#a8a3bd;--gold:#f2c14e;--gold2:#ffe49a;--blue:#6ad8ff;--line:rgba(242,193,78,.28)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,sans-serif;overflow-x:hidden}
+a{color:var(--blue)}img{max-width:100%}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+nav{position:sticky;top:0;z-index:10;background:rgba(12,16,32,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:14px;height:58px}nav .logo{display:flex;align-items:center;gap:10px;font-family:Cinzel,serif;font-weight:900;color:var(--gold2);text-decoration:none;white-space:nowrap}
+nav .logo img{width:36px;height:36px;border-radius:9px;border:2px solid var(--gold)}nav .links{display:flex;gap:16px;margin-left:auto;overflow-x:auto;scrollbar-width:none}nav .links a{color:var(--ink);text-decoration:none;font-weight:600;font-size:14px;white-space:nowrap}nav .links a:hover{color:var(--gold2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:800 15px Inter,sans-serif;padding:12px 20px;border-radius:12px;text-decoration:none;cursor:pointer;border:2px solid var(--gold);color:var(--gold2);background:rgba(0,0,0,.25);transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.45)}.btn.pri{color:#2a1406;background:linear-gradient(180deg,#ffe49a,#f2a63a);border-color:#ffe49a}
+.hero{position:relative;overflow:hidden;padding:70px 0 40px;background:radial-gradient(circle at 80% 10%,rgba(255,230,160,.18),transparent 40%),linear-gradient(180deg,#0b0820,#1c1440 45%,#3a2456 75%,#0f1426)}
+.hero .stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 70% 20%,#fff,transparent),radial-gradient(1.5px 1.5px at 40% 70%,#fff,transparent),radial-gradient(1px 1px at 85% 55%,#fff,transparent),radial-gradient(1px 1px at 10% 80%,#fff,transparent),radial-gradient(1.2px 1.2px at 55% 15%,#fff,transparent);background-size:300px 300px;opacity:.6}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center}
+.hero h1{font-family:Cinzel,serif;font-size:clamp(38px,7vw,68px);line-height:1.05;margin:0 0 10px;background:linear-gradient(90deg,#c9932e,#ffe49a,#f2a63a,#ffe49a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #2a1406)}
+.hero p.lead{font-size:18px;color:#d8d0e8;max-width:520px}.hero .cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.hero .art{position:relative;text-align:center}.hero .art .cover{width:min(330px,80vw);border-radius:24px;border:4px solid #c9932e;box-shadow:0 0 0 4px #2a1406,0 0 60px rgba(242,193,78,.45);animation:float 5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-10px)}}
+.tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.12em;color:#ffb46a;text-transform:uppercase}
+section{padding:60px 0}section h2{font-family:Cinzel,serif;font-size:clamp(26px,4vw,38px);color:var(--gold2);margin:4px 0 14px}
+.alt{background:var(--bg2)}
+.lore{display:grid;grid-template-columns:1fr 280px;gap:30px;align-items:center}.lore img{image-rendering:auto;filter:drop-shadow(0 0 30px rgba(160,60,255,.45))}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.2));border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{margin:6px 0;color:var(--gold2);font-size:19px}.card p{margin:0;color:var(--muted);font-size:14px}
+.cls{text-align:center}.cls img{height:150px;image-rendering:auto;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6));transition:transform .2s}.cls:hover img{transform:translateY(-6px) scale(1.04)}
+.feat .ic{font-size:30px}
+.dl{display:flex;flex-direction:column;gap:10px}.dl .ic{font-size:38px}.dl .btn{margin-top:auto}
+.steps{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:14px}.steps li{margin:4px 0}
+.redeem{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:22px;border-radius:18px;border:1px dashed rgba(255,215,120,.6);background:radial-gradient(circle at 0 0,rgba(255,215,120,.15),transparent 60%),var(--card)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}th{color:var(--gold);font-size:12px;letter-spacing:.06em}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{font:700 14px Inter,sans-serif;padding:7px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:var(--ink);cursor:pointer}.tabs button.on{background:linear-gradient(90deg,#ffe49a,#f2a63a);color:#2a1406;border-color:#ffe49a}
+.war{padding:14px 16px;border-radius:14px;border:1px solid rgba(255,120,80,.5);background:linear-gradient(135deg,rgba(120,30,20,.4),rgba(20,16,40,.4));margin-bottom:12px}
+.memorial{display:flex;gap:20px;align-items:center}.memorial img{height:130px;filter:drop-shadow(0 0 20px rgba(255,215,90,.6))}
+footer{padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px;text-align:center}footer a{margin:0 8px}
+@media(max-width:820px){.hero .wrap,.lore{grid-template-columns:1fr}.hero{padding-top:40px}.hero .art{order:-1}.grid3{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}.lore img{max-width:200px;margin:0 auto}.memorial{flex-direction:column;text-align:center}nav .links{gap:12px}}
+@media(max-width:480px){.grid4{grid-template-columns:1fr}nav .logo span{display:none}}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><a class="logo" href="#topo"><img src="icons/icon-192.png" alt=""><span>Reinos de Eldmor</span></a>
+<div class="links"><a href="#historia">História</a><a href="#baixar">Baixar</a><a href="loja.html">Loja</a><a href="loja.html#resgatar">Códigos</a><a href="#ranking">Ranking</a></div></div></nav>
+
+<header class="hero" id="topo"><div class="stars"></div><div class="wrap">
+<div><span class="tag">RPG de ação 2D em pixel art</span><h1>Reinos de Eldmor</h1>
+<p class="lead">Troque entre Guerreiro, Mago e Arqueiro a qualquer momento, enfrente chefes gigantes, monte sua guilda e colecione mascotes. Grátis no navegador, no Android, no PC e no iPhone.</p>
+<div class="cta"><a class="btn pri" id="play" href="https://eldmor-server.onrender.com/">▶ Jogar agora</a><a class="btn" href="#baixar">⬇ Baixar</a><a class="btn" href="loja.html">💎 Loja</a></div></div>
+<div class="art"><img class="cover" src="img/capa.jpg" alt="Reinos de Eldmor"></div>
+</div></header>
+
+<section id="historia"><div class="wrap lore"><div><span class="tag">A história</span><h2>A sombra caiu sobre Eldmor</h2>
+<p>Por séculos, seis guardiões protegeram as regiões de Eldmor: a floresta, o pântano, o deserto, as montanhas geladas, os céus e as terras de fogo. Até que o Lorde das Trevas despertou e corrompeu cada um deles.</p>
+<p>Hoje, Fendas Sombrias se abrem pelo mapa e despejam monstros pelas estradas. Da pequena vila de Eldmor sai a última esperança: um herói capaz de dominar a espada, a magia e o arco, que precisa ficar forte o bastante para libertar os guardiões e enfrentar o Lorde em pessoa.</p>
+<p>Você não vai sozinho: forme uma guilda, lute ao lado de outros jogadores e escreva seu nome no ranking do reino.</p></div>
+<img src="img/b_lorde.png" alt="Lorde das Trevas"></div></section>
+
+<section class="alt"><div class="wrap"><span class="tag">Três heróis em um</span><h2>Escolha na hora, troque quando quiser</h2>
+<div class="grid3"><div class="card cls"><img src="img/h2_w_front.png" alt="Guerreiro"><h3>Guerreiro</h3><p>Espada e escudo na linha de frente. Aguenta pancada e derruba hordas de perto.</p></div>
+<div class="card cls"><img src="img/h2_m_front.png" alt="Mago"><h3>Mago</h3><p>Bolas de fogo, gelo e raios de longe. Muito dano em área, mas precisa de distância.</p></div>
+<div class="card cls"><img src="img/h2_a_front.png" alt="Arqueiro"><h3>Arqueiro</h3><p>Flechas rápidas e precisas. Ataca enquanto se move e acerta os chefes de longe.</p></div></div>
+<div class="grid4" style="margin-top:16px">
+<div class="card feat"><div class="ic">🐉</div><h3>Chefes gigantes</h3><p>30 chefes espalhados pelo mundo, com arenas e itens raros.</p></div>
+<div class="card feat"><div class="ic">🛡️</div><h3>Guildas</h3><p>Crie sua guilda, chame os amigos e dispute a Guerra de Guildas.</p></div>
+<div class="card feat"><div class="ic">🐾</div><h3>Mascotes</h3><p>De comuns a míticos, cada um com um bônus leve de ouro e experiência.</p></div>
+<div class="card feat"><div class="ic">⚖️</div><h3>Sem "pay to win"</h3><p>Nada da loja dá força de combate. Quem joga mais, fica mais forte.</p></div></div></div></section>
+
+<section id="baixar"><div class="wrap"><span class="tag">Onde jogar</span><h2>Baixe ou jogue direto no navegador</h2>
+<div class="grid4">
+<div class="card dl"><div class="ic">🤖</div><h3>Android</h3><p>Baixe o aplicativo e instale no celular. Se o Android perguntar, permita instalar apps desta fonte.</p><a class="btn pri" href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest/download/ReinosDeEldmor.apk">Baixar APK</a></div>
+<div class="card dl"><div class="ic">🖥️</div><h3>Windows</h3><p>Baixe o arquivo .zip, extraia a pasta e abra "Reinos de Eldmor".</p><a class="btn pri" href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/download/windows/ReinosDeEldmor-Windows.zip">Baixar para PC</a></div>
+<div class="card dl"><div class="ic">🍎</div><h3>iPhone e iPad</h3><p>Jogue pelo Safari e coloque o jogo na tela de início, como um app:</p><ol class="steps"><li>Abra o jogo no Safari.</li><li>Toque em Compartilhar (quadrado com seta).</li><li>Escolha "Adicionar à Tela de Início".</li></ol><a class="btn pri" href="https://eldmor-server.onrender.com/">Abrir no Safari</a></div>
+<div class="card dl"><div class="ic">🌐</div><h3>Navegador</h3><p>Funciona em qualquer celular ou computador, sem instalar nada. O progresso fica salvo na sua conta.</p><a class="btn pri" href="https://eldmor-server.onrender.com/">Jogar agora</a></div></div>
+<p style="color:var(--muted);font-size:13px;margin-top:12px">Dica: crie uma conta dentro do jogo para usar o mesmo personagem em todos os aparelhos. Se o servidor estiver "dormindo", ele leva uns 30 segundos para acordar.</p></div></section>
+
+<section class="alt" id="codigos"><div class="wrap"><div class="redeem"><div><span class="tag">Eventos</span><h2 style="margin:4px 0">Tem um código especial?</h2><p style="margin:0;color:var(--muted)">Códigos de eventos e lives dão diamantes, mascotes e itens exclusivos. O prêmio cai direto na sua conta do jogo.</p></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn pri" href="loja.html#resgatar">🎁 Resgatar código</a><a class="btn" href="loja.html">💎 Comprar diamantes</a></div></div></div></section>
+
+<section id="ranking"><div class="wrap"><span class="tag">Ao vivo</span><h2>Ranking do reino</h2>
+<div id="war"></div>
+<div class="tabs"><button class="on" data-r="p">Jogadores</button><button data-r="g">Guildas</button></div>
+<div class="card" style="padding:8px 12px"><div id="rank"><p style="color:var(--muted)">Carregando o ranking...</p></div></div></div></section>
+
+<section class="alt"><div class="wrap memorial"><img src="img/p_paulo_front.png" alt="Paulo, o Arqueiro Eterno"><div><span class="tag">Em memória</span><h2 style="margin:4px 0">Paulo, o Arqueiro Eterno</h2>
+<p style="color:var(--muted)">Grande guerreiro que, depois de vencer diversas batalhas, foi descansar no céu. Ele ajudou a criar este jogo e segue com a gente: no Memorial da vila, Paulo aparece para ajudar os heróis que passam por lá.</p></div></div></section>
+
+<footer><div class="wrap"><p><a href="termos.html">Termos de Uso</a>·<a href="privacidade.html">Política de Privacidade</a>·<a href="mailto:reinosdeeldmor@gmail.com">reinosdeeldmor@gmail.com</a></p><p>© 2026 Reinos de Eldmor. Feito no Brasil.</p></div></footer>
+<script>
+const API=(window.ELD_SAME?location.origin:'https://eldmor-server.onrender.com')+'/api/';
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const CLS={warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'};const MED=['🥇','🥈','🥉'];let R='p';
+async function rank(){const box=document.getElementById('rank');try{
+  if(R==='p'){const r=await (await fetch(API+'rank')).json();box.innerHTML=r.list.length?`<table><thead><tr><th>#</th><th>Jogador</th><th>Classe</th><th>Nível</th></tr></thead><tbody>${r.list.slice(0,20).map(x=>`<tr><td>${MED[x.pos-1]||x.pos}</td><td>${esc(x.name)}</td><td>${CLS[x.cls]||'—'}</td><td>${x.lvl}</td></tr>`).join('')}</tbody></table>`:'<p>Ainda ninguém no ranking. Seja o primeiro!</p>'}
+  else{const r=await (await fetch(API+'guild/rank')).json();box.innerHTML=r.list.length?`<table><thead><tr><th>#</th><th>Guilda</th><th>Membros</th><th>Nível médio</th></tr></thead><tbody>${r.list.slice(0,20).map(x=>`<tr><td>${MED[x.pos-1]||x.pos}</td><td>[${esc(x.tag)}] ${esc(x.name)}${x.wins?' 🏆'+x.wins:''}</td><td>${x.n}</td><td>${x.avg}</td></tr>`).join('')}</tbody></table>`:`<p>Nenhuma guilda com ${r.min} membros ainda. Crie a sua dentro do jogo!</p>`}
+}catch(e){box.innerHTML='<p style="color:var(--muted)">O servidor está acordando. Tente de novo em alguns segundos.</p>'}}
+async function war(){try{const r=await (await fetch(API+'war')).json();const w=r.war,el=document.getElementById('war');if(!w){el.innerHTML='';return}
+  if(w.on){const s=Math.max(0,(w.ends-r.now)/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);el.innerHTML=`<div class="war"><b>⚔️ ${esc(w.name)} acontecendo agora · termina em ${h}h ${m}min</b>${r.board.length?'<br>'+r.board.slice(0,3).map((g,i)=>MED[i]+' ['+esc(g.tag)+'] '+esc(g.name)+' · '+g.pts+' pts').join(' &nbsp; '):''}</div>`}
+  else if(w.result&&w.result.length)el.innerHTML=`<div class="war"><b>⚔️ Última guerra: ${esc(w.name)}</b><br>${w.result.map(g=>MED[g.pos-1]+' ['+esc(g.tag)+'] '+esc(g.name)+' · '+g.pts+' pts').join(' &nbsp; ')}</div>`}catch(_){}}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{R=b.dataset.r;document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x===b));rank()});
+rank();war();setInterval(()=>{rank();war()},60000);
+if(window.ELD_SAME)document.querySelectorAll('a[href^="https://eldmor-server.onrender.com/"]').forEach(a=>a.href='/');
+</script>
+</body>
+</html>

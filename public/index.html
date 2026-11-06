@@ -1736,7 +1736,7 @@ const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0)+(S.bagX||0);
 const bagUsed=()=>S.inv.length+consStacks().length;
 const bagFull=()=>bagUsed()>=bagCap();
 const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
-const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
+const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
 
 const KEY='eldmor-save-v4',OLDKEYS=['eldmor-save-v3','eldmor-save-v2','eldmor-save-v1'];
 function save(){try{S.x=P.x;S.y=P.y;S.ground=ground.map(g=>({it:g.it,x:g.x,y:g.y}));localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -2513,7 +2513,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v43 · 05/11/2026';
+const ELD_VER='v44 · 06/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3252,6 +3252,172 @@ function POTIMG(k){const c=(window.ARTC||{})['k_'+k];if(!c)return'';const u=c._u
  if(hp){$('hpi').src=hp;$('q-hp').querySelector('img').src=hp}if(mp){$('mpi').src=mp;$('q-mp').querySelector('img').src=mp}
  setTimeout(()=>{for(const k in ICONC)if(/^p(hp|mp)/.test(k))delete ICONC[k];for(const k in ICONU)if(/^p(hp|mp)/.test(k))delete ICONU[k]},0)}catch(_){}}
 
+/* ================= guildas, guerra de guildas, códigos de resgate e loja nova ================= */
+/* auras e rastro especiais (só por evento, guerra ou código) */
+AURAS.push({n:'Campeão',c:['#ffd04a','#ff4a3a','#fff0a8','#ff9a2a']},{n:'Fundador',c:['#ffffff','#fff6c8','#bff2ff','#ffe49a']});
+TRAILS.push({n:'Cometa',c:['#bff2ff','#ffffff','#8ab8ff','#ffe49a'],s:1.6});
+for(const c of CLS_ORDER){COS[c].aura.o.push(['Campeão','ev:war'],['Fundador','ev:code']);COS[c].trail.o.push(['Cometa','ev:code'])}
+const EVITEMS={'ev:asas_fundador':'Asas de Luz do Fundador','ev:coroa_torneio':'Coroa do Primeiro Torneio','ev:capa_estelar':'Capa Estelar','ev:dragao_cristal':'Dragãozinho de Cristal','ev:estandarte':'Estandarte de Guilda'};
+const GUILD_COST=250;
+const fmtCode=c=>/^ELD[A-Z0-9]{8}$/.test(c)?c.slice(0,3)+'-'+c.slice(3,7)+'-'+c.slice(7):c;
+const clsName=c=>({warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'})[c]||'—';
+/* ---- presentes dos códigos (ouro, poções, pergaminhos) chegam no jogo ---- */
+let giftBusy=false;
+async function giftsTake(){if(giftBusy||!ACC||!ACC.tok||typeof S==='undefined'||!S||mode==='title'||S.acc!==ACC.id)return;giftBusy=true;
+  try{const r=await api('gifts/take',{});if(r.owned){ACC.owned=r.owned;accStore();accOwned()}
+    for(const g of r.gifts||[]){S.gold=(S.gold|0)+(g.gold|0);S.pot.hp+=g.hp|0;S.pot.mp+=g.mp|0;S.scroll=(S.scroll|0)+(g.scroll|0);
+      const t=[g.gold?g.gold+' de ouro':'',g.hp?g.hp+' poções de vida':'',g.mp?g.mp+' poções de mana':'',g.scroll?g.scroll+' pergaminhos':''].filter(Boolean).join(', ');
+      toast('🎁 Presente recebido ('+escA(g.from||'código')+'): '+t,'#ffd04a');sfx('lvl')}
+    if((r.gifts||[]).length){save();hud()}}catch(_){}giftBusy=false}
+{const _sg=startGame;startGame=function(s){_sg(s);setTimeout(giftsTake,2500)}}
+setInterval(giftsTake,120000);
+{const _sd=srvData;srvData=function(m){if(m&&m.t==='gmsg'){toast('🛡️ '+m.msg,'#ffd04a');GUILD=null;if(!menuEl.hidden&&menuTab==='guild')guildLoad();return}if(m&&m.t==='gift'){giftsTake();return}return _sd(m)}}
+/* ---- resgatar código ---- */
+async function redeemCode(code,out){const say=(t,c)=>{if(out){out.textContent=t;out.style.color=c||''}};
+  if(!ACC||!ACC.tok){closeMenu();openLogin('Entre na sua conta para resgatar códigos.');return}
+  code=String(code||'').trim();if(code.length<4){say('Digite o código.','#ff7a6e');return}say('Resgatando...');
+  try{const r=await api('redeem',{code});ACC.dia=r.dia;ACC.owned=r.owned;accStore();accOwned();if(S)S.dia=r.dia;sfx('lvl');
+    say('Resgatado: '+r.text+'!','#8bd86a');toast('🎁 Código resgatado: '+r.text,'#ffd04a');giftsTake();save()}catch(e){say(e.message,'#ff7a6e')}}
+/* ---- guerra de guildas ---- */
+let WAR=null,WARLT=0,WARP=0;
+async function warLoad(){try{const r=await api('war');WAR=r;WAR.skew=Date.now()-r.now;WARLT=Date.now()}catch(_){}warBadge()}
+const warOn=()=>WAR&&WAR.war&&WAR.war.on&&WAR.war.ends>Date.now()-(WAR.skew||0);
+function warLeft(){if(!warOn())return'';const s=Math.max(0,(WAR.war.ends-(Date.now()-(WAR.skew||0)))/1000);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+'h '+String(m).padStart(2,'0')+'min':m+'min'}
+function warBadge(){let b=$('warbadge');if(!warOn()||mode==='title'){if(b)b.remove();return}
+  if(!b){b=document.createElement('button');b.id='warbadge';b.onclick=e=>{e.stopPropagation();openMenu('guild')};document.body.appendChild(b)}
+  b.innerHTML=`⚔️ ${escA(WAR.war.name||'Guerra de Guildas')} · ${warLeft()}`}
+setInterval(()=>{const b=$('warbadge');if(b)b.style.display=mode==='play'?'':'none'},700);
+setInterval(()=>{if(mode==='title')return;if(Date.now()-WARLT>90000)warLoad();else warBadge()},20000);setTimeout(warLoad,4000);
+{const _ke=killEnemy;killEnemy=function(e){try{if(warOn()&&ACC&&ACC.tok&&!e.minion)WARP+=e.boss?30:e.elite===2?8:e.elite?4:1}catch(_){}return _ke.apply(this,arguments)}}
+setInterval(async()=>{if(WARP<=0||!ACC||!ACC.tok)return;const n=Math.min(150,WARP);WARP-=n;try{await api('war/pts',{n})}catch(_){WARP+=n}},20000);
+/* ---- aba Guilda ---- */
+let GUILD=null,GLIST=null,GQ='',GBUSY=false;
+async function guildLoad(){if(!ACC||!ACC.tok)return;try{const[r,l]=await Promise.all([api('guild/me'),api('guild/list'+(GQ?'?q='+encodeURIComponent(GQ):'')),warLoad()]);GUILD=r;GLIST=l.list}catch(e){GUILD=GUILD||{err:e.message}}if(!menuEl.hidden&&menuTab==='guild')renderMenu()}
+function warBox(){if(!WAR||!WAR.war)return`<div class="gwar"><b>⚔️ Guerra de Guildas</b><p class="muted">Nenhuma guerra agora. Quando o Operador abrir uma, cada monstro que os membros derrotarem vale pontos para a guilda (chefe 30, elite 4 a 8, monstro 1). As 3 melhores guildas ganham diamantes, e a campeã ganha a Aura de Campeão.</p></div>`;
+  const w=WAR.war;if(warOn())return`<div class="gwar on"><b>⚔️ ${escA(w.name)} · termina em ${warLeft()}</b><p class="muted">Derrote monstros para somar pontos: chefe 30, elite 4 a 8, monstro 1. Prêmios: 150, 80 e 40 diamantes para cada membro do 1º, 2º e 3º lugar. A campeã ganha a Aura de Campeão.</p>
+    ${(WAR.board||[]).length?`<table class="rank"><thead><tr><th>#</th><th>Guilda</th><th>Pontos</th></tr></thead><tbody>${WAR.board.map((g,i)=>`<tr class="${GUILD&&GUILD.guild&&GUILD.guild.id===g.id?'me':''}"><td>${i<3?['🥇','🥈','🥉'][i]:i+1}</td><td>[${escA(g.tag)}] ${escA(g.name)}</td><td>${g.pts}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">Nenhuma guilda pontuou ainda.</p>'}</div>`;
+  return`<div class="gwar"><b>⚔️ Última guerra: ${escA(w.name)}</b>${(w.result||[]).length?`<p>${w.result.map(g=>['🥇','🥈','🥉'][g.pos-1]+' ['+escA(g.tag)+'] '+escA(g.name)+' · '+g.pts+' pts').join('<br>')}</p>`:'<p class="muted">Ninguém pontuou.</p>'}</div>`}
+function guildHTML(){
+  if(!ACC||!ACC.tok)return`<div class="pnl gbox" style="text-align:center"><h4>Guildas</h4><p>Entre na sua conta para criar ou entrar numa guilda.</p><button class="btn pri" id="g-login">Entrar / Criar conta</button></div>`;
+  if(!GUILD)return'<p class="muted" style="text-align:center">Carregando a guilda...</p>';
+  if(GUILD.err)return`<p class="muted" style="text-align:center">${escA(GUILD.err)}</p>`;
+  const g=GUILD.guild;let h='<div class="gwrap">';
+  if(g){const lead=g.leader===g.me;
+    h+=`<div class="pnl gbox"><div class="ghead"><div class="gemb">${escA(g.tag)}</div><div style="flex:1;min-width:0"><h4 style="margin:0">${escA(g.name)}</h4><div class="muted" style="font-size:12px">${g.n}/${g.max} membros · nível médio ${g.avg}${g.wins?` · 🏆 ${g.wins} guerra${g.wins>1?'s':''} vencida${g.wins>1?'s':''}`:''} · ${g.open?'aberta':'com aprovação'}</div></div></div>
+      ${g.descr?`<p style="margin:8px 0">${escA(g.descr)}</p>`:''}
+      <table class="rank"><thead><tr><th>Membro</th><th>Classe</th><th>Nível</th>${lead?'<th></th>':''}</tr></thead><tbody>${g.members.map(m=>`<tr class="${m.id===g.me?'me':''}"><td>${m.leader?'👑 ':''}${escA(m.name)}</td><td>${clsName(m.cls)}</td><td>${m.lvl}</td>${lead?`<td style="text-align:right;white-space:nowrap">${m.id!==g.me?`<button class="btn s" data-glead="${m.id}" title="Passar a liderança">👑</button> <button class="btn s" data-gkick="${m.id}">Remover</button>`:''}</td>`:''}</tr>`).join('')}</tbody></table>
+      ${lead&&g.reqs.length?`<h3>Pedidos para entrar</h3>${g.reqs.map(r=>`<div class="row" style="align-items:center;margin:4px 0"><span style="flex:1">${escA(r.name)} · nível ${r.lvl}</span><button class="btn s pri" data-gacc="${r.id}">Aceitar</button><button class="btn s" data-gden="${r.id}">Recusar</button></div>`).join('')}`:''}
+      ${lead?`<h3>Configurar</h3><div class="row"><input id="g-descr" class="ninput gin" maxlength="120" placeholder="Mensagem da guilda" value="${escA(g.descr)}"><button class="btn" id="g-save">Salvar</button></div>
+        <label class="muted" style="display:flex;gap:8px;align-items:center;margin-top:8px;cursor:pointer"><input type="checkbox" id="g-open" ${g.open?'checked':''} style="width:18px;height:18px"> Qualquer um pode entrar (sem isso, você aprova os pedidos)</label>`:''}
+      <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="btn" id="g-leave">Sair da guilda</button>${lead?'<button class="btn" id="g-disband" style="color:#ff9a8a">Desfazer guilda</button>':''}</div></div>`}
+  else{h+=`<div class="pnl gbox"><h4>Criar guilda</h4><p class="muted" style="font-size:13px">Ser líder é para poucos: criar uma guilda custa <b style="color:#6ad8ff">${GUILD.cost||GUILD_COST} 💎</b>. Até 30 membros. O ranking usa o nível médio dos membros.</p>
+      <div class="row"><input id="g-name" class="ninput gin" maxlength="20" placeholder="Nome da guilda"><input id="g-tag" class="ninput gin" maxlength="4" placeholder="Sigla" style="flex:0 0 80px;text-transform:uppercase"></div>
+      <div class="row" style="margin-top:8px"><input id="g-ndescr" class="ninput gin" maxlength="120" placeholder="Mensagem da guilda (opcional)"></div>
+      <div class="row" style="margin-top:8px;align-items:center"><button class="btn pri" id="g-create">Criar por ${GUILD.cost||GUILD_COST} 💎</button><span class="muted" style="font-size:12px">Você tem ${ACC.dia|0} 💎</span></div></div>
+    <div class="pnl gbox"><h4>Entrar numa guilda</h4><div class="row"><input id="g-q" class="ninput gin" maxlength="20" placeholder="Procurar pelo nome ou sigla" value="${escA(GQ)}"><button class="btn" id="g-search">Procurar</button></div>
+      ${(GLIST||[]).length?GLIST.map(x=>`<div class="glist"><div class="gemb s">${escA(x.tag)}</div><div style="flex:1;min-width:0"><b>${escA(x.name)}</b>${x.wins?` 🏆${x.wins}`:''}<div class="muted" style="font-size:12px">${x.n}/30 · nível médio ${x.avg} · ${x.open?'aberta':'com aprovação'}${x.descr?' · '+escA(x.descr):''}</div></div><button class="btn s ${x.full?'':'pri'}" data-gjoin="${x.id}" ${x.full?'disabled':''}>${x.full?'Cheia':x.open?'Entrar':'Pedir'}</button></div>`).join(''):'<p class="muted">Nenhuma guilda encontrada. Que tal criar a primeira?</p>'}</div>`}
+  h+=warBox();
+  if(ACC.op)h+=`<div class="pnl gbox opbox"><h4>Operador: guerra e códigos</h4>
+    <div class="row" style="flex-wrap:wrap;align-items:center"><input id="w-name" class="ninput gin" maxlength="40" placeholder="Nome da guerra" value="Guerra de Guildas"><input id="w-h" class="ninput gin" type="number" min="1" max="336" value="24" style="flex:0 0 80px"><span class="muted">horas</span>
+    ${warOn()?'<button class="btn" id="w-stop">Encerrar agora e dar prêmios</button>':'<button class="btn pri" id="w-start">Começar guerra</button>'}</div>
+    <h3>Criar códigos</h3><div class="codeg"><label>Diamantes<input id="c-dia" class="ninput gin" type="number" min="0" value="0"></label><label>Ouro<input id="c-gold" class="ninput gin" type="number" min="0" value="0"></label><label>Poções de vida<input id="c-hp" class="ninput gin" type="number" min="0" value="0"></label><label>Poções de mana<input id="c-mp" class="ninput gin" type="number" min="0" value="0"></label>
+    <label>Quantos códigos<input id="c-n" class="ninput gin" type="number" min="1" max="200" value="1"></label><label>Usos por código<input id="c-max" class="ninput gin" type="number" min="1" value="1"></label><label>Validade (dias, 0 = sem)<input id="c-days" class="ninput gin" type="number" min="0" value="0"></label><label>Código fixo (opcional)<input id="c-code" class="ninput gin" maxlength="20" placeholder="ex.: NATAL2026"></label></div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:6px">${[['cos:any.aura.7','Aura de Campeão'],['cos:any.aura.8','Aura do Fundador'],['cos:any.trail.6','Rastro de Cometa'],['pal:neon','Paleta Neon'],...Object.entries(EVITEMS),...PETDEF.map((d,i)=>d&&d.r>=3?['cos:any.pet.'+i,'Mascote '+d.n]:null).filter(Boolean)].map(([k,n])=>`<label class="chip"><input type="checkbox" data-citem="${k}"> ${escA(n)}</label>`).join('')}</div>
+    <div class="row" style="margin-top:8px"><input id="c-note" class="ninput gin" maxlength="60" placeholder="Nome do evento (ex.: Evento de Natal)"><button class="btn pri" id="c-make">Gerar</button><button class="btn" id="c-list">Ver códigos</button></div><div id="c-out"></div></div>`;
+  return h+'</div>'}
+function guildBind(){const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};const q=s=>mbody.querySelectorAll(s);
+  const call=async(p,b,ok)=>{if(GBUSY)return;GBUSY=true;try{const r=await api(p,b);if(r.dia!==undefined&&typeof r.dia==='number'){ACC.dia=r.dia;accStore();if(S)S.dia=r.dia}if(ok)ok(r);GUILD=null}catch(e){toast(e.message,'#ff7a6e')}GBUSY=false;guildLoad()};
+  on('g-login',()=>{closeMenu();openLogin()});
+  on('g-create',()=>{const name=$('g-name').value.trim(),tag=$('g-tag').value.trim();if(name.length<3){toast('Escolha um nome com pelo menos 3 letras.','#ff7a6e');return}if(tag.length<2){toast('A sigla precisa ter de 2 a 4 letras.','#ff7a6e');return}
+    if((ACC.dia|0)<GUILD_COST){toast('Você precisa de '+GUILD_COST+' diamantes para criar uma guilda.','#ff7a6e');menuTab='shop';renderMenu();return}
+    if(!confirm('Criar a guilda "'+name+'" ['+tag.toUpperCase()+'] por '+GUILD_COST+' diamantes?'))return;call('guild/create',{name,tag,descr:$('g-ndescr').value},()=>{sfx('lvl');toast('Guilda criada! Agora você é o líder.','#ffd04a')})});
+  on('g-search',()=>{GQ=$('g-q').value.trim();guildLoad()});if($('g-q'))$('g-q').onkeydown=e=>{if(e.key==='Enter'){GQ=e.target.value.trim();guildLoad()}};
+  q('[data-gjoin]').forEach(b=>b.onclick=()=>call('guild/join',{id:+b.dataset.gjoin},r=>toast(r.asked?'Pedido enviado ao líder da guilda.':'Você entrou na guilda!','#8bd86a')));
+  on('g-leave',()=>{if(confirm('Sair da guilda?'))call('guild/leave',{},()=>toast('Você saiu da guilda.','#a597bd'))});
+  on('g-disband',()=>{if(confirm('Desfazer a guilda? Todos os membros saem e os diamantes não voltam.'))call('guild/disband',{},()=>toast('Guilda desfeita.','#a597bd'))});
+  on('g-save',()=>call('guild/edit',{descr:$('g-descr').value},()=>toast('Mensagem salva.','#8bd86a')));
+  if($('g-open'))$('g-open').onchange=e=>call('guild/edit',{open:e.target.checked});
+  q('[data-gkick]').forEach(b=>b.onclick=()=>{if(confirm('Remover este membro da guilda?'))call('guild/kick',{id:+b.dataset.gkick})});
+  q('[data-glead]').forEach(b=>b.onclick=()=>{if(confirm('Passar a liderança para este membro? Você deixa de ser o líder.'))call('guild/lead',{id:+b.dataset.glead})});
+  q('[data-gacc]').forEach(b=>b.onclick=()=>call('guild/accept',{id:+b.dataset.gacc,yes:true}));
+  q('[data-gden]').forEach(b=>b.onclick=()=>call('guild/accept',{id:+b.dataset.gden,yes:false}));
+  on('w-start',()=>call('war/start',{name:$('w-name').value,hours:+$('w-h').value},()=>toast('Guerra de Guildas começou!','#ffd04a')));
+  on('w-stop',()=>{if(confirm('Encerrar a guerra agora e entregar os prêmios?'))call('war/stop',{},()=>toast('Guerra encerrada. Prêmios entregues.','#ffd04a'))});
+  on('c-make',async()=>{const v=id=>+($(id).value||0);const items=[...q('[data-citem]')].filter(x=>x.checked).map(x=>x.dataset.citem);
+    try{const r=await api('code/create',{reward:{dia:v('c-dia'),gold:v('c-gold'),hp:v('c-hp'),mp:v('c-mp'),items},count:v('c-n'),max:v('c-max'),days:v('c-days'),code:$('c-code').value.trim()||undefined,note:$('c-note').value});
+      $('c-out').innerHTML=`<p class="up">Prêmio: ${escA(r.text)}</p><textarea readonly rows="${Math.min(10,r.codes.length+1)}" style="width:100%;font:14px monospace;background:rgba(0,0,0,.3);color:#ffe49a;border-radius:8px;padding:8px">${r.codes.join('\n')}</textarea><p class="muted" style="font-size:12px">Copie e guarde estes códigos agora.</p>`}catch(e){toast(e.message,'#ff7a6e')}});
+  on('c-list',async()=>{try{const r=await api('code/list');$('c-out').innerHTML=`<table class="rank"><thead><tr><th>Código</th><th>Evento</th><th>Prêmio</th><th>Usos</th></tr></thead><tbody>${r.list.map(c=>`<tr><td style="font-family:monospace">${escA(fmtCode(c.code))}</td><td>${escA(c.note||'')}</td><td style="font-size:12px">${escA(c.text)}</td><td>${c.uses}/${c.max}</td></tr>`).join('')}</tbody></table>`}catch(e){toast(e.message,'#ff7a6e')}})}
+/* ---- ranking de guildas ---- */
+let RANKM='p',GRANK=null,GRANKT=0;
+async function grankLoad(){try{const r=await api('guild/rank');GRANK=r;GRANKT=Date.now()}catch(_){GRANK=GRANK||{list:[],min:3}}if(!menuEl.hidden&&menuTab==='rank')renderMenu()}
+function grankHTML(){if(!GRANK)return'<p class="muted" style="text-align:center">Carregando...</p>';
+  return`<div class="pnl" style="max-width:640px;margin:0 auto"><h4>Ranking de guildas</h4><p class="muted" style="font-size:12px">Ordenado pelo nível médio dos membros. A guilda precisa de pelo menos ${GRANK.min} membros para aparecer.</p>
+  ${GRANK.list.length?`<table class="rank"><thead><tr><th>#</th><th>Guilda</th><th>Membros</th><th>Nível médio</th></tr></thead><tbody>${GRANK.list.map(g=>`<tr><td>${g.pos<=3?['🥇','🥈','🥉'][g.pos-1]:g.pos}</td><td>[${escA(g.tag)}] ${escA(g.name)}${g.wins?' 🏆'+g.wins:''}</td><td>${g.n}</td><td>${g.avg}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">Ainda nenhuma guilda com membros suficientes.</p>'}</div>`}
+/* ---- loja nova ---- */
+const shopIcon=(cat,i)=>{try{const c=cosIcon(S.cls,cat,i);return typeof c==='string'?c:c&&c.toDataURL?(c._u||(c._u=c.toDataURL())):''}catch(_){return''}};
+const potU=k=>{const c=(window.ARTC||{})[k];return c?(c._u||(c._u=c.toDataURL())):''};
+let SHOPCAT='all';
+shopHTML=function(){const I=SHOPINFO||{packs:{}},o=(ACC&&ACC.owned)||{};const logged=ACC&&ACC.tok;const dia=logged?(ACC.dia|0):0;
+  const card=(t,d,p,act,dis,img,cls,badge)=>`<div class="scard ${cls||''}">${badge?`<span class="sbadge">${badge}</span>`:''}<div class="simg">${img||''}</div><b>${t}</b><span class="sdesc">${d}</span><button class="btn ${dis?'':'pri'} sbuy" ${act} ${dis?'disabled':''}>${p}</button></div>`;
+  const im=u=>u?`<img src="${u}" alt="">`:'';
+  const packIc=n=>`<div class="dgem" style="--n:${n}">${'💎'.repeat(n)}</div>`;
+  const pets=PETDEF.map((d,i)=>d&&d.q.startsWith('dia:')?{i,d,p:+d.q.slice(4)}:null).filter(Boolean);const own=i=>skinOwned(S.cls,'pet',i);
+  const sec=(k,t,body)=>SHOPCAT==='all'||SHOPCAT===k?`<h3 class="sh3">${t}</h3><div class="shopg">${body}</div>`:'';
+  const packs=Object.entries(I.packs||{});const best={p3:'Mais vendido',p5:'Melhor valor'};
+  const evOwn=Object.keys(EVITEMS).filter(k=>o[k]);
+  return`<div class="shop2"><div class="shero"><div><div class="sh-t">Loja do Reino</div><div class="sh-s">${logged?`Conta <b>${escA(ACC.name)}</b>`:'Entre na sua conta para comprar'}</div></div><div class="sh-dia">💎 <b>${dia}</b>${logged?'':'<button class="btn s pri" id="shoplogin" style="margin-left:8px">Entrar</button>'}</div></div>
+  <div class="redeem"><span>🎁 Tem um código de evento?</span><input id="rd-code" class="ninput gin" maxlength="24" placeholder="Digite o código" autocomplete="off"><button class="btn pri" id="rd-go">Resgatar</button><span id="rd-out" class="muted" style="flex-basis:100%;font-size:13px"></span>
+  ${evOwn.length?`<div style="flex-basis:100%;font-size:12px" class="muted">Seus itens de evento: ${evOwn.map(k=>'<b style="color:#ffe49a">'+escA(EVITEMS[k])+'</b>').join(', ')} (aparecem no jogo quando a arte deles ficar pronta)</div>`:''}</div>
+  <div class="spills">${[['all','Tudo'],['dia','Diamantes'],['pet','Mascotes'],['vis','Visual'],['bon','Bônus e itens']].map(([k,n])=>`<button class="spill${SHOPCAT===k?' on':''}" data-shcat="${k}">${n}</button>`).join('')}</div>
+  ${sec('dia','💎 Diamantes',packs.map(([k,p],i)=>card(p.n.replace(/ \(.*/,''),(p.n.match(/\((.*)\)/)||[,''])[1]?'Bônus de '+(p.n.match(/\+\d+%/)||[''])[0]+' · Pix ou cartão':'Pix ou cartão',brl(p.price),`data-shbuy="${k}"`,!logged||!I.pay,packIc(Math.min(5,i+1)),'dia'+(best[k]?' hot':''),best[k])).join('')||'<p class="muted">Carregando...</p>')}
+  ${(SHOPCAT==='all'||SHOPCAT==='dia')&&!I.pay?'<p class="muted" style="font-size:12px">As compras com dinheiro serão ativadas em breve.</p>':''}
+  ${sec('pet','🐾 Mascotes',pets.map(x=>card(x.d.n,`<span style="color:${RARC[x.d.r]};font-weight:800">${RARN[x.d.r]}</span> · +${Math.round(PETB[x.d.r][0]*100)}% ouro${PETB[x.d.r][1]?` · +${Math.round(PETB[x.d.r][1]*100)}% XP`:''}${PETB[x.d.r][2]?' · pega moedas':''}`,own(x.i)?'Já é seu':x.p+' 💎',`data-shpet="${x.i}"`,!logged||own(x.i),im(shopIcon('pet',x.i)),'r'+x.d.r)).join(''))}
+  ${sec('vis','✨ Visual',card('Paleta Neon','12 cores neon para a aparência',o['pal:neon']?'Já é sua':'200 💎','data-shit="pal:neon"',!logged||o['pal:neon'],`<div class="neon">${NEON.slice(0,8).map(c=>`<i style="background:${c}"></i>`).join('')}</div>`,'r2')+
+     [[4,250],[5,250],[6,500]].map(([i,p])=>card('Aura '+AURAS[i].n,'Brilho em volta do herói',skinOwned(S.cls,'aura',i)?'Já é sua':p+' 💎',`data-shlook="aura"`,false,im(shopIcon('aura',i)),'r'+(p>=500?3:2))).join('')+
+     [[3,150],[4,150],[5,200]].map(([i,p])=>card('Rastro '+TRAILS[i].n,'Partículas quando você anda',skinOwned(S.cls,'trail',i)?'Já é seu':p+' 💎',`data-shlook="trail"`,false,im(shopIcon('trail',i)),'r1')).join(''))}
+  ${sec('bon','⚡ Bônus e itens',card('XP +50% por 1 hora','Soma com a comida da taverna','80 💎','data-shit="boost:xp"',!logged,'<div class="sem">📜</div>','r1')+card('Ouro +50% por 1 hora','Mais ouro de monstros e baús','60 💎','data-shit="boost:gold"',!logged,'<div class="sem">🪙</div>','r1')+
+     card('Baú Raro','1 item épico do seu nível · até 3 por dia','150 💎','data-shit="chest:rare"',!logged,'<div class="sem">🧰</div>','r2')+card('Bolsa Extra',`+10 espaços no inventário (${o.bag||0}/5)`,(o.bag||0)>=5?'Máximo':'120 💎','data-shit="bag"',!logged||(o.bag||0)>=5,im(potU('k_bag2'))||'<div class="sem">🎒</div>','r1')+
+     card('5 Pergaminhos de Retorno','Volte para a vila na hora','30 💎','data-shit="scroll5"',!logged,'<div class="sem">🌀</div>',''))}
+  <p class="muted" style="font-size:12px;text-align:center;margin-top:14px">Nada da loja dá força de combate: mascotes dão no máximo +10% de ouro e +7% de XP, e os baús só têm itens épicos (nunca lendários). Diamantes também caem de chefes, baús e missões (até ${I.earnDay||150} por dia).</p></div>`};
+{const _sb=shopBind;shopBind=function(){_sb();const q=s=>mbody.querySelectorAll(s);
+  q('[data-shcat]').forEach(b=>b.onclick=e=>{e.stopPropagation();SHOPCAT=b.dataset.shcat;renderMenu()});
+  q('[data-shlook]').forEach(b=>b.onclick=()=>{menuTab='look';renderMenu()});
+  const go=()=>redeemCode($('rd-code').value,$('rd-out'));if($('rd-go'))$('rd-go').onclick=go;if($('rd-code'))$('rd-code').onkeydown=e=>{if(e.key==='Enter')go()}}}
+/* ---- estilos ---- */
+(function(){const st=document.createElement('style');st.textContent=`
+.gwrap{display:flex;flex-direction:column;gap:12px;max-width:720px;margin:0 auto}.gbox{padding:12px 14px!important}.gbox h3{margin:14px 0 6px;color:#f2c14e;font-size:13px;letter-spacing:.06em}
+.gin{flex:1;min-width:0;text-transform:none!important;letter-spacing:0!important;font-size:16px!important}.ghead{display:flex;gap:12px;align-items:center}
+.gemb{width:54px;height:54px;flex:none;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:16px;color:#2a1406;background:linear-gradient(145deg,#ffe49a,#c9932e);box-shadow:0 0 0 2px #2a1406,0 0 14px rgba(242,193,78,.45);letter-spacing:.04em}
+.gemb.s{width:40px;height:40px;font-size:12px;border-radius:9px}.glist{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.08)}
+.gwar{padding:12px 14px;border-radius:10px;border:1px solid rgba(255,120,80,.35);background:linear-gradient(135deg,rgba(120,30,20,.35),rgba(20,16,40,.4))}.gwar.on{border-color:#ff7a4a;box-shadow:0 0 18px rgba(255,90,40,.25)}
+.opbox{border:1px dashed rgba(106,216,255,.5)!important}.codeg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.codeg label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#c8c0d8}
+.chip{display:inline-flex;gap:5px;align-items:center;font-size:12px;padding:4px 8px;border-radius:14px;background:rgba(255,255,255,.07);cursor:pointer}
+#warbadge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:50%;transform:translateX(-50%);z-index:30;font:700 12px system-ui,sans-serif;color:#fff;padding:5px 12px;border-radius:14px;border:1px solid #ff7a4a;background:linear-gradient(90deg,#7a1a10,#3a1030);box-shadow:0 0 12px rgba(255,90,40,.5);cursor:pointer;animation:warp 2s ease-in-out infinite}
+@keyframes warp{50%{box-shadow:0 0 22px rgba(255,120,40,.85)}}
+.shop2{max-width:960px;margin:0 auto}.shero{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px;border-radius:14px;border:1px solid rgba(242,193,78,.45);background:radial-gradient(circle at 15% 0%,rgba(255,215,120,.25),transparent 55%),radial-gradient(circle at 90% 120%,rgba(106,216,255,.25),transparent 55%),linear-gradient(135deg,#2a1a40,#14203a);box-shadow:inset 0 0 30px rgba(0,0,0,.35)}
+.sh-t{font-family:var(--display);font-size:22px;color:#ffe49a;text-shadow:0 2px 0 #2a1406;letter-spacing:.04em}.sh-s{font-size:13px;color:#c8c0d8}.sh-dia{font-size:22px;color:#bff2ff;display:flex;align-items:center;padding:6px 14px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid rgba(106,216,255,.4)}
+.redeem{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;padding:10px 12px;border-radius:12px;border:1px dashed rgba(255,215,120,.55);background:rgba(255,215,120,.07)}.redeem>span:first-child{font-weight:700;color:#ffe49a}
+.spills{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}.spill{font:600 13px system-ui,sans-serif;color:#d8d0e8;padding:6px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);cursor:pointer}.spill.on{color:#2a1406;background:linear-gradient(90deg,#ffe49a,#f2a63a);border-color:#ffe49a}
+.sh3{margin:16px 0 8px;color:#f2c14e;font-family:var(--display);letter-spacing:.06em;font-size:15px}
+.shop2 .shopg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.scard{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:12px 10px 10px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.25));border:1px solid rgba(255,255,255,.12);transition:transform .15s,box-shadow .15s}
+.scard:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.4)}.scard b{font-size:14px}.sdesc{font-size:12px;color:#b8b0c8;flex:1}.sbuy{width:100%}
+.simg{height:64px;display:grid;place-items:center}.simg img{max-height:60px;max-width:80px;image-rendering:auto;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}.sem{font-size:40px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+.scard.r1{border-color:rgba(74,168,255,.55)}.scard.r2{border-color:rgba(195,107,255,.6);box-shadow:inset 0 0 18px rgba(195,107,255,.12)}.scard.r3{border-color:rgba(255,180,60,.7);box-shadow:inset 0 0 20px rgba(255,180,60,.15)}.scard.r4{border-color:#ff4a6a;box-shadow:inset 0 0 22px rgba(255,74,106,.2),0 0 12px rgba(255,74,106,.25)}
+.scard.dia{border-color:rgba(106,216,255,.5);background:linear-gradient(180deg,rgba(106,216,255,.12),rgba(0,0,0,.25))}.scard.hot{border-color:#ffe49a;box-shadow:0 0 14px rgba(255,215,120,.35)}
+.sbadge{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font:800 10px system-ui,sans-serif;white-space:nowrap;color:#2a1406;background:linear-gradient(90deg,#ffe49a,#f2a63a);padding:2px 8px;border-radius:9px}
+.dgem{font-size:calc(16px + var(--n)*3px);letter-spacing:-.35em;filter:drop-shadow(0 0 6px rgba(106,216,255,.6))}.neon{display:grid;grid-template-columns:repeat(4,14px);gap:4px}.neon i{width:14px;height:14px;border-radius:4px;box-shadow:0 0 6px currentColor}`;document.head.appendChild(st)})();
+/* ---- abas no menu ---- */
+{const _rm=renderMenu;renderMenu=function(){
+  try{_rm.apply(this,arguments)}catch(e){if(menuTab!=='guild')throw e}
+  try{const tabs=$('tabs');if(tabs&&!tabs.querySelector('[data-tab=guild]')){const b=document.createElement('button');b.className='tab';b.dataset.tab='guild';b.innerHTML='<span style="font-size:20px;line-height:1">🛡️</span><span>Guilda</span>';b.onclick=e=>{e.stopPropagation();menuTab='guild';renderMenu()};const sh=tabs.querySelector('[data-tab=shop]');tabs.insertBefore(b,sh||tabs.querySelector('[data-tab=opts]'))}
+    if(tabs)tabs.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===menuTab))}catch(_){}
+  if(menuTab==='guild'){mbody.innerHTML=guildHTML();guildBind();if(!GUILD&&ACC&&ACC.tok)guildLoad();return}
+  if(menuTab==='rank'){const sw=`<div class="spills" style="justify-content:center;margin-bottom:10px"><button class="spill${RANKM==='p'?' on':''}" data-rkm="p">Jogadores</button><button class="spill${RANKM==='g'?' on':''}" data-rkm="g">Guildas</button></div>`;
+    if(RANKM==='g'){mbody.innerHTML=sw+grankHTML();if(!GRANK||Date.now()-GRANKT>30000)grankLoad()}else mbody.insertAdjacentHTML('afterbegin',sw);
+    mbody.querySelectorAll('[data-rkm]').forEach(b=>b.onclick=e=>{e.stopPropagation();RANKM=b.dataset.rkm;renderMenu()})}}}
+window.__GLD={load:guildLoad,war:warLoad,redeem:redeemCode,gifts:giftsTake,G:()=>GUILD};
+
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
 if(window.ARTC&&window.ARTC.v_banner){const bn=window.ARTC.v_banner;for(const o of STRO)if(o.kind==='deco'&&o.img&&o.img!==bn&&o.img.height>o.img.width*1.8&&o.img.width<80){const h=o.h;bn._bk=bn.height/(G*h);o.img=bn;o.w=bn.width/G/bn._bk}}
@@ -3830,28 +3996,48 @@ const st=document.createElement('style');st.textContent=`
 #eldload .cover{width:min(26vmin,150px);height:min(26vmin,150px);border-radius:18px;border:3px solid #c9932e;box-shadow:0 0 0 3px #2a1a08,0 0 40px rgba(242,193,78,.45);animation:elzoom 1.6s cubic-bezier(.2,.8,.2,1) both,elglow 3s ease-in-out infinite 1.6s}
 @keyframes elzoom{from{opacity:0;transform:scale(.4) rotate(-6deg)}to{opacity:1;transform:none}}
 @keyframes elglow{50%{box-shadow:0 0 0 3px #2a1a08,0 0 70px rgba(242,193,78,.75)}}
-#eldload h1{margin:0;font-size:min(9vw,54px);letter-spacing:.04em;font-weight:900;background:linear-gradient(90deg,#c9932e,#ffe49a,#f2a63a,#ffe49a,#c9932e);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #2a1406);animation:elshine 3s linear infinite,elfade 1.2s both .6s}
+#eldload h1{margin:0;font-size:min(9vw,54px);letter-spacing:.04em;font-weight:900;background:linear-gradient(90deg,#c9932e,#ffe49a,#f2a63a,#ffe49a,#c9932e);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #2a1406);animation:elshine 3s linear infinite,eltitle 1.4s cubic-bezier(.2,1.2,.3,1) both .5s}
+@keyframes eltitle{from{opacity:0;transform:scale(1.8);filter:blur(8px) drop-shadow(0 3px 0 #2a1406)}to{opacity:1;transform:none;filter:drop-shadow(0 3px 0 #2a1406) drop-shadow(0 0 18px rgba(255,200,90,.45))}}
 @keyframes elshine{to{background-position:200% 0}}@keyframes elfade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 #eldload .sub{font-style:italic;color:#ffb46a;font-size:min(3.6vw,15px);animation:elfade 1.2s both 1.1s}
 #eldload .load{position:absolute;left:50%;bottom:3.2%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(80vw,280px)}
 #eldload .bar{width:100%;height:10px;border:2px solid #c9932e;border-radius:6px;overflow:hidden;background:rgba(0,0,0,.45)}#eldload .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f2a63a,#ffe49a);transition:width .2s}
+
+#eldload .castle{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);width:min(70vw,520px);height:auto;opacity:.9;animation:elfade 2s both .2s}
+#eldload .rays{position:absolute;inset:-20%;background:conic-gradient(from 200deg at 82% 14%,transparent 0deg,rgba(255,230,160,.10) 8deg,transparent 16deg,rgba(255,230,160,.07) 26deg,transparent 34deg,rgba(255,230,160,.09) 46deg,transparent 56deg);animation:elrays 14s linear infinite;mix-blend-mode:screen}
+@keyframes elrays{50%{opacity:.5}}
+#eldload .shoot{position:absolute;width:120px;height:2px;background:linear-gradient(90deg,rgba(255,255,255,0),#fff);border-radius:2px;transform:rotate(-24deg);opacity:0;animation:elshoot 5.5s ease-in infinite}
+@keyframes elshoot{0%,70%{opacity:0;translate:0 0}72%{opacity:1}88%{opacity:0;translate:-260px 120px}100%{opacity:0;translate:-260px 120px}}
+#eldload .mist{position:absolute;left:-30%;right:-30%;height:22%;border-radius:50%;background:radial-gradient(ellipse at center,rgba(200,190,255,.16),transparent 70%);animation:elmist 12s ease-in-out infinite alternate}
+@keyframes elmist{to{transform:translateX(12%)}}
+#eldload .ember{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:50%;background:#ffb46a;box-shadow:0 0 6px 2px rgba(255,140,60,.8);animation:elember 6s linear infinite}
+@keyframes elember{0%{transform:translate(0,0);opacity:0}10%{opacity:1}100%{transform:translate(30px,-75vh);opacity:0}}
+#eldload .dragon{position:absolute;top:22%;left:-20%;width:min(22vw,150px);opacity:.85;animation:eldrag 11s linear infinite 1s}
+@keyframes eldrag{0%{left:-25%;transform:translateY(0) scale(.8)}50%{transform:translateY(-30px) scale(1)}100%{left:120%;transform:translateY(10px) scale(.8)}}
+#eldload h1 span{display:inline-block;animation:eldrop .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes eldrop{from{opacity:0;transform:translateY(-40px) scale(1.4)}to{opacity:1;transform:none}}
+#eldload .glint{position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);background-size:250% 100%;border-radius:18px;border-radius:18px;mix-blend-mode:overlay;animation:elglint 3.5s ease-in-out infinite 2s;pointer-events:none}
+@keyframes elglint{0%{background-position:120% 0}40%,100%{background-position:-60% 0}}
+#eldload .tip{font-size:11px;color:#a89cc8;max-width:280px;text-align:center;min-height:1.3em}
 #eldload .txt{font-size:12px;font-weight:600;color:#d8d0e8;text-shadow:0 1px 0 #000}`;
 document.head.appendChild(st);
 const ov=document.createElement('div');ov.id='eldload';
 let h='';for(let i=0;i<70;i++)h+=`<i class="star" style="left:${Math.random()*100}%;top:${Math.random()*55}%;animation-delay:${(Math.random()*2.4).toFixed(2)}s;opacity:${(0.3+Math.random()*0.7).toFixed(2)}"></i>`;
-h+='<div class="moon"></div><div class="hill h1"></div>';
+h+='<div class="rays"></div><div class="moon"></div>';for(let i=0;i<4;i++)h+=`<i class="shoot" style="left:${55+Math.random()*40}%;top:${4+Math.random()*25}%;animation-delay:${(i*1.4+Math.random()).toFixed(2)}s"></i>`;h+='<svg class="castle" viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="elcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2048"/><stop offset="1" stop-color="#141026"/></linearGradient></defs><g fill="url(#elcg)"><path d="M60 220V120h20v-14h10v14h14v-14h10v14h16V90l-10-6 34-50 34 50-10 6v38h40V70h-8l38-58 38 58h-8v58h40V90l-10-6 34-50 34 50-10 6v30h16v-14h10v14h14v-14h10v14h20v100z"/></g><g fill="#ffd27a" opacity=".9"><rect x="160" y="110" width="8" height="14" rx="4"><animate attributeName="opacity" values="1;.4;1" dur="2.6s" repeatCount="indefinite"/></rect><rect x="256" y="90" width="8" height="16" rx="4"><animate attributeName="opacity" values=".5;1;.5" dur="3.1s" repeatCount="indefinite"/></rect><rect x="352" y="110" width="8" height="14" rx="4"><animate attributeName="opacity" values="1;.6;1" dur="2.2s" repeatCount="indefinite"/></rect><rect x="232" y="150" width="8" height="12" rx="4"/><rect x="280" y="150" width="8" height="12" rx="4"/></g><path d="M244 220v-34a16 16 0 0 1 32 0v34z" fill="#0c0a18"/><path d="M260 12v-14l18 6-18 6" fill="#c9932e"/></svg><div class="mist" style="bottom:26%"></div><div class="hill h1"></div>';
 const tr=[AR.v_pine,AR.v_tree,AR.v_pine,AR.v_tree,AR.v_pine,AR.v_tree,AR.v_pine];tr.forEach((s,i)=>{if(s)h+=`<img class="tree" src="${s}" style="left:${i*15-4}%;height:${18+((i*7)%3)*4}vh;bottom:${11+(i%2)*2}%" alt="">`});
 h+='<div class="hill h2"></div>';
+h+='<div class="mist" style="bottom:4%;animation-duration:9s"></div>';for(let i=0;i<16;i++)h+=`<i class="ember" style="left:${Math.random()*100}%;animation-delay:${(Math.random()*6).toFixed(2)}s;animation-duration:${(5+Math.random()*4).toFixed(1)}s"></i>`;
+const DR=AR.b_darkdragon||AR.b_firedragon;if(DR)h+=`<img class="dragon" src="${DR}" alt="" style="filter:brightness(.12) drop-shadow(0 0 6px rgba(140,100,220,.6))">`;
 for(let i=0;i<14;i++)h+=`<i class="fly" style="left:${8+Math.random()*84}%;top:${45+Math.random()*40}%;animation-delay:${(Math.random()*7).toFixed(2)}s"></i>`;
-h+=`<div class="mid">${window.ELD_COVER?`<img class="cover" src="${window.ELD_COVER}" alt="">`:''}<h1>Reinos de Eldmor</h1><div class="sub">Em memória de Paulo, o Arqueiro Eterno</div></div>`;
+h+=`<div class="mid">${window.ELD_COVER?`<div style="position:relative"><img class="cover" src="${window.ELD_COVER}" alt="" style="display:block"><i class="glint"></i></div>`:''}<h1>Reinos de Eldmor</h1><div class="sub">Em memória de Paulo, o Arqueiro Eterno</div></div>`;
 const hs=[AR.h2_a_front||AR.h_a_front,AR.h2_w_front||AR.h_w_front,AR.h2_m_front||AR.h_m_front].filter(Boolean);
 if(hs.length)h+=`<div class="heroes">${hs.map(s=>`<img src="${s}" alt="">`).join('')}</div>`;
-h+='<div class="load"><div class="bar"><i id="eldbar"></i></div><div class="txt" id="eldtxt">Carregando o reino...</div></div>';
+h+='<div class="load"><div class="bar"><i id="eldbar"></i></div><div class="txt" id="eldtxt">Carregando o reino...</div><div class="tip" id="eldtip"></div></div>';
 if(AUTO)h='<div class="load" style="bottom:46%"><div class="txt">Entrando no mundo...</div></div>';ov.innerHTML=h;if(AUTO)ov.style.background='#0b0820';(document.body||document.documentElement).appendChild(ov);
 const T0=Date.now(),MINV=3000;/* a vinheta aparece pelo menos ~2 s */
 const bar=()=>{const b=document.getElementById('eldbar');if(b)b.style.width=Math.round((N-n)/Math.max(1,N)*100)+'%'};
-const msgs=['Carregando o reino...','Afiando as espadas...','Acendendo as tochas da vila...','Chamando os heróis...','Quase pronto...'];let mi=0;const mt=setInterval(()=>{const t=document.getElementById('eldtxt');if(t&&!done)t.textContent=msgs[Math.min(msgs.length-1,++mi)]},1100);
-const fin=()=>{if(done)return;done=true;clearInterval(mt);window.ARTC=C;try{window.__ELDMAIN()}finally{const w=AUTO?700:Math.max(0,3200-performance.now(),900-(Date.now()-T0));setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();st.remove()},AUTO?300:650)},w)}};
+const msgs=['Carregando o reino...','Afiando as espadas...','Acendendo as tochas da vila...','Chamando os heróis...','Quase pronto...'];const TIPS=['Dica: toque na barra de vida para beber uma poção.','Dica: crie ou entre numa guilda na aba Guilda.','Dica: códigos de evento são resgatados na Loja.','Dica: Paulo, o Arqueiro Eterno, ajuda você uma vez por hora.','Dica: chefes dão diamantes e itens raros.'];const tp=()=>{const t=document.getElementById('eldtip');if(t)t.textContent=TIPS[Math.floor(Math.random()*TIPS.length)]};setTimeout(tp,50);let mi=0;const mt=setInterval(()=>{if(mi%2)tp();const t=document.getElementById('eldtxt');if(t&&!done)t.textContent=msgs[Math.min(msgs.length-1,++mi)]},1100);
+const fin=()=>{if(done)return;done=true;clearInterval(mt);window.ARTC=C;try{window.__ELDMAIN()}finally{const w=AUTO?700:Math.max(0,3200-performance.now(),900-(Date.now()-T0));if(location.hash!=='#vinheta')setTimeout(()=>{ov.style.opacity='0';setTimeout(()=>{ov.remove();st.remove()},AUTO?300:650)},w)}};
 if(!n){fin();return}
 const one=k=>{const im=new Image();im.decoding='async';let fired=false;const step=()=>{if(fired)return;fired=true;n--;bar();if(n===0)fin()};
   const ok=()=>{if(!C[k]){try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);C[k]=c}catch(e){}}step()};

@@ -50,10 +50,11 @@ const db = {
         await pool.query(`create table if not exists tokens(tok text primary key, acc int not null references accounts(id) on delete cascade, created timestamptz default now())`);
         await pool.query(`create table if not exists support(id serial primary key, acc int, name text, contact text, msg text not null, done boolean not null default false, at timestamptz default now())`);
         await pool.query(`create table if not exists payments(id text primary key, acc int not null, dia int not null, status text, at timestamptz default now())`);
-        console.log('Banco de dados Postgres conectado.'); return;
+        console.log('Banco de dados Postgres conectado.'); await G.init(); return;
       } catch (e) { console.log('Não consegui usar o Postgres (' + e.message + '). Usando arquivo local.'); pool = null; }
     }
     try { MEM = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
+    await G.init();
     console.log('Sem DATABASE_URL: contas guardadas em arquivo local (somem quando o servidor reinicia).');
   },
   saveMem() { clearTimeout(db._t); db._t = setTimeout(() => { try { fs.writeFileSync(FILE, JSON.stringify(MEM)); } catch (e) { } }, 1500); },
@@ -87,7 +88,7 @@ const cleanName = s => String(s || '').replace(/[<>"'`\\]/g, '').replace(/\s+/g,
 const validName = n => n.length >= 3 && /^[\p{L}\p{N} _.\-@]+$/u.test(n);
 const today = () => new Date().toISOString().slice(0, 10);
 let isOpName = () => false, notify = () => { };
-function pubAcc(a) { return { id: a.id, name: a.op ? 'Operador level 0' : a.name, realName: a.name, dia: a.dia, owned: a.owned || {}, op: !!a.op, lvl: a.lvl }; }
+function pubAcc(a) { return { id: a.id, name: a.op ? 'Operador level 0' : a.name, realName: a.name, dia: a.dia, owned: a.owned || {}, op: !!a.op, lvl: a.lvl, guild: a.guild || null }; }
 function body(req) { return new Promise(res => { let d = ''; req.on('data', c => { d += c; if (d.length > 600000) req.destroy(); }); req.on('end', () => { try { res(d ? JSON.parse(d) : {}); } catch (e) { res({}); } }); }); }
 function send(res, code, o) { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, authorization', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); }
 const auth = req => db.tokAcc(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
@@ -108,11 +109,185 @@ async function mpCheck(pid) {
   notify(acc, { t: 'dia', dia, add: pk.dia, why: 'Compra aprovada: +' + pk.dia + ' diamantes' });
 }
 
+
+/* ================= guildas, guerra de guildas e códigos de resgate ================= */
+const GUILD_COST = 250, GUILD_MAX = 30, GUILD_RANK_MIN = 3;
+const WAR_PTS_MAX = 4000;           // pontos que um jogador pode somar numa guerra
+const WAR_PRIZE = [150, 80, 40];     // diamantes para cada membro do 1º, 2º e 3º lugar
+const shaCode = c => crypto.createHash('sha256').update('eldcode:' + c).digest('hex');
+const normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+// códigos prontos (guardados só como hash, porque o código-fonte é público)
+const SEED_CODES = require('./codes_seed.json');
+const G = {
+  async init() {
+    if (pool) {
+      await pool.query('alter table accounts add column if not exists guild int');
+      await pool.query(`create table if not exists guilds(id serial primary key, name text not null, lname text unique not null, tag text not null, leader int not null, descr text not null default '', open boolean not null default true, reqs jsonb not null default '[]', wins int not null default 0, created timestamptz default now())`);
+      await pool.query(`create table if not exists codes(h text primary key, plain text, reward jsonb not null, max int not null default 1, uses int not null default 0, until timestamptz, note text, created timestamptz default now())`);
+      await pool.query(`create table if not exists code_uses(h text not null, acc int not null, at timestamptz default now(), primary key(h, acc))`);
+      await pool.query(`create table if not exists kv(k text primary key, v jsonb)`);
+      await pool.query(`create table if not exists war_pts(war int not null, acc int not null, guild int not null, pts int not null default 0, primary key(war, acc))`);
+      for (const s of SEED_CODES) await pool.query('insert into codes(h,reward,max,until,note) values($1,$2,$3,$4,$5) on conflict (h) do nothing', [s.h, JSON.stringify(s.reward), s.max, s.until || null, s.note]);
+    } else {
+      MEM.guilds = MEM.guilds || []; MEM.codes = MEM.codes || {}; MEM.cuses = MEM.cuses || {}; MEM.kv = MEM.kv || {}; MEM.wpts = MEM.wpts || {}; MEM.gnext = MEM.gnext || 1;
+      for (const s of SEED_CODES) if (!MEM.codes[s.h]) MEM.codes[s.h] = { h: s.h, reward: s.reward, max: s.max, uses: 0, until: s.until || null, note: s.note };
+      db.saveMem();
+    }
+  },
+  async q(sql, args) { return (await pool.query(sql, args)).rows; },
+  async kvGet(k) { if (pool) { const r = await G.q('select v from kv where k=$1', [k]); return r[0] ? r[0].v : null; } return MEM.kv[k] || null; },
+  async kvSet(k, v) { if (pool) { await pool.query('insert into kv(k,v) values($1,$2) on conflict (k) do update set v=$2', [k, JSON.stringify(v)]); return; } MEM.kv[k] = v; db.saveMem(); },
+  async gById(id) { if (!id) return null; if (pool) return (await G.q('select * from guilds where id=$1', [id]))[0]; return MEM.guilds.find(g => g.id === id); },
+  async gByName(ln) { if (pool) return (await G.q('select * from guilds where lname=$1', [ln]))[0]; return MEM.guilds.find(g => g.lname === ln); },
+  async gCreate(o) { if (pool) return (await G.q('insert into guilds(name,lname,tag,leader,descr) values($1,$2,$3,$4,$5) returning *', [o.name, o.lname, o.tag, o.leader, o.descr || '']))[0]; const g = Object.assign({ id: MEM.gnext++, open: true, reqs: [], wins: 0, descr: '' }, o); MEM.guilds.push(g); db.saveMem(); return g; },
+  async gSet(id, f) { if (pool) { const ks = Object.keys(f); await pool.query('update guilds set ' + ks.map((k, i) => k + '=$' + (i + 2)).join(',') + ' where id=$1', [id, ...ks.map(k => k === 'reqs' ? JSON.stringify(f[k]) : f[k])]); return; } const g = MEM.guilds.find(x => x.id === id); if (g) Object.assign(g, f); db.saveMem(); },
+  async gDel(id) { if (pool) { await pool.query('update accounts set guild=null where guild=$1', [id]); await pool.query('delete from guilds where id=$1', [id]); return; } for (const a of MEM.accs) if (a.guild === id) a.guild = null; MEM.guilds = MEM.guilds.filter(g => g.id !== id); db.saveMem(); },
+  async members(id) { if (pool) return G.q('select id,name,lvl,cls,op from accounts where guild=$1 order by lvl desc, id asc', [id]); return MEM.accs.filter(a => a.guild === id).sort((a, b) => b.lvl - a.lvl || a.id - b.id).map(a => ({ id: a.id, name: a.name, lvl: a.lvl, cls: a.cls, op: a.op })); },
+  async stats() { // todas as guildas com quantidade de membros e média de nível
+    if (pool) return G.q(`select g.id,g.name,g.tag,g.open,g.wins,g.descr,count(a.id)::int as n,coalesce(round(avg(a.lvl)),0)::int as avg from guilds g left join accounts a on a.guild=g.id group by g.id order by avg desc, n desc, g.id asc`);
+    return MEM.guilds.map(g => { const m = MEM.accs.filter(a => a.guild === g.id); return { id: g.id, name: g.name, tag: g.tag, open: g.open, wins: g.wins, descr: g.descr, n: m.length, avg: m.length ? Math.round(m.reduce((s, a) => s + a.lvl, 0) / m.length) : 0 }; }).sort((a, b) => b.avg - a.avg || b.n - a.n || a.id - b.id);
+  },
+  async count(id) { if (pool) return (await G.q('select count(*)::int as n from accounts where guild=$1', [id]))[0].n; return MEM.accs.filter(a => a.guild === id).length; },
+  /* guerra */
+  async war() { let w = await G.kvGet('war'); if (w && w.on && Date.now() > w.ends) w = await G.warEnd(w); return w; },
+  async warBoard(w) { if (!w) return []; if (pool) return G.q('select g.id,g.name,g.tag,sum(p.pts)::int as pts,count(p.acc)::int as n from war_pts p join guilds g on g.id=p.guild where p.war=$1 group by g.id order by pts desc limit 20', [w.id]);
+    const t = {}; for (const k in MEM.wpts) { const p = MEM.wpts[k]; if (p.war !== w.id) continue; const g = MEM.guilds.find(x => x.id === p.guild); if (!g) continue; t[g.id] = t[g.id] || { id: g.id, name: g.name, tag: g.tag, pts: 0, n: 0 }; t[g.id].pts += p.pts; t[g.id].n++; } return Object.values(t).sort((a, b) => b.pts - a.pts).slice(0, 20); },
+  async warEnd(w) {
+    if (!w || !w.on) return w; w.on = false; w.ended = Date.now(); await G.kvSet('war', w);
+    const board = await G.warBoard(w); w.result = board.slice(0, 3).map((g, i) => ({ pos: i + 1, id: g.id, name: g.name, tag: g.tag, pts: g.pts }));
+    for (let i = 0; i < w.result.length; i++) {
+      const g = w.result[i]; const mem = await G.members(g.id);
+      if (i === 0) { const gg = await G.gById(g.id); if (gg) await G.gSet(g.id, { wins: (gg.wins || 0) + 1 }); }
+      for (const m of mem) {
+        const dia = await db.addDia(m.id, WAR_PRIZE[i]);
+        if (i === 0) { const a = await db.byId(m.id); const owned = a.owned || {}; owned['cos:any.aura.7'] = 1; await db.set(m.id, { owned }); }
+        notify(m.id, { t: 'dia', dia, add: WAR_PRIZE[i], why: `Guerra de Guildas: ${g.name} ficou em ${i + 1}º lugar! +${WAR_PRIZE[i]} diamantes${i === 0 ? ' e a Aura de Campeão' : ''}` });
+      }
+    }
+    await G.kvSet('war', w); console.log('guerra encerrada', JSON.stringify(w.result)); return w;
+  },
+  /* códigos */
+  async codeGet(h) { if (pool) return (await G.q('select * from codes where h=$1', [h]))[0]; return MEM.codes[h]; },
+  async codeAdd(o) { if (pool) { await pool.query('insert into codes(h,plain,reward,max,until,note) values($1,$2,$3,$4,$5,$6)', [o.h, o.plain, JSON.stringify(o.reward), o.max, o.until, o.note]); return; } MEM.codes[o.h] = Object.assign({ uses: 0, created: new Date().toISOString() }, o); db.saveMem(); },
+  async codeList() { if (pool) return G.q('select plain,reward,max,uses,until,note,created from codes order by created desc limit 200'); return Object.values(MEM.codes).reverse().slice(0, 200); },
+  async codeUse(h, acc) { // marca o uso; devolve false se já usou ou acabou
+    if (pool) {
+      const ins = await pool.query('insert into code_uses(h,acc) values($1,$2) on conflict do nothing returning h', [h, acc]); if (!ins.rowCount) return 'used';
+      const up = await pool.query('update codes set uses=uses+1 where h=$1 and uses<max returning uses', [h]); if (!up.rowCount) { await pool.query('delete from code_uses where h=$1 and acc=$2', [h, acc]); return 'out'; } return 'ok';
+    }
+    const k = h + ':' + acc; if (MEM.cuses[k]) return 'used'; const c = MEM.codes[h]; if (c.uses >= c.max) return 'out'; MEM.cuses[k] = 1; c.uses++; db.saveMem(); return 'ok';
+  },
+};
+const okGuildName = n => n.length >= 3 && n.length <= 20 && /^[\p{L}\p{N} _.\-]+$/u.test(n);
+const cleanG = s => String(s || '').replace(/[<>"'`\\]/g, '').replace(/\s+/g, ' ').trim();
+async function guildView(a) {
+  const g = await G.gById(a.guild); if (!g) return null; const mem = await G.members(g.id);
+  return { id: g.id, name: g.name, tag: g.tag, descr: g.descr, open: g.open, wins: g.wins || 0, leader: g.leader, me: a.id, n: mem.length, max: GUILD_MAX,
+    avg: mem.length ? Math.round(mem.reduce((s, m) => s + m.lvl, 0) / mem.length) : 0,
+    members: mem.map(m => ({ id: m.id, name: m.op ? 'Operador level 0' : m.name, lvl: m.lvl, cls: m.cls, leader: m.id === g.leader })),
+    reqs: g.leader === a.id ? (g.reqs || []) : [] };
+}
+function rewardText(r) {
+  const t = []; if (r.dia) t.push(r.dia + ' diamantes'); if (r.gold) t.push(r.gold + ' de ouro'); if (r.hp) t.push(r.hp + ' poções de vida'); if (r.mp) t.push(r.mp + ' poções de mana'); if (r.scroll) t.push(r.scroll + ' pergaminhos');
+  for (const k of r.items || []) t.push(ITEMNAME[k] || k); return t.join(', ');
+}
+const ITEMNAME = { 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro de Cometa', 'pal:neon': 'Paleta Neon',
+  'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda' };
+for (let i = 1; i <= 20; i++) ITEMNAME['cos:any.pet.' + i] = 'Mascote nº ' + i;
+async function handleExtra(req, res, u, a) {
+  /* ---------- públicas ---------- */
+  if (u === '/api/guild/rank') { const all = await G.stats(); return send(res, 200, { min: GUILD_RANK_MIN, list: all.filter(g => g.n >= GUILD_RANK_MIN).slice(0, 50).map((g, i) => ({ pos: i + 1, name: g.name, tag: g.tag, n: g.n, avg: g.avg, wins: g.wins || 0 })) }); }
+  if (u === '/api/guild/list') { const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').toLowerCase(); const all = await G.stats(); return send(res, 200, { list: all.filter(g => !q || g.name.toLowerCase().includes(q) || g.tag.toLowerCase().includes(q)).slice(0, 40).map(g => ({ id: g.id, name: g.name, tag: g.tag, n: g.n, avg: g.avg, open: g.open, wins: g.wins || 0, descr: g.descr, full: g.n >= GUILD_MAX })) }); }
+  if (u === '/api/war') { const w = await G.war(); return send(res, 200, { war: w ? { on: !!w.on, name: w.name, ends: w.ends, start: w.start, result: w.result || null } : null, board: w && w.on ? await G.warBoard(w) : [], now: Date.now() }); }
+  if (!a) return null;
+  /* ---------- guilda ---------- */
+  if (u === '/api/guild/me') { await G.war(); return send(res, 200, { guild: await guildView(a), cost: GUILD_COST, dia: a.dia }); }
+  if (u === '/api/guild/create' && req.method === 'POST') {
+    const b = await body(req); if (a.guild && await G.gById(a.guild)) return send(res, 400, { err: 'Você já está numa guilda. Saia dela antes.' });
+    const name = cleanG(b.name).slice(0, 20), tag = cleanG(b.tag).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    if (!okGuildName(name)) return send(res, 400, { err: 'O nome da guilda precisa ter de 3 a 20 letras ou números.' });
+    if (tag.length < 2) return send(res, 400, { err: 'A sigla precisa ter de 2 a 4 letras ou números.' });
+    if (/operador|admin|suporte/i.test(name)) return send(res, 400, { err: 'Esse nome é reservado.' });
+    if (await G.gByName(name.toLowerCase())) return send(res, 409, { err: 'Já existe uma guilda com esse nome.' });
+    const dia = await db.spendDia(a.id, GUILD_COST); if (dia === null) return send(res, 400, { err: 'Criar uma guilda custa ' + GUILD_COST + ' diamantes.', need: GUILD_COST });
+    let g; try { g = await G.gCreate({ name, lname: name.toLowerCase(), tag, leader: a.id, descr: cleanG(b.descr).slice(0, 120) }); } catch (e) { await db.addDia(a.id, GUILD_COST); return send(res, 409, { err: 'Já existe uma guilda com esse nome.' }); }
+    await db.set(a.id, { guild: g.id }); a.guild = g.id; return send(res, 200, { guild: await guildView(a), dia });
+  }
+  if (u === '/api/guild/join' && req.method === 'POST') {
+    const b = await body(req); if (a.guild && await G.gById(a.guild)) return send(res, 400, { err: 'Você já está numa guilda.' });
+    const g = await G.gById(+b.id); if (!g) return send(res, 404, { err: 'Guilda não encontrada.' });
+    if (await G.count(g.id) >= GUILD_MAX) return send(res, 400, { err: 'Essa guilda está cheia.' });
+    if (g.open) { await db.set(a.id, { guild: g.id }); a.guild = g.id; notify(g.leader, { t: 'gmsg', msg: a.name + ' entrou na sua guilda!' }); return send(res, 200, { guild: await guildView(a) }); }
+    const reqs = (g.reqs || []).filter(r => r.id !== a.id); reqs.push({ id: a.id, name: a.name, lvl: a.lvl, at: Date.now() }); await G.gSet(g.id, { reqs: reqs.slice(-40) });
+    notify(g.leader, { t: 'gmsg', msg: a.name + ' pediu para entrar na sua guilda.' }); return send(res, 200, { asked: true });
+  }
+  if (u === '/api/guild/leave' && req.method === 'POST') {
+    const g = await G.gById(a.guild); await db.set(a.id, { guild: null }); if (!g) return send(res, 200, { ok: true });
+    if (g.leader === a.id) { const rest = (await G.members(g.id)).filter(m => m.id !== a.id); if (!rest.length) await G.gDel(g.id); else { await G.gSet(g.id, { leader: rest[0].id }); notify(rest[0].id, { t: 'gmsg', msg: 'Agora você é o líder da guilda ' + g.name + '.' }); } }
+    return send(res, 200, { ok: true });
+  }
+  const g = await G.gById(a.guild);
+  if (u.startsWith('/api/guild/') && req.method === 'POST') {
+    if (!g) return send(res, 400, { err: 'Você não está numa guilda.' });
+    if (g.leader !== a.id) return send(res, 403, { err: 'Só o líder da guilda pode fazer isso.' });
+    const b = await body(req);
+    if (u === '/api/guild/accept') { const id = +b.id; const reqs = (g.reqs || []).filter(r => r.id !== id); await G.gSet(g.id, { reqs });
+      if (b.yes) { const t = await db.byId(id); if (!t) return send(res, 404, { err: 'Jogador não encontrado.' }); if (t.guild && await G.gById(t.guild)) return send(res, 400, { err: t.name + ' já entrou em outra guilda.' }); if (await G.count(g.id) >= GUILD_MAX) return send(res, 400, { err: 'A guilda está cheia.' }); await db.set(id, { guild: g.id }); notify(id, { t: 'gmsg', msg: 'Você foi aceito na guilda ' + g.name + '!' }); }
+      return send(res, 200, { guild: await guildView(a) }); }
+    if (u === '/api/guild/kick') { const id = +b.id; if (id === a.id) return send(res, 400, { err: 'Use "Sair da guilda".' }); const t = await db.byId(id); if (t && t.guild === g.id) { await db.set(id, { guild: null }); notify(id, { t: 'gmsg', msg: 'Você saiu da guilda ' + g.name + '.' }); } return send(res, 200, { guild: await guildView(a) }); }
+    if (u === '/api/guild/lead') { const id = +b.id; const t = await db.byId(id); if (!t || t.guild !== g.id) return send(res, 400, { err: 'Esse jogador não é da guilda.' }); await G.gSet(g.id, { leader: id }); notify(id, { t: 'gmsg', msg: 'Agora você é o líder da guilda ' + g.name + '.' }); return send(res, 200, { guild: await guildView(a) }); }
+    if (u === '/api/guild/edit') { const f = {}; if (b.descr !== undefined) f.descr = cleanG(b.descr).slice(0, 120); if (b.open !== undefined) f.open = !!b.open; if (Object.keys(f).length) await G.gSet(g.id, f); return send(res, 200, { guild: await guildView(a) }); }
+    if (u === '/api/guild/disband') { await G.gDel(g.id); return send(res, 200, { ok: true }); }
+  }
+  /* ---------- guerra ---------- */
+  if (u === '/api/war/pts' && req.method === 'POST') {
+    const b = await body(req); const w = await G.war(); if (!w || !w.on || !g) return send(res, 200, { ok: false });
+    if (limited(req, 'wp' + a.id, 6, 60e3)) return send(res, 429, { err: 'devagar' });
+    let n = Math.max(0, Math.min(150, b.n | 0)); if (!n) return send(res, 200, { ok: true });
+    if (pool) { const r = await G.q('select pts from war_pts where war=$1 and acc=$2', [w.id, a.id]); const cur = r[0] ? r[0].pts : 0; n = Math.min(n, WAR_PTS_MAX - cur); if (n > 0) await pool.query('insert into war_pts(war,acc,guild,pts) values($1,$2,$3,$4) on conflict (war,acc) do update set pts=war_pts.pts+$4, guild=$3', [w.id, a.id, g.id, n]); }
+    else { const k = w.id + ':' + a.id; const p = MEM.wpts[k] || (MEM.wpts[k] = { war: w.id, acc: a.id, guild: g.id, pts: 0 }); n = Math.min(n, WAR_PTS_MAX - p.pts); if (n > 0) { p.pts += n; p.guild = g.id; } db.saveMem(); }
+    return send(res, 200, { ok: true, got: Math.max(0, n) });
+  }
+  if (u === '/api/war/start' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const old = await G.war(); if (old && old.on) return send(res, 400, { err: 'Já tem uma guerra acontecendo.' });
+    const h = Math.max(0.1, Math.min(24 * 14, +b.hours || 24)); const w = { id: ((old && old.id) || 0) + 1, on: true, name: cleanG(b.name).slice(0, 40) || 'Guerra de Guildas', start: Date.now(), ends: Date.now() + h * 3600e3 }; await G.kvSet('war', w); return send(res, 200, { war: w }); }
+  if (u === '/api/war/stop' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const w = await G.kvGet('war'); if (!w || !w.on) return send(res, 400, { err: 'Não tem guerra acontecendo.' }); return send(res, 200, { war: await G.warEnd(w) }); }
+  /* ---------- códigos ---------- */
+  if (u === '/api/redeem' && req.method === 'POST') {
+    if (limited(req, 'rd' + a.id, 10, 600e3)) return send(res, 429, { err: 'Muitas tentativas. Espere alguns minutos.' });
+    const b = await body(req); const code = normCode(b.code); if (code.length < 4) return send(res, 400, { err: 'Digite o código.' });
+    const h = shaCode(code); const c = await G.codeGet(h); if (!c) return send(res, 404, { err: 'Código inválido.' });
+    if (c.until && new Date(c.until).getTime() < Date.now()) return send(res, 400, { err: 'Este código já expirou.' });
+    const st = await G.codeUse(h, a.id); if (st === 'used') return send(res, 400, { err: 'Você já usou este código.' }); if (st === 'out') return send(res, 400, { err: 'Este código já foi usado o máximo de vezes.' });
+    const r = typeof c.reward === 'string' ? JSON.parse(c.reward) : c.reward; let dia = a.dia;
+    if (r.dia) dia = await db.addDia(a.id, r.dia | 0);
+    const fresh = await db.byId(a.id); const owned = fresh.owned || {};
+    for (const k of r.items || []) owned[k] = 1;
+    if (r.gold || r.hp || r.mp || r.scroll) { owned.gifts = (owned.gifts || []).concat([{ gold: r.gold | 0, hp: r.hp | 0, mp: r.mp | 0, scroll: r.scroll | 0, from: c.note || 'Código' }]).slice(-20); }
+    await db.set(a.id, { owned });
+    notify(a.id, { t: 'gift' });
+    return send(res, 200, { ok: true, dia, owned, text: rewardText(r), note: c.note || '' });
+  }
+  if (u === '/api/gifts/take' && req.method === 'POST') { const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const gifts = owned.gifts || []; if (!gifts.length) return send(res, 200, { gifts: [] }); delete owned.gifts; await db.set(a.id, { owned }); return send(res, 200, { gifts, owned }); }
+  if (u === '/api/code/create' && req.method === 'POST') {
+    if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const n = Math.max(1, Math.min(200, b.count | 0 || 1)); const r = b.reward || {};
+    const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)).slice(0, 10) };
+    if (!rw.dia && !rw.gold && !rw.hp && !rw.mp && !rw.scroll && !rw.items.length) return send(res, 400, { err: 'Escolha pelo menos um prêmio.' });
+    const max = Math.max(1, Math.min(100000, b.max | 0 || 1)); const until = b.days ? new Date(Date.now() + Math.min(3650, +b.days) * 864e5).toISOString() : null; const note = cleanG(b.note).slice(0, 60) || 'Código especial';
+    const AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const rnd = k => Array.from(crypto.randomBytes(k), x => AL[x % 32]).join(''); const out = [];
+    for (let i = 0; i < n; i++) { let plain = b.code && n === 1 ? normCode(b.code) : 'ELD' + rnd(4) + rnd(4); if (plain.length < 4) return send(res, 400, { err: 'Código muito curto.' }); const h = shaCode(plain); if (await G.codeGet(h)) { if (b.code) return send(res, 409, { err: 'Esse código já existe.' }); i--; continue; }
+      await G.codeAdd({ h, plain, reward: rw, max, until, note }); out.push(plain.startsWith('ELD') && plain.length === 11 ? plain.slice(0, 3) + '-' + plain.slice(3, 7) + '-' + plain.slice(7) : plain); }
+    return send(res, 200, { codes: out, text: rewardText(rw) });
+  }
+  if (u === '/api/code/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: (await G.codeList()).map(c => ({ code: c.plain || '(código pronto)', text: rewardText(typeof c.reward === 'string' ? JSON.parse(c.reward) : c.reward), max: c.max, uses: c.uses, until: c.until, note: c.note })) }); }
+  /* ---------- loja pelo site (só itens que ficam na conta) ---------- */
+  return null;
+}
+
 /* ---------- rotas ---------- */
 async function handle(req, res, u) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
   try {
-    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, payHint: MP_HINT, supportEmail: (process.env.SUPPORT_EMAIL || 'reinosdeeldmor@gmail.com').trim(), mpKey: MP_KEY ? JSON.stringify(MP_KEY) : '', packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY });
+    if (u === '/api/info') return send(res, 200, { ok: true, db: !!pool, pay: !!MP_TOKEN, payHint: MP_HINT, supportEmail: (process.env.SUPPORT_EMAIL || 'reinosdeeldmor@gmail.com').trim(), mpKey: MP_KEY ? JSON.stringify(MP_KEY) : '', packs: PACKS, shop: SHOP, rename: RENAME_COST, earnDay: EARN_DAY, guildCost: GUILD_COST });
     if (u === '/api/register' && req.method === 'POST') {
       if (limited(req, 'reg', +(process.env.REG_LIMIT || 6), 3600e3)) return send(res, 429, { err: 'Muitas contas criadas daqui. Tente mais tarde.' });
       const b = await body(req); const name = cleanName(b.name), pw = String(b.pass || '');
@@ -149,6 +324,7 @@ async function handle(req, res, u) {
       const who = await auth(req); await db.supAdd({ acc: who ? who.id : null, name: who ? who.name : cleanName(b.name) || null, contact: String(b.contact || '').replace(/[<>]/g, '').trim().slice(0, 120) || null, msg });
       return send(res, 200, { ok: true });
     }
+    if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war') return handleExtra(req, res, u, null);
     const a = await auth(req); if (!a) return send(res, 401, { err: 'Entre na sua conta de novo.' });
     if (u === '/api/me') return send(res, 200, { acc: pubAcc(a), save: a.save || null });
     if (u === '/api/save' && req.method === 'POST') {
@@ -198,6 +374,7 @@ async function handle(req, res, u) {
     if (u === '/api/support/done' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); await db.supDone(+b.id); return send(res, 200, { ok: true }); }
     if (u === '/api/delete' && req.method === 'POST') { const b = await body(req); if (hashPw(b.pass || '', a.salt) !== a.ph) return send(res, 401, { err: 'Senha errada.' }); await db.delAcc(a.id); return send(res, 200, { ok: true }); }
     if (u === '/api/logout' && req.method === 'POST') { await db.dropToks(a.id); return send(res, 200, { ok: true }); }
+    if (await handleExtra(req, res, u, a) !== null) return;
     return send(res, 404, { err: 'rota desconhecida' });
   } catch (e) { console.log('api erro', u, e.message); return send(res, 500, { err: 'Erro no servidor. Tente de novo.' }); }
 }
