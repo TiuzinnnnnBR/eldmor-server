@@ -2545,7 +2545,7 @@ function srvData(m){
     if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;srvExitBtn(true);$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
     if(!modal.hidden&&mode==='modal'&&$('srvbox'))closeModal();toast(`Bem-vindo ao servidor, ${SRV.name}! ${SRV.players.size?SRV.players.size+' jogador(es) online.':'Você é o primeiro aqui.'}`,'#6ad8ff');sfx('lvl');return}
   if(!SRV.on)return;
-  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z})}}
+  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null})}}
   else if(m.t==='pj'){if(m.p.id!==SRV.id){srvAdd(m.p);toast(`${m.p.name} entrou no servidor.`,'#6ad8ff')}}
   else if(m.t==='pl'){const p=SRV.players.get(m.id);if(p){SRV.players.delete(m.id);toast(`${p.name} saiu do servidor.`,'#a597bd')}}
   else if(m.t==='ev'){if(m.k&&EVD[m.k]){EVT={k:m.k,end:Date.now()+m.rem};const d=EVD[m.k];banner(d.n,d.d);toast('Evento no servidor: '+d.n+'. '+d.d+'.',d.c);sfx('boss')}else EVT=null}
@@ -2556,7 +2556,7 @@ function srvData(m){
   else if(m.t==='bgone'){const e=enemies.find(x=>x.srv&&x.bi===m.bi);if(e)enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;toast(`${BD[m.bi].name} voltou para as sombras.`,'#a597bd')}
   else if(m.t==='chat'){toast(`${m.n}: ${m.m}`,'#e8e0ff')}
   $('p2hud')&&($('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online')}
-function srvAdd(p){const h=p.h||{};SRV.players.set(p.id,{id:p.id,name:p.name,op:h.op,x:h.x||SPAWN.x,y:h.y||SPAWN.y,tx:h.x||SPAWN.x,ty:h.y||SPAWN.y,dn:h.dn||'down',actT:0,actMax:0.3,walk:0,cls:h.cls||'warrior',look:h.look,dead:false,lv:h.lv||1,ghosts:[]})}
+function srvAdd(p){const h=p.h||{};SRV.players.set(p.id,{id:p.id,name:p.name,op:h.op,x:h.x||SPAWN.x,y:h.y||SPAWN.y,tx:h.x||SPAWN.x,ty:h.y||SPAWN.y,dn:h.dn||'down',actT:0,actMax:0.3,walk:0,cls:h.cls||'warrior',look:h.look,dead:false,lv:h.lv||1,wv:h.wv,ov:h.ov,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null,ghosts:[]})}
 function srvBoss(m,announce){const bi=m.bi;if(!BD[bi])return;SRV.bossBi=bi;let e=enemies.find(x=>x.boss&&x.bi===bi);
   if(!e){const n=enemies.length;spawnBoss(bi);e=enemies[enemies.length-1];if(enemies.length===n||!e||!e.boss)return}
   e.srv=true;if(m.max){e.max=m.max;e.hp=Math.max(1,m.hp)}else srvSend({t:'bmax',bi,max:e.max});
@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v56 · 07/11/2026';
+const ELD_VER='v57 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3591,7 +3591,7 @@ openGod=function(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
   const T=(k,l)=>`<button class="gp-b${GOD[k]?' gold':''}" data-act="god" data-id="t:${k}">${l}: ${GOD[k]?'Ligado':'Desligado'}</button>`;const B=(id,l,x)=>`<button class="gp-b${x||''}" data-act="god" data-id="${id}">${l}</button>`;
   const sec=(ic,t,body)=>`<section class="gp-sec"><h3 class="gp-h"><span>${ic}</span>${t}</h3>${body}</section>`;
   openModal(`<div class="gp"><div class="gp-head big"><div class="gp-ic">⚡</div><div style="flex:1"><h2>Painel do Operador</h2><p>Você está como <b>Operador level 0</b>. ${GOD.srv?'O servidor reconheceu você: os poderes valem para todos.':'Poderes locais ativos. Entre no servidor para ter os poderes online.'}</p></div><button class="gp-x" data-act="close">✕ Fechar</button></div>
-  <div class="gp-row" style="margin:0 0 10px">${B('off:1','🚪 Sair do modo Operador',' red')}${B('items2','🧰 Itens especiais',' gold')}${B('gift','🎁 Presentear jogador',' gold')}${B('items','⚔️ Todos os equipamentos')}</div>
+  <div class="gp-row" style="margin:0 0 10px">${B('off:1','🚪 Sair do modo Operador',' red')}${B('items2','🧰 Itens especiais',' gold')}${B('gift','🎁 Presentear jogador',' gold')}${B('items','⚔️ Todos os equipamentos')}${B('mon','📊 Monitorar jogadores',' gold')}</div>
   <div class="gp-cols">
   ${sec('🛠️','Modo criativo',`<div class="gp-row">${B('build',GOD.build?'Construção: ligada':'Construir e quebrar blocos',GOD.build?' gold':'')}${B('fly',GOD.ghost&&GOD.fast?'Voar: ligado':'Voar (atravessa tudo)',GOD.ghost&&GOD.fast?' gold':'')}${B('max','Nível 300')}</div><div class="gp-row">${B('day:0.25','☀️ Dia',' s')}${B('day:0.62','🌇 Entardecer',' s')}${B('day:0.8','🌙 Noite',' s')}${B('day:auto','Tempo normal',' s')}${B('undo','Desfazer construções',' s')}</div><p class="gp-tip">No mapa grande, toque em qualquer lugar para se teletransportar.</p>`)}
   ${sec('⚡','Poderes',`<div class="gp-row">${T('inv','Invencível')}${T('mana','Mana infinita')}${T('nocd','Sem recarga')}${T('one','Matar com 1 golpe')}${T('fast','Super velocidade')}${T('ghost','Atravessar paredes')}${GOD.srv?T('hide','Invisível'):''}</div>`)}
@@ -3606,6 +3606,12 @@ openGod=function(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
   mbox.querySelectorAll('select').forEach(el=>['keydown','keyup'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation())))};
 {const _gc=godCmd;godCmd=function(id){const[a,b]=id.split(':');
   if(a==='items2'){openGodItems();return}
+  if(a==='mon'){openMon();return}
+  if(a==='mons'){MON.sort=b;monDraw();return}
+  if(a==='monf'){MON.f=b;monDraw();return}
+  if(a==='monp'){monPlayer(+b);return}
+  if(a==='monr'){openMon();return}
+  if(a==='mong'){GIFT.on=true;GIFT.name=decodeURIComponent(id.slice(5));openGodItems();return}
   if(a==='gift'){GIFT.on=true;openGodItems();return}
   if(a==='gmode'){GIFT.on=b==='1';openGodItems();return}
   if(a==='gclear'){GIFT.sel={};openGodItems();return}
@@ -3643,6 +3649,59 @@ openGod=function(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
 .gp-card.sel{outline:3px solid #ffd040;outline-offset:2px}.gp-card.sel .gp-rar{background:#8a6a10;border-color:#ffd040}
 .gp-card .gp-ico{flex:none;width:48px!important;height:48px!important}
 @media(max-width:760px){.gp-cols{grid-template-columns:1fr}.gp-items{grid-template-columns:1fr}.gp-side{flex-direction:row;flex-wrap:wrap}.gp-cat{flex:1 1 40%}.gp-cnt{flex:1 1 100%}.gp-head.big::after{display:none}}`;document.head.appendChild(st)})();
+
+/* ================= monitoramento dos jogadores (só Operador) ================= */
+const MON={d:null,sort:'upd',f:'all',q:'',t:0};
+const CLSN={warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'};
+const monAgo=t=>{if(!t)return'—';const s=(Date.now()-new Date(t).getTime())/1000;if(s<90)return'agora';if(s<3600)return Math.round(s/60)+' min';if(s<86400)return Math.round(s/3600)+' h';return Math.round(s/86400)+' d'};
+const monN=n=>(+n||0).toLocaleString('pt-BR');
+async function openMon(){mode='modal';if(!opAcc()){openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">📊</div><div style="flex:1"><h2>Monitorar jogadores</h2><p>Entre na conta de Operador (Opções → Conta) para ver os dados dos jogadores.</p></div><button class="gp-x" data-act="god" data-id="back">← Voltar</button></div></div>`);mbox.classList.add('godm');return}
+  if(!MON.d)openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">📊</div><div style="flex:1"><h2>Monitorar jogadores</h2><p>Carregando…</p></div></div></div>`),mbox.classList.add('godm');
+  try{MON.d=await api('op/players');MON.t=Date.now();monDraw()}catch(e){toast(e.message,'#ff7a6e');if(!MON.d)openGod()}}
+function monDraw(){const D=MON.d;if(!D)return;const q=MON.q.trim().toLowerCase();
+  let L=D.list.filter(x=>!x.op&&(!q||x.name.toLowerCase().includes(q)));
+  if(MON.f==='on')L=L.filter(x=>x.online);else if(MON.f==='pay')L=L.filter(x=>x.pays);else if(MON.f==='pass')L=L.filter(x=>x.pass);
+  const S2={upd:(a,b)=>String(b.updated||'').localeCompare(String(a.updated||'')),dia:(a,b)=>b.dia-a.dia,lvl:(a,b)=>b.lvl-a.lvl,bought:(a,b)=>b.bought-a.bought||b.spent-a.spent,spent:(a,b)=>b.spent-a.spent,new:(a,b)=>String(b.created||'').localeCompare(String(a.created||''))};
+  L.sort(S2[MON.sort]||S2.upd);const sm=D.sum;
+  const card=(ic,v,l)=>`<div class="mon-k"><span>${ic}</span><b>${v}</b><small>${l}</small></div>`;
+  const B=(id,l,on)=>`<button class="gp-b s${on?' gold':''}" data-act="god" data-id="${id}">${l}</button>`;
+  const sc=mbox.querySelector('.mon-list');const top=sc?sc.scrollTop:0;
+  openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">📊</div><div style="flex:1"><h2>Monitorar jogadores</h2><p>Contas, diamantes, compras e quem está online. Atualizado ${monAgo(MON.t)==='agora'?'agora':'há '+monAgo(MON.t)}.</p></div><button class="gp-x" data-act="god" data-id="monr">↻ Atualizar</button><button class="gp-x" style="margin-left:6px" data-act="god" data-id="back">← Voltar</button></div>
+  <div class="mon-ks">${card('👥',monN(sm.accs),'contas')}${card('🟢',monN(sm.online),'online agora'+(D.guests?' ('+D.guests+' visitante'+(D.guests>1?'s':'')+')':''))}${card('💎',monN(sm.dia),'diamantes guardados')}${card('🛒',monN(sm.bought),'diamantes comprados')}${card('💸',monN(sm.spent),'diamantes gastos na loja')}${card('⭐',monN(sm.buyers),'jogadores que compraram')}</div>
+  <div class="gp-row" style="align-items:center;margin:10px 0 6px"><input id="mon-q" class="gp-sel" placeholder="🔎 Procurar jogador pelo nome" value="${esc(MON.q)}" style="max-width:260px">
+   <span class="mon-lb">Mostrar:</span>${B('monf:all','Todos',MON.f==='all')}${B('monf:on','Online',MON.f==='on')}${B('monf:pay','Compradores',MON.f==='pay')}${B('monf:pass','Passe Premium',MON.f==='pass')}</div>
+  <div class="gp-row" style="align-items:center;margin:0 0 8px"><span class="mon-lb">Ordenar:</span>${B('mons:upd','Último acesso',MON.sort==='upd')}${B('mons:dia','Mais diamantes',MON.sort==='dia')}${B('mons:bought','Mais compraram',MON.sort==='bought')}${B('mons:spent','Mais gastaram',MON.sort==='spent')}${B('mons:lvl','Maior nível',MON.sort==='lvl')}${B('mons:new','Contas novas',MON.sort==='new')}</div>
+  <div class="mon-list"><div class="mon-r mon-hd"><span>Jogador</span><span>Nível</span><span>💎 Agora</span><span>🛒 Comprou</span><span>💸 Gastou</span><span>🪙 Ouro</span><span>Itens</span><span>Visto</span></div>
+  ${L.length?L.map(x=>`<button class="mon-r" data-act="god" data-id="monp:${x.id}"><span class="mon-n">${x.online?'<i class="mon-on" title="Online"></i>':''}<b>${esc(x.name)}</b><small>${CLSN[x.cls]||'—'}${x.pass?' · <em>Passe</em>':''}</small></span><span>${x.lvl}</span><span class="mon-d">${monN(x.dia)}${x.earned?`<small>+${x.earned} hoje</small>`:''}</span><span>${x.bought?monN(x.bought)+`<small>${x.pays} compra${x.pays>1?'s':''}</small>`:'—'}</span><span>${x.spent?monN(x.spent):'—'}</span><span>${monN(x.gold)}</span><span>${x.items}</span><span>${x.online?'<b style="color:#6ad86a">online</b>':monAgo(x.updated)}</span></button>`).join(''):'<p class="gp-tip" style="padding:14px">Nenhum jogador encontrado.</p>'}</div>
+  <p class="gp-foot">Toque num jogador para ver o histórico de compras e os itens dele. "💎 Agora" é o saldo atual; "Comprou" é o que entrou por pagamento (Mercado Pago).</p></div>`);mbox.classList.add('godm');
+  const ls=mbox.querySelector('.mon-list');if(ls)ls.scrollTop=top;
+  const qi=$('mon-q');if(qi){['keydown','keyup'].forEach(t=>qi.addEventListener(t,e=>e.stopPropagation()));qi.addEventListener('input',()=>{MON.q=qi.value;clearTimeout(MON._qt);MON._qt=setTimeout(()=>{const p=qi.selectionStart;monDraw();const q2=$('mon-q');if(q2){q2.focus();try{q2.setSelectionRange(p,p)}catch(_){}}},250)})}}
+async function monPlayer(id){let r;try{r=await api('op/player?id='+id)}catch(e){toast(e.message,'#ff7a6e');return}
+  const TN={natal:'Título Natal',halloween:'Título Halloween',pascoa:'Título Páscoa',estelar:'Título Estelar',fundador:'Título Fundador',armeiro:'Título Armeiro',estrela:'Título Estrela',lenda:'Lenda de Eldmor'};const nm=k=>{k=String(k||'');if(k.startsWith('title:'))return(window.__TITLES&&window.__TITLES[k])||TN[k.slice(6)]||k;if(k.startsWith('pass:'))return'Passe de Temporada';let n=k;if(window.__itemName)try{n=window.__itemName(k)||k}catch(_){}if(n===k&&r.names&&r.names[k])n=r.names[k];if(n===k&&k.includes(',')&&k.includes(': '))n=k.split(': ')[0]+': '+k.split(': ')[1].split(',').map(x=>nm(x)).join(', ');else if(n===k&&k.includes(','))n=k.split(',').map(x=>nm(x)).join(', ');return n};
+  const dt=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+  const H=r.hist||{tx:[],pays:[]};const x=(MON.d&&MON.d.list.find(y=>y.id===id))||{};
+  const row=(a,b)=>`<div class="mon-dl"><span>${a}</span><b>${b}</b></div>`;
+  openModal(`<div class="gp"><div class="gp-head"><div class="gp-ic">👤</div><div style="flex:1"><h2>${esc(r.name)}</h2><p>${CLSN[r.cls]||'Sem classe'} · Nível ${r.lvl}${x.online?' · <b style="color:#6ad86a">online agora</b>':' · visto há '+monAgo(r.updated)}</p></div><button class="gp-x" data-act="god" data-id="mong:${encodeURIComponent(r.name)}">🎁 Presentear</button><button class="gp-x" style="margin-left:6px" data-act="god" data-id="mon">← Voltar</button></div>
+  <div class="gp-cols"><section class="gp-sec"><h3 class="gp-h"><span>📋</span>Resumo</h3>
+   ${row('💎 Diamantes agora',monN(r.dia))}${row('🛒 Diamantes comprados',monN(x.bought||0)+(x.pays?' ('+x.pays+' pagamentos)':''))}${row('💸 Gastos na loja',monN(x.spent||0))}${row('🪙 Ouro',monN(r.gold))}${row('🧪 Poções',`${r.hp} vida · ${r.mp} mana`)}${row('👹 Chefes derrotados',r.bosses)}${row('🎟️ Passe',r.pass?(r.pass.prem?'Premium':'Grátis')+' · '+monN(r.pass.xp)+' XP':'—')}${row('🏷️ Título',r.title?esc(nm(r.title)):'—')}${row('📅 Conta criada',dt(r.created))}${row('🕒 Último save',dt(r.updated))}</section>
+   <section class="gp-sec"><h3 class="gp-h"><span>🧾</span>Histórico</h3><div class="mon-h">
+   ${(H.pays||[]).map(p=>`<div class="mon-hr"><span>💳 Pagamento ${p.status==='approved'?'aprovado':esc(p.status||'')}</span><b style="color:#6ad86a">+${monN(p.dia)} 💎</b><small>${dt(p.at)}</small></div>`).join('')}
+   ${(H.tx||[]).map(t=>`<div class="mon-hr"><span>${esc(t.kind)}: ${esc(nm(t.item||''))}${t.other?' <small>('+esc(t.other)+')</small>':''}</span><b>${t.price?'-'+monN(t.price)+' 💎':'grátis'}</b><small>${dt(t.at)}</small></div>`).join('')}
+   ${!(H.pays||[]).length&&!(H.tx||[]).length?'<p class="gp-tip">Nenhuma compra ainda.</p>':''}</div></section></div>
+  <section class="gp-sec" style="margin-top:10px"><h3 class="gp-h"><span>🎒</span>Itens da conta (${r.owned.length})</h3><div class="mon-it">${r.owned.length?r.owned.map(k=>`<span>${esc(nm(k))}</span>`).join(''):'<p class="gp-tip">Nenhum item comprado.</p>'}</div></section></div>`);mbox.classList.add('godm')}
+(function(){const st=document.createElement('style');st.textContent=`
+.mon-ks{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.mon-k{padding:10px;border-radius:12px;text-align:center;background:linear-gradient(180deg,rgba(40,52,110,.45),rgba(10,14,34,.6));border:1px solid rgba(242,193,78,.35)}
+.mon-k span{font-size:20px;display:block}.mon-k b{display:block;font-size:20px;color:#ffe49a;font-family:var(--display)}.mon-k small{font-size:11px;color:#b8b2cc}
+.mon-lb{font-size:12px;color:#a8a3bd;font-weight:700}
+.mon-list{max-height:52vh;overflow:auto;border-radius:12px;border:1px solid rgba(110,140,255,.25);background:rgba(8,10,26,.5)}
+.mon-r{display:grid;grid-template-columns:2.2fr .6fr 1fr 1fr .9fr .9fr .6fr .8fr;gap:6px;align-items:center;width:100%;padding:8px 10px;border:0;border-bottom:1px solid rgba(255,255,255,.06);background:none;color:#e8eeff;font:600 13px system-ui,sans-serif;text-align:left;cursor:pointer}
+.mon-r:hover{background:rgba(90,122,232,.15)}.mon-r small{display:block;font-size:10.5px;color:#a8a3bd;font-weight:500}.mon-r em{color:#ffd040;font-style:normal}
+.mon-hd{position:sticky;top:0;z-index:1;background:#1a2246;color:#f2c14e;font-size:11px;text-transform:uppercase;letter-spacing:.05em;cursor:default}.mon-hd:hover{background:#1a2246}
+.mon-n{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.mon-n b{color:#6ad8ff}.mon-n small{flex-basis:100%;padding-left:0}.mon-on{width:9px;height:9px;border-radius:50%;background:#4ad84a;box-shadow:0 0 6px #4ad84a;display:inline-block}
+.mon-d{color:#9ad8ff}.mon-dl{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:#c8c0d8}.mon-dl b{color:#fff}
+.mon-h{max-height:46vh;overflow:auto}.mon-hr{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12.5px;color:#e0e4f4}.mon-hr small{grid-column:1/-1;color:#8a86a0;font-size:10.5px}
+.mon-it{display:flex;flex-wrap:wrap;gap:5px;max-height:24vh;overflow:auto}.mon-it span{font-size:11.5px;padding:3px 8px;border-radius:8px;background:#1c2450;border:1px solid rgba(110,140,255,.35);color:#d8e0ff}
+@media(max-width:760px){.mon-ks{grid-template-columns:repeat(3,1fr)}.mon-r{grid-template-columns:1.8fr .5fr .9fr .9fr .8fr;font-size:12px}.mon-r>span:nth-child(6),.mon-r>span:nth-child(7),.mon-r>span:nth-child(8){display:none}}`;document.head.appendChild(st)})();
 
 /* ================= Loja v3: layout novo, Experimentar, presentes, pacotes, coleções, eventos, histórico e Passe de Temporada ================= */
 {const A=window.ARTC||{};const EV=window.__EV||{ACC_DEF:[],WS_DEF:{},PETEV:{},EVM:{},RING:{}};
@@ -3693,6 +3752,7 @@ const ICC={};function bboxIcon(fr,sz){const k=fr._u2;if(k)return k;const g0=fr.g
 function auraIcon(i){if(ICC['a'+i])return ICC['a'+i];const ring=EV.RING&&EV.RING[i];const o=document.createElement('canvas');o.width=o.height=72;const g=o.getContext('2d');if(ring){const w=68,h=ring.height*w/ring.width;g.drawImage(ring,2,(72-h)/2,w,h)}else if(AURAS[i]){const c=AURAS[i].c;const gr=g.createRadialGradient(36,40,2,36,40,34);gr.addColorStop(0,c[0]+'cc');gr.addColorStop(0.6,c[0]+'44');gr.addColorStop(1,c[0]+'00');g.fillStyle=gr;g.fillRect(0,0,72,72);for(let k=0;k<16;k++){const a=k/16*Math.PI*2;g.fillStyle=c[k%c.length];g.beginPath();g.arc(36+Math.cos(a)*26,42+Math.sin(a)*10-Math.abs(Math.sin(a*2))*14,3,0,7);g.fill()}}return ICC['a'+i]=o.toDataURL()}
 function iconOf(key,cls){if(key.startsWith('mount:')){const i=mIdx(key);const c=i>0&&A['mt_'+MOUNTS[i].k+'_side_0'];return c?bboxIcon(c,72):''}if(key.startsWith('frame:')){const c=A['fr_'+key.slice(6)];return c?(c._u||(c._u=c.toDataURL())):''}const lk0=lookOf(key);if(lk0&&lk0.cat==='pet'&&PETSPR[lk0.i]&&PETSPR[lk0.i][0]){try{return bboxIcon(PETSPR[lk0.i][0],72)}catch(_){}}if(lk0&&lk0.cat==='aura'&&lk0.i){try{return auraIcon(lk0.i)}catch(_){}}const lk=lk0;if(!lk){if(key==='pal:neon')return'';return''}try{const c=cosIcon(lk.cls||cls||S.cls,lk.cat,lk.i);return typeof c==='string'?c:c&&c.toDataURL?(c._u||(c._u=c.toDataURL())):''}catch(_){return''}}
 function nameOf(key){if(key.startsWith('mount:')){const i=mIdx(key);return i>0?MOUNTS[i].n+' (montaria)':key}if(key.startsWith('frame:'))return FRAMES[+key.slice(6)]||key;const lk=lookOf(key);if(EVITEMS[key])return EVITEMS[key];if(key==='pal:neon')return'Paleta Neon';if(lk){try{const n=COS[lk.cls||S.cls][lk.cat].o[lk.i][0];return lk.cat==='aura'?'Aura '+n:lk.cat==='trail'?'Rastro '+n:n}catch(_){}}return key}
+window.__itemName=nameOf;try{window.__TITLES=TITLES}catch(_){}
 function rarOf(key){const lk=lookOf(key);if(lk&&lk.cat==='pet'&&PETDEF[lk.i])return PETDEF[lk.i].r;const p=price(key)||0;return p>=2000?4:p>=800?3:p>=300?2:p>=150?1:0}
 function price(key){const it=SHOPINFO&&SHOPINFO.shop&&SHOPINFO.shop[key];return it?it.p:null}
 const CATS=[['dest','Destaques','⭐'],['dia','Diamantes','💎'],['asas','Asas e Capas','🪽'],['chap','Chapéus','🎩'],['aura','Auras','✨'],['arma','Armas (Skins)','🗡️'],['pet','Mascotes','🐾'],['mont','Montarias','🐴'],['mold','Molduras','🖼️'],['rastro','Rastros','☄️'],['pac','Ofertas e Pacotes','🎁'],['passe','Passe de Temporada','👑'],['col','Coleções','🏅'],['evt','Eventos','📅'],['bon','Bônus e Itens','⚡'],['hist','Histórico','🧾'],['cod','Resgatar Código','🎟️']];
@@ -3927,6 +3987,17 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
    const html=`<div class="pnl invmt"><h4>🐴 Montarias</h4><p class="muted" style="font-size:12px;margin:0 0 8px">Toque para montar. No jogo, use o botão ao lado das poções ou a tecla G para montar e desmontar. Montarias são só visuais.</p><div class="invmtg">${MOUNTS.map((m,i)=>{if(!m)return'';const own=L.includes(i);return`<button data-invmt="${i}" class="${cur===i?'on':''}${own?'':' lock'}"><img src="${mIco(i)}" alt=""><span>${escA(m.n)}</span><small>${own?(cur===i?'Montado ✔':'Montar'):'🔒 Ver na Loja'}</small></button>`}).join('')}<button data-invmt="0" class="${cur?'':'on'}"><span style="font-size:30px;line-height:48px">🚶</span><span>A pé</span><small>${cur?'Desmontar':'Atual ✔'}</small></button></div></div>`;
    mbody.insertAdjacentHTML('afterbegin',html);mbody.querySelectorAll('[data-invmt]').forEach(x=>x.onclick=e=>{e.stopPropagation();const i=+x.dataset.invmt;if(i&&!L.includes(i)){menuTab='shop';S3.cat='mont';S3.sel='mount:'+MOUNTS[i].k;renderMenu();return}if(i){S.mount=i;S.lastMount=i;toast(MOUNTS[i].n+': montado!','#8bd86a')}else{if(S.mount)S.lastMount=S.mount;S.mount=0;toast('Você desmontou.','#8bd86a')}save();qmUpd();renderMenu()})}catch(_){}}}
 }
+
+/* ================= v57: visual dos outros jogadores (aura, anel, rastro, mascote) ================= */
+{const _dr=drawRemote;drawRemote=function(p){const L=p.look||{};const lo=typeof GFX!=='undefined'&&GFX.lo;const au=L.aura|0;const RG=(window.__EV&&window.__EV.RING)||{};
+  if(!p.dead&&au){try{const D=AURAS[au];const fy=p.y+(P.r||4);if(D&&D.c){const c=D.c,pu=0.35+0.2*Math.sin(time*4+p.id);ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(p.x,fy-8,1,p.x,fy-8,16);g.addColorStop(0,c[0]+'00');g.addColorStop(0.6,c[0]+Math.round(pu*120).toString(16).padStart(2,'0'));g.addColorStop(1,c[0]+'00');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,fy-8,14,17,0,0,7);ctx.fill();ctx.restore()}
+    const im=RG[au];if(im&&!lo){const w=34,h=im.height*w/im.width,pu=0.75+0.25*Math.sin(time*3+p.id);ctx.save();ctx.globalAlpha=pu;ctx.imageSmoothingEnabled=true;ctx.drawImage(im,p.x-w/2,fy-h*0.72,w,h);ctx.restore()}}catch(_){}}
+  _dr(p);
+  try{const now=time,dt=Math.min(0.1,Math.max(0,now-(p._ct||now)));p._ct=now;if(p.dn==='left')p._dir=-1;else if(p.dn==='right')p._dir=1;const dir=p._dir||1;
+    const mv=hyp((p.tx||p.x)-p.x,(p.ty||p.y)-p.y)>0.5||(p.walk||0)>0;
+    const tr=L.trail|0;if(tr&&!lo&&!p.dead&&mv&&TRAILS[tr]&&Math.random()<dt*22){const T2=TRAILS[tr];parts.push({x:p.x+rand(-3,3),y:p.y+(P.r||4)-1,vx:rand(-4,4),vy:rand(-10,-2),life:0.7,max:0.7,col:pick(T2.c),s:T2.s,g:T2.g||0,nog:T2.nog})}
+    const pk=L.pet|0;if(pk&&PETSPR[pk]&&!p.dead){if(!p.pet)p.pet={x:p.x-10,y:p.y+3,h:0};const q=p.pet,tx=p.x-(dir>0?11:-11),ty=p.y+3,dx=tx-q.x,dy=ty-q.y,d=hyp(dx,dy);if(d>60){q.x=tx;q.y=ty}else if(d>3){const s=Math.min(d,(40+d*3)*dt);q.x+=dx/d*s;q.y+=dy/d*s;q.h+=dt*10}else q.h=0;
+      const fr=PETSPR[pk][Math.floor(q.h)%2],w=fr.width/2/(fr._bk||1),h=fr.height/2/(fr._bk||1);shadow(q.x,q.y,3.5);ctx.save();ctx.translate(q.x,q.y);ctx.imageSmoothingEnabled=true;if(dir<0)ctx.scale(-1,1);ctx.drawImage(fr,-w/2,-h+1,w,h);ctx.restore()}}catch(_){}}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
