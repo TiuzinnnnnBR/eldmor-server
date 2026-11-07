@@ -31,7 +31,7 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
-html,body{height:100%}
+html,body{height:100%;height:100dvh}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
 .panel{background:var(--panel);border:2px solid var(--edge);box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),0 4px 0 rgba(0,0,0,.35);border-radius:3px}
@@ -2524,7 +2524,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v49 · 07/11/2026';
+const ELD_VER='v50 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3679,7 +3679,7 @@ function zoneCheck(){const tx=Math.floor(P.x/T),ty=Math.floor(P.y/T);let z=(P.x<
 const cv=$('c'),ctx=cv.getContext('2d');
 let W=0,H=0,DPR=1,SCALE=3;
 function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=window.innerWidth;H=window.innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);SCALE=clamp(Math.round(Math.min(W,H)/215*2)/2,2,5);if(Math.min(W,H)<=440)SCALE=1.5}
-addEventListener('resize',resize);resize();
+addEventListener('resize',resize);resize();{const fixVH=()=>{const h=window.innerHeight;document.documentElement.style.height=h+'px';document.body.style.height=h+'px';if(scrollY)scrollTo(0,0);if(h!==H||window.innerWidth!==W)resize()};const later=()=>{fixVH();[80,250,600,1200].forEach(t=>setTimeout(fixVH,t))};addEventListener('orientationchange',later);addEventListener('resize',later);if(window.visualViewport)visualViewport.addEventListener('resize',later);document.addEventListener('visibilitychange',()=>{if(!document.hidden)later()});setInterval(fixVH,1000);later()}
 function shadow(x,y,rx){ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,rx,rx*0.4,0,0,7);ctx.fill()}
 function questTarget(){if(S.qDone)return{x:NPCS[0].x,y:NPCS[0].y};const q=curQuest();if(q.k==='boss')return AC_(q.m);
   if(q.k==='chest'){let b=null,bd=1e9;for(const c of chests){if(c.open||c.locked)continue;const d=hyp(c.x-P.x,c.y-P.y);if(d<bd){bd=d;b=c}}return b}
