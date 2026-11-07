@@ -1747,7 +1747,7 @@ const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0)+(S.bagX||0);
 const bagUsed=()=>S.inv.length+consStacks().length;
 const bagFull=()=>bagUsed()>=bagCap();
 const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;if(S.owned&&S.owned[cls+'.'+cat+'.'+i])return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
-const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
+const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('pass:'))return'Passe de Temporada';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
 
 const KEY='eldmor-save-v4',OLDKEYS=['eldmor-save-v3','eldmor-save-v2','eldmor-save-v1'];
 function save(){try{S.x=P.x;S.y=P.y;S.ground=ground.map(g=>({it:g.it,x:g.x,y:g.y}));localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -2524,7 +2524,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v50 · 07/11/2026';
+const ELD_VER='v51 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3470,6 +3470,7 @@ window.__GLD={load:guildLoad,war:warLoad,redeem:redeemCode,gifts:giftsTake,G:()=
    if(cat==='aura'&&RING[i])return u(RING[i]);if(cat==='trail'&&i===6&&A.k_ev_rastro)return u(A.k_ev_rastro);return _ci(cls,cat,i)};for(const k in COSI)delete COSI[k]},50);
  /* círculo das auras especiais embaixo do herói */
  {const _dp=drawPlayer;drawPlayer=function(){try{const L=S&&S.look&&S.look[S.cls];const au=L&&L.aura|0;const im=RING[au];if(im&&mode!=='title'&&!P.dead&&skinOwned(S.cls,'aura',au)&&!GFX.lo){const w=34,h=im.height*w/im.width,pu=0.75+0.25*Math.sin(time*3);ctx.save();ctx.globalAlpha=pu;ctx.imageSmoothingEnabled=true;ctx.drawImage(im,P.x-w/2,P.y+P.r-h*0.72,w,h);ctx.restore()}}catch(_){}return _dp.apply(this,arguments)}}
+ window.__EV={ACC_DEF,WS_DEF,PETEV,EVM,RING};
 }
 
 /* ================= painel do Operador com visual novo + todos os itens especiais sem código ================= */
@@ -3561,6 +3562,224 @@ openGod=function(){mode='modal';const mobs=Object.keys(ED).filter(k=>!/^mimic/.t
 .gp-card.sel{outline:3px solid #ffd040;outline-offset:2px}.gp-card.sel .gp-rar{background:#8a6a10;border-color:#ffd040}
 .gp-card .gp-ico{flex:none;width:48px!important;height:48px!important}
 @media(max-width:760px){.gp-cols{grid-template-columns:1fr}.gp-items{grid-template-columns:1fr}.gp-side{flex-direction:row;flex-wrap:wrap}.gp-cat{flex:1 1 40%}.gp-cnt{flex:1 1 100%}.gp-head.big::after{display:none}}`;document.head.appendChild(st)})();
+
+/* ================= Loja v3: layout novo, Experimentar, presentes, pacotes, coleções, eventos, histórico e Passe de Temporada ================= */
+{const A=window.ARTC||{};const EV=window.__EV||{ACC_DEF:[],WS_DEF:{},PETEV:{},EVM:{},RING:{}};
+/* ---- cosméticos da temporada 1 (Estrelas de Eldmor) ---- */
+AURAS[9]={n:'Estelar',c:['#8a7aff','#bff2ff','#ff9af0','#ffffff']};for(const c of CLS_ORDER){COS[c].aura.o[9]=['Estelar','pass:1']}
+TRAILS[7]={n:'Estelar',c:['#8a7aff','#bff2ff','#ff9af0','#ffffff'],s:1.5};for(const c of CLS_ORDER){COS[c].trail.o[7]=['Estelar','pass:1']}
+{const tint=(fr)=>{try{const o=artTint(fr,[200,235,255],0.55);o._bk=fr._bk;return o}catch(_){return fr}};while(PETDEF.length<25)PETDEF.push(null);
+ PETDEF[25]={n:'Lobo Celestial',r:4,q:'pass:1'};const base=PETSPR[18]||PETSPR[1];PETSPR[25]=base?[tint(base[0]),tint(base[1])]:PETSPR[1];for(const c of CLS_ORDER){while(COS[c].pet.o.length<25)COS[c].pet.o.push(['—','ev:x']);COS[c].pet.o[25]=['Lobo Celestial','pass:1']}}
+const TITLES={'title:natal':'Espírito Natalino','title:halloween':'Senhor das Abóboras','title:pascoa':'Caçador de Ovos','title:estelar':'Viajante Estelar','title:fundador':'Fundador de Eldmor','title:armeiro':'Mestre Armeiro','title:estrela':'Estrela de Eldmor','title:lenda':'Lenda Estelar'};
+window.__TITLES=TITLES;
+/* ---- catálogo (os preços valem os do servidor; aqui é só para mostrar) ---- */
+const EXCL={'ev:asas_fundador':'Exclusivo dos Fundadores','ev:coroa_torneio':'Prêmio do Primeiro Torneio','cos:any.aura.7':'Prêmio da Guerra de Guildas','cos:any.aura.8':'Exclusivo dos Fundadores','cos:any.aura.9':'Passe de Temporada','cos:any.trail.7':'Passe de Temporada','cos:any.pet.25':'Passe de Temporada'};
+const accIdx=k=>{const L=EV.EVM[k];return L&&L[0]&&L[0][0]==='acc'?L[0][1]:0};
+function lookOf(key){if(key.startsWith('cos:')){const[c,cat,i]=key.slice(4).split('.');return{cls:c==='any'?null:c,cat,i:+i}}const L=EV.EVM[key];if(L&&L[0]){const[cat,i,only]=L[0];return{cls:only||null,cat,i}}return null}
+const ICC={};function bboxIcon(fr,sz){const k=fr._u2;if(k)return k;const g0=fr.getContext?fr.getContext('2d'):null;let x0=0,y0=0,w=fr.width,h=fr.height;if(g0){const d=g0.getImageData(0,0,fr.width,fr.height).data;let a=fr.width,b=fr.height,c=0,e=0;for(let y=0;y<fr.height;y++)for(let x=0;x<fr.width;x++)if(d[(y*fr.width+x)*4+3]>20){if(x<a)a=x;if(x>c)c=x;if(y<b)b=y;if(y>e)e=y}if(c>a){x0=a;y0=b;w=c-a+1;h=e-b+1}}const s=Math.min(sz/w,sz/h);const o=document.createElement('canvas');o.width=sz;o.height=sz;const g=o.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(fr,x0,y0,w,h,(sz-w*s)/2,(sz-h*s)/2,w*s,h*s);return fr._u2=o.toDataURL()}
+function auraIcon(i){if(ICC['a'+i])return ICC['a'+i];const ring=EV.RING&&EV.RING[i];const o=document.createElement('canvas');o.width=o.height=72;const g=o.getContext('2d');if(ring){const w=68,h=ring.height*w/ring.width;g.drawImage(ring,2,(72-h)/2,w,h)}else if(AURAS[i]){const c=AURAS[i].c;const gr=g.createRadialGradient(36,40,2,36,40,34);gr.addColorStop(0,c[0]+'cc');gr.addColorStop(0.6,c[0]+'44');gr.addColorStop(1,c[0]+'00');g.fillStyle=gr;g.fillRect(0,0,72,72);for(let k=0;k<16;k++){const a=k/16*Math.PI*2;g.fillStyle=c[k%c.length];g.beginPath();g.arc(36+Math.cos(a)*26,42+Math.sin(a)*10-Math.abs(Math.sin(a*2))*14,3,0,7);g.fill()}}return ICC['a'+i]=o.toDataURL()}
+function iconOf(key,cls){const lk0=lookOf(key);if(lk0&&lk0.cat==='pet'&&PETSPR[lk0.i]&&PETSPR[lk0.i][0]){try{return bboxIcon(PETSPR[lk0.i][0],72)}catch(_){}}if(lk0&&lk0.cat==='aura'&&lk0.i){try{return auraIcon(lk0.i)}catch(_){}}const lk=lk0;if(!lk){if(key==='pal:neon')return'';return''}try{const c=cosIcon(lk.cls||cls||S.cls,lk.cat,lk.i);return typeof c==='string'?c:c&&c.toDataURL?(c._u||(c._u=c.toDataURL())):''}catch(_){return''}}
+function nameOf(key){const lk=lookOf(key);if(EVITEMS[key])return EVITEMS[key];if(key==='pal:neon')return'Paleta Neon';if(lk){try{const n=COS[lk.cls||S.cls][lk.cat].o[lk.i][0];return lk.cat==='aura'?'Aura '+n:lk.cat==='trail'?'Rastro '+n:n}catch(_){}}return key}
+function rarOf(key){const lk=lookOf(key);if(lk&&lk.cat==='pet'&&PETDEF[lk.i])return PETDEF[lk.i].r;const p=price(key)||0;return p>=2000?4:p>=800?3:p>=300?2:p>=150?1:0}
+function price(key){const it=SHOPINFO&&SHOPINFO.shop&&SHOPINFO.shop[key];return it?it.p:null}
+const CATS=[['dest','Destaques','⭐'],['dia','Diamantes','💎'],['asas','Asas e Capas','🪽'],['chap','Chapéus','🎩'],['aura','Auras','✨'],['arma','Armas (Skins)','🗡️'],['pet','Mascotes','🐾'],['rastro','Rastros','☄️'],['pac','Ofertas e Pacotes','🎁'],['passe','Passe de Temporada','👑'],['col','Coleções','🏅'],['evt','Eventos','📅'],['bon','Bônus e Itens','⚡'],['hist','Histórico','🧾'],['cod','Resgatar Código','🎟️']];
+function catalog(cat){const K=[];const add=k=>{if(!K.includes(k))K.push(k)};
+  if(cat==='asas'){add('ev:asas_fundador');add('ev:capa_estelar');add('ev:estandarte')}
+  if(cat==='chap'){add('ev:gorro_natal');add('ev:chapeu_bruxa');add('ev:coroa_torneio');for(const c of CLS_ORDER)COS[c].hat.o.forEach((o,i)=>{if(String(o[1]).startsWith('dia:'))add('cos:'+c+'.hat.'+i)})}
+  if(cat==='aura'){[4,5,6,7,8,9].forEach(i=>add('cos:any.aura.'+i))}
+  if(cat==='arma'){add('ev:espada_alada');add('ev:arco_gelo');add('ev:cajado_galaxia')}
+  if(cat==='pet'){PETDEF.forEach((d,i)=>{if(!d)return;const k=EVITEMSK(i)||('cos:any.pet.'+i);if(price(k)||EXCL[k])add(k)})}
+  if(cat==='rastro'){[3,4,5,6,7].forEach(i=>add('cos:any.trail.'+i));add('pal:neon')}
+  if(cat==='dest'){['ev:capa_estelar','ev:dragao_cristal','ev:espada_alada','ev:rena','ev:abobora','cos:any.trail.6','ev:gorro_natal','cos:any.aura.6','cos:any.pet.17','ev:asas_fundador'].forEach(add)}
+  return K}
+const EVITEMSK=i=>{for(const q in EV.PETEV)if(EV.PETEV[q]===i)return q;return null};
+/* ---- estado ---- */
+let S3=window.__S3={cat:'dest',sel:null,cls:null,info:null,pass:null,hist:null,modal:null,rid:null,busy:false};
+const rid=()=>{try{return crypto.randomUUID()}catch(_){return Date.now().toString(36)+Math.random().toString(36).slice(2,12)}};
+async function s3info(){if(S3.info)return S3.info;try{S3.info=await api('shop3')}catch(_){}return S3.info}
+const owns=k=>{const o=(ACC&&ACC.owned)||{};if(o[k])return true;const lk=lookOf(k);if(lk&&k.startsWith('cos:')){try{return skinOwned(lk.cls||S.cls,lk.cat,lk.i)&&!!(S.owned&&S.owned[(lk.cls||S.cls)+'.'+lk.cat+'.'+lk.i])}catch(_){}}return false};
+const logged=()=>!!(ACC&&ACC.tok);
+const fmt=n=>(n|0).toLocaleString('pt-BR');
+const dt=s=>new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+/* ---- prévia (Experimentar): desenha o herói com o item num canvas, sem mexer na aparência salva ---- */
+function previewLook(){const cls=S3.cls||S.cls;const lk=JSON.parse(JSON.stringify(S.look[cls]));let pet=lk.pet|0,aura=lk.aura|0,trail=lk.trail|0;const k=S3.sel;
+  if(k){const L=lookOf(k);if(L){if(L.cat==='pet')pet=L.i;else if(L.cat==='aura')aura=L.i;else if(L.cat==='trail')trail=L.i;else lk[L.cat]=L.i}}
+  return{cls,lk,pet,aura,trail}}
+let PVT=0;function drawPreview(){const c=document.getElementById('s3pv');if(!c||menuEl.hidden||menuTab!=='shop'){return}const g=c.getContext('2d'),W=c.width,H=c.height;g.clearRect(0,0,W,H);g.imageSmoothingEnabled=true;
+  const{cls,lk,pet,aura,trail}=previewLook();const t=performance.now()/1000;const dirs=['down','side','up','side'];const di=Math.floor(t/2.2)%4,dir=dirs[di],flip=di===3;
+  let sh;try{sh=heroSheet(cls,lk)}catch(_){return}const walk=!!trail;const seq=sh[dir][walk?'walk':'idle'];const fr=seq[Math.floor(t*(walk?8:2))%seq.length];
+  const k=H*0.5/((fr._bk||1)*46.4);const w=fr.width*k,h=fr.height*k,cx=W*0.5,fy=H*0.86;
+  // pedestal
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(cx,fy,W*0.3,H*0.05,0,0,7);g.fill();g.strokeStyle='rgba(242,193,78,.55)';g.lineWidth=2;g.beginPath();g.ellipse(cx,fy,W*0.3,H*0.05,0,0,7);g.stroke();
+  // aura
+  if(aura){const ring=EV.RING&&EV.RING[aura];if(ring){const rw=W*0.5,rh=ring.height*rw/ring.width;g.globalAlpha=0.75+0.25*Math.sin(t*3);g.drawImage(ring,cx-rw/2,fy-rh*0.72,rw,rh);g.globalAlpha=1}
+    else if(AURAS[aura]){const cols=AURAS[aura].c;for(let i=0;i<14;i++){const a=t*1.6+i/14*Math.PI*2,r=W*0.24;const x=cx+Math.cos(a)*r,y=fy-H*0.05+Math.sin(a)*H*0.05-((t*40+i*13)%(H*0.4));g.fillStyle=cols[i%cols.length];g.globalAlpha=0.8;g.beginPath();g.arc(x,y,2.6,0,7);g.fill()}g.globalAlpha=1;
+      const gr=g.createRadialGradient(cx,fy-H*0.2,0,cx,fy-H*0.2,W*0.42);gr.addColorStop(0,cols[0]+'55');gr.addColorStop(1,cols[0]+'00');g.fillStyle=gr;g.fillRect(0,0,W,H)}}
+  // rastro
+  if(trail&&TRAILS[trail]){const cols=TRAILS[trail].c;for(let i=0;i<22;i++){const p=(t*1.2+i/22)%1;const x=cx+(flip?1:-1)*(dir==='side'?p*W*0.45:0)+(dir==='side'?0:Math.sin(i*7)*W*0.12),y=fy-2+(dir==='side'?Math.sin(i*3)*6:p*H*0.12);g.globalAlpha=1-p;g.fillStyle=cols[i%cols.length];g.beginPath();g.arc(x,y,3.2*(1-p)+1,0,7);g.fill()}g.globalAlpha=1}
+  g.save();if(flip){g.translate(W,0);g.scale(-1,1)}g.drawImage(fr,(flip?W-cx:cx)-w/2,fy-h,w,h);g.restore();
+  // mascote
+  if(pet&&PETSPR[pet]){const pf=PETSPR[pet][Math.floor(t*3)%2];const pk=H*0.17/((pf.height/(pf._bk||1))/2||1)/2;const pw=pf.width*pk,ph=pf.height*pk;g.drawImage(pf,cx+W*0.2,fy-ph-Math.abs(Math.sin(t*3))*4,pw,ph)}
+  PVT=requestAnimationFrame(drawPreview)}
+/* ---- HTML ---- */
+function card(k,opt){opt=opt||{};const p=price(k),own=owns(k),ex=EXCL[k],lk=lookOf(k);const ic=iconOf(k,lk&&lk.cls);const r=rarOf(k);
+  const nm=nameOf(k)+(lk&&lk.cls&&lk.cat!=='hat'?'':lk&&lk.cls?' ('+CLASSES[lk.cls].n+')':'');
+  const btn=own?`<button class="btn s3own" disabled>✔ Já é seu</button>`:ex&&!p?`<button class="btn s3ex" disabled>${ex}</button>`:p!=null?`<button class="btn pri s3b" data-s3buy="${k}">💎 ${fmt(p)}</button>`:`<button class="btn" disabled>Indisponível</button>`;
+  return`<div class="s3c r${r}${S3.sel===k?' sel':''}" data-s3sel="${k}">${opt.badge?`<span class="s3bad">${opt.badge}</span>`:''}<div class="s3ic">${ic?`<img src="${ic}" alt="">`:k==='pal:neon'?`<div class="neon">${NEON.slice(0,8).map(c=>`<i style="background:${c}"></i>`).join('')}</div>`:'✨'}</div><b>${escA(nm)}</b>${btn}${p!=null&&!own?`<button class="btn s s3g" data-s3gift="${k}" title="Presentear">🎁</button>`:''}</div>`}
+function packsHTML(){const I=SHOPINFO||{packs:{}};const best={p3:'Mais vendido',p5:'Melhor valor'};const pk=Object.entries(I.packs||{});
+  return`<div class="s3grid">${pk.map(([k,p],i)=>{const bon=(p.n.match(/\+\d+%/)||[''])[0];return`<div class="s3c dia r${Math.min(4,i)}">${best[k]?`<span class="s3bad">${best[k]}</span>`:''}<div class="s3ic"><div class="dgem" style="--n:${Math.min(5,i+1)}">${'💎'.repeat(Math.min(5,i+1))}</div></div><b>${fmt(p.dia)} diamantes</b><span class="s3d">${bon?'Já inclui bônus de '+bon:'Sem bônus'}<br>Dá para: ${p.dia>=2000?'1 mascote mítico':p.dia>=900?'1 mascote lendário':p.dia>=400?'1 visual de arma':p.dia>=150?'1 chapéu ou rastro':'boosts e itens'}</span><button class="btn pri s3b" data-s3pack="${k}" ${logged()&&I.pay?'':'disabled'}>${brl(p.price)}</button></div>`}).join('')||'<p class="muted">Carregando...</p>'}</div>
+  <p class="muted s3note">${I.pay?'Pagamento pelo Mercado Pago (Pix ou cartão). Os diamantes só entram depois que o Mercado Pago confirma o pagamento.':'As compras com dinheiro estão desligadas no momento.'}</p>`}
+function bundlesHTML(){const B=S3.info&&S3.info.bundles;if(!B)return'<p class="muted">Carregando...</p>';
+  return`<div class="s3grid wide">${Object.entries(B).map(([id,b])=>{const miss=b.items.filter(k=>!owns(k));const full=miss.reduce((s,k)=>s+(price(k)||0),0);const pr=Math.round(full*(1-b.off));
+    return`<div class="s3c bund r3"><span class="s3bad">-${Math.round(b.off*100)}%</span><div class="s3bic">${b.items.map(k=>`<div class="${owns(k)?'ok':''}" data-s3sel="${k}" title="${escA(nameOf(k))}">${iconOf(k)?`<img src="${iconOf(k)}" alt="">`:'✨'}${owns(k)?'<i>✔</i>':''}</div>`).join('')}</div><b>${escA(b.n)}</b><span class="s3d">${b.items.map(k=>escA(nameOf(k))).join(' · ')}</span>
+    ${miss.length?`<span class="s3d"><s>${fmt(full)} 💎</s> por <b style="color:#6ad8ff">${fmt(pr)} 💎</b>${miss.length<b.items.length?' (só o que falta)':''}</span><button class="btn pri s3b" data-s3bund="${id}" data-pr="${pr}" ${logged()?'':'disabled'}>Comprar pacote</button>`:'<button class="btn s3own" disabled>✔ Você já tem tudo</button>'}</div>`}).join('')}</div>`}
+function bonusHTML(){const o=(ACC&&ACC.owned)||{};const it=[['boost:xp','XP +50% por 1 hora','📜'],['boost:gold','Ouro +50% por 1 hora','🪙'],['chest:rare','Baú Raro (1 item épico, até 3 por dia)','🧰'],['bag',`Bolsa Extra +10 espaços (${o.bag||0}/5)`,'🎒'],['scroll5','5 Pergaminhos de Retorno','🌀']];
+  return`<div class="s3grid">${it.map(([k,n,e])=>{const p=price(k);const dis=!logged()||(k==='bag'&&(o.bag||0)>=5);return`<div class="s3c r1"><div class="s3ic"><div class="sem">${e}</div></div><b>${n}</b><button class="btn pri s3b" data-s3use="${k}" data-n="${escA(n)}" ${dis?'disabled':''}>💎 ${p==null?'—':fmt(p)}</button></div>`}).join('')}</div><p class="muted s3note">Bônus e baús são consumíveis. O baú nunca dá itens lendários.</p>`}
+function collHTML(){const I=S3.info;if(!I)return'<p class="muted">Carregando...</p>';const o=(ACC&&ACC.owned)||{};
+  const tl=Object.keys(TITLES).filter(k=>o[k]);
+  return`<div class="s3coll">${I.coll.map(c=>{const n=c.items.filter(k=>owns(k)).length,done=n===c.items.length,got=o[c.reward];return`<div class="s3cl${done?' done':''}"><div class="s3clh"><b>Coleção ${escA(c.n)}</b><span>${n}/${c.items.length}</span></div><div class="s3bic">${c.items.map(k=>`<div class="${owns(k)?'ok':''}" data-s3sel="${k}" title="${escA(nameOf(k))}">${iconOf(k)?`<img src="${iconOf(k)}" alt="">`:'✨'}${owns(k)?'<i>✔</i>':''}</div>`).join('')}</div>
+    <div class="s3clf">Recompensa: título <b>“${escA(TITLES[c.reward]||c.reward)}”</b> ${got?'<span class="ok">✔ Resgatado</span>':`<button class="btn s ${done?'pri':''}" data-s3coll="${c.id}" ${done&&logged()?'':'disabled'}>Resgatar</button>`}</div></div>`}).join('')}
+    <div class="s3cl"><div class="s3clh"><b>Coleção Aniversário</b><span>em breve</span></div><p class="muted" style="margin:6px 0">Os itens do 1º aniversário chegam no evento de novembro de 2027.</p></div></div>
+  <div class="pnl" style="margin-top:12px"><h4>Seu título</h4><p class="muted" style="font-size:12px">O título aparece no Ranking. Ganhe títulos completando coleções e o Passe de Temporada.</p><div class="row" style="flex-wrap:wrap">${tl.length?tl.map(k=>`<button class="btn s ${o.title===k?'pri':''}" data-s3title="${k}">${escA(TITLES[k])}</button>`).join('')+`<button class="btn s" data-s3title="">Sem título</button>`:'<span class="muted">Você ainda não tem títulos.</span>'}</div></div>`}
+function evtHTML(){const I=S3.info;if(!I)return'<p class="muted">Carregando...</p>';const now=Date.parse(I.now)||Date.now();const o=(ACC&&ACC.owned)||{};
+  return`<div class="s3coll">${I.events.map(e=>{const a=Date.parse(e.from),b=Date.parse(e.to);const st=now<a?'Em breve':now>b?'Encerrado':'Acontecendo agora';const on=now>=a&&now<=b;const g=e.gift;
+    return`<div class="s3cl${on?' done':''}"><div class="s3clh"><b>${escA(e.n)}</b><span>${st}</span></div><p style="margin:6px 0">De <b>${dt(e.from)}</b> a <b>${dt(e.to)}</b></p><p class="muted" style="margin:0 0 6px;font-size:13px">Presente grátis para quem entrar no evento: ${g.dia} 💎, ${fmt(g.gold)} de ouro, ${g.hp} poções de vida e ${g.mp} de mana.${e.coll?' Itens da coleção '+escA((I.coll.find(c=>c.id===e.coll)||{}).n||'')+' ficam em destaque.':''}</p>
+    ${o['evc:'+e.id]?'<span class="ok">✔ Presente resgatado</span>':`<button class="btn s ${on?'pri':''}" data-s3evt="${e.id}" ${on&&logged()?'':'disabled'}>${on?'Pegar presente':st}</button>`}</div>`}).join('')}</div><p class="muted s3note">As datas são reais (horário de Brasília). Não existe contagem falsa nem estoque limitado: os itens à venda continuam à venda.</p>`}
+function histHTML(){if(!logged())return'<p class="muted">Entre na sua conta para ver o histórico.</p>';const H=S3.hist;if(!H)return'<p class="muted">Carregando...</p>';
+  const row=t=>`<tr><td>${new Date(t.at).toLocaleString('pt-BR')}</td><td>${escA(t.kind)}</td><td>${escA(t.item?(TITLES[t.item]||(t.item.startsWith('pass:')?'Passe Premium (temporada '+t.item.slice(5)+')':t.kind==='pacote'?t.item.replace(/:\s*(.*)$/,(m,l)=>': '+l.split(',').map(nameOf).join(', ')):nameOf(t.item))):'')}${t.other?' · '+escA(t.other):''}</td><td>${t.price?'-'+fmt(t.price)+' 💎':''}</td></tr>`;
+  return`<div class="pnl"><h4>Compras com dinheiro</h4><table class="rank"><thead><tr><th>Data</th><th>Pagamento</th><th>Diamantes</th><th>Status</th></tr></thead><tbody>${(H.pays||[]).map(p=>`<tr><td>${p.at?new Date(p.at).toLocaleString('pt-BR'):'-'}</td><td>${escA(p.id)}</td><td>+${fmt(p.dia)}</td><td>${p.status==='approved'?'Aprovado':escA(p.status||'')}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Nenhuma compra com dinheiro.</td></tr>'}</tbody></table></div>
+  <div class="pnl" style="margin-top:10px"><h4>Diamantes gastos, presentes e recompensas</h4><table class="rank"><thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th></tr></thead><tbody>${(H.tx||[]).map(row).join('')||'<tr><td colspan="4" class="muted">Nada ainda.</td></tr>'}</tbody></table></div>`}
+function codHTML(){const o=(ACC&&ACC.owned)||{};const evOwn=Object.keys(EVITEMS).filter(k=>o[k]);return`<div class="pnl s3red"><h4>🎟️ Resgatar código</h4><p class="muted" style="font-size:13px">Códigos de eventos, lives e sorteios. Cada código vale uma vez por conta.</p><div class="row"><input id="rd-code" class="ninput gin" maxlength="24" placeholder="Digite o código" autocomplete="off"><button class="btn pri" id="rd-go">Resgatar</button></div><p id="rd-out" class="muted" style="font-size:13px;min-height:1.2em"></p>${evOwn.length?`<p class="muted" style="font-size:12px">Seus itens de evento: ${evOwn.map(k=>'<b style="color:#ffe49a">'+escA(EVITEMS[k])+'</b>').join(', ')}</p>`:''}</div>`}
+function rewTxt(r){if(!r)return'';const a=[];if(r.dia)a.push(r.dia+' 💎');if(r.gold)a.push(fmt(r.gold)+' ouro');if(r.hp)a.push(r.hp+' poções de vida');if(r.mp)a.push(r.mp+' de mana');if(r.scroll)a.push(r.scroll+' pergaminho');for(const k of r.items||[])a.push(TITLES[k]?'título “'+TITLES[k]+'”':nameOf(k));return a.join(' + ')}
+function rewIc(r){const k=(r.items||[]).find(x=>!x.startsWith('title:'));if(k){const u=iconOf(k);if(u)return`<img src="${u}" alt="">`}if((r.items||[]).length)return'🏷️';if(r.dia)return'💎';if(r.gold)return'🪙';if(r.hp)return'🧪';return'🎁'}
+function passHTML(){const I=S3.info;if(!I)return'<p class="muted">Carregando...</p>';const P=I.pass;if(!logged())return`<div class="pnl" style="text-align:center"><p>Entre na sua conta para jogar o Passe de Temporada.</p><button class="btn pri" id="s3login">Entrar / Criar conta</button></div>`;
+  const st=S3.pass;if(!st)return'<p class="muted">Carregando seu passe...</p>';const p=st.pass;const lvl=Math.min(P.tiers,Math.floor((p.xp||0)/P.per));const into=(p.xp||0)-lvl*P.per;const prog=lvl>=P.tiers?100:Math.round(into/P.per*100);
+  const M=P.miss;const cnt=missCount();
+  const mrow=id=>{const m=M[id],box=m.per==='d'?p.md:p.mw,done=box&&box.done.includes(id);const[cur,goal]=cnt[id];return`<div class="s3m${done?' ok':''}"><span>${escA(m.n)}</span><div class="s3bar"><i style="width:${Math.min(100,cur/goal*100)}%"></i></div><small>${Math.min(cur,goal)}/${goal}</small><b>+${m.xp} XP</b>${done?'<span class="ok">✔</span>':`<button class="btn s ${cur>=goal?'pri':''}" data-s3mis="${id}" ${cur>=goal&&st.active?'':'disabled'}>Concluir</button>`}</div>`};
+  const tier=t=>{const f=P.rewards.f[t-1],pr=P.rewards.p[t-1];const cf=p.cf.includes(t),cp=p.cp.includes(t),un=t<=lvl;
+    return`<div class="s3t${un?' un':''}"><div class="s3tn">${t}</div><div class="s3tr f${cf?' got':''}" title="${escA(rewTxt(f))}">${rewIc(f)}<small>${escA(rewTxt(f))}</small>${cf?'<i>✔</i>':un?`<button class="btn s pri" data-s3claim="f:${t}">Pegar</button>`:''}</div><div class="s3tr p${cp?' got':''}${p.prem?'':' lock'}" title="${escA(rewTxt(pr))}" ${(pr.items||[]).find(x=>!x.startsWith('title:'))?`data-s3sel="${(pr.items||[]).find(x=>!x.startsWith('title:'))}"`:''}>${rewIc(pr)}<small>${escA(rewTxt(pr))}</small>${cp?'<i>✔</i>':un&&p.prem?`<button class="btn s pri" data-s3claim="p:${t}">Pegar</button>`:p.prem?'':'<em>🔒</em>'}</div></div>`};
+  return`<div class="s3pass"><div class="s3ph"><div><div class="s3pt">👑 Passe de Temporada · ${escA(P.n)}</div><div class="muted">Temporada ${P.s}: de <b>${dt(P.from)}</b> a <b>${dt(P.to)}</b>${st.active?'':' (fora do período)'}</div></div>
+    <div class="s3plv"><b>Nível ${lvl}</b>/${P.tiers}<div class="s3bar big"><i style="width:${prog}%"></i></div><small>${lvl>=P.tiers?'Passe completo!':fmt(into)+' / '+fmt(P.per)+' XP para o próximo nível'}</small></div>
+    ${p.prem?'<div class="s3prem on">✔ Premium ativo</div>':`<div class="s3prem"><button class="btn pri" id="s3pbuy" ${st.active?'':'disabled'}>Ativar Premium · ${P.price} 💎</button><small>Libera a trilha dourada: Aura Estelar, Rastro Estelar, Lobo Celestial, título “Lenda Estelar” e ${P.rewards.p.reduce((s,r)=>s+(r.dia||0),0)} 💎 de volta.</small></div>`}</div>
+    <div class="s3mis"><div><h4>Missões diárias</h4>${['d1','d2','d3'].map(mrow).join('')}</div><div><h4>Missões semanais</h4>${['w1','w2','w3'].map(mrow).join('')}</div></div>
+    <p class="muted" style="font-size:12px;margin:6px 0">Toque numa recompensa da trilha dourada para ver no seu personagem antes de comprar. As missões diárias renovam à meia-noite e as semanais na segunda-feira (horário de Brasília).</p>
+    <div class="s3trk"><div class="s3tl"><span>Grátis</span><span>Premium</span></div>${Array.from({length:P.tiers},(_,i)=>tier(i+1)).join('')}</div></div>`}
+function centerHTML(){const c=S3.cat;
+  if(c==='dia')return`<h3 class="s3h">💎 Diamantes</h3>${packsHTML()}`;
+  if(c==='pac')return`<h3 class="s3h">🎁 Ofertas e Pacotes</h3><p class="muted s3note">Pacotes com ${Math.round(((S3.info&&Object.values(S3.info.bundles)[0]||{}).off||0.2)*100)}% de desconto. Se você já tem algum item do pacote, só paga pelo que falta.</p>${bundlesHTML()}`;
+  if(c==='passe')return passHTML();if(c==='col')return`<h3 class="s3h">🏅 Coleções</h3>${collHTML()}`;if(c==='evt')return`<h3 class="s3h">📅 Eventos</h3>${evtHTML()}`;
+  if(c==='bon')return`<h3 class="s3h">⚡ Bônus e Itens</h3>${bonusHTML()}`;if(c==='hist')return`<h3 class="s3h">🧾 Histórico</h3>${histHTML()}`;if(c==='cod')return codHTML();
+  const ttl=(CATS.find(x=>x[0]===c)||[])[1];const K=catalog(c);
+  const ban=c==='dest'&&S3.info?`<div class="s3ban"><div><div class="s3bt">👑 Passe de Temporada</div><div class="s3bs">${escA(S3.info.pass.n)} · até ${dt(S3.info.pass.to)}</div><p>Missões diárias e semanais, recompensas grátis e a trilha Premium com Aura Estelar, Rastro Estelar e o mascote Lobo Celestial.</p><button class="btn pri" data-s3cat="passe">Ver Passe ›</button></div><div class="s3banart">${[iconOf('cos:any.pet.25'),iconOf('cos:any.aura.9'),iconOf('cos:any.trail.7')].filter(Boolean).map(u=>`<img src="${u}" alt="">`).join('')}</div></div>`:'';
+  const novos=new Set(['ev:gorro_natal','ev:chapeu_bruxa','ev:capa_estelar','ev:estandarte','ev:coelho_pascoa','ev:abobora','ev:rena','ev:dragao_cristal','ev:espada_alada','ev:arco_gelo','ev:cajado_galaxia','cos:any.trail.6']);
+  return`${ban}<h3 class="s3h">${c==='dest'?'⭐ Itens em destaque':escA(ttl||'')}</h3><div class="s3grid">${K.map(k=>card(k,{badge:novos.has(k)&&!owns(k)?'Novo':''})).join('')}</div>`}
+function previewHTML(){const k=S3.sel;const cls=S3.cls||S.cls;const lk=k?lookOf(k):null;const p=k?price(k):null,own=k?owns(k):false;
+  return`<div class="s3pvb"><h4>👁️ Pré-visualização</h4><div class="s3pvc"><canvas id="s3pv" width="240" height="250"></canvas></div><div class="seg sm s3cls">${CLS_ORDER.map(c=>`<button data-s3cls="${c}" class="${cls===c?'on':''}">${CLASSES[c].n}</button>`).join('')}</div>
+  ${k?`<b class="s3pn">${escA(nameOf(k))}</b><span class="s3d">${own?'Você já tem este item.':EXCL[k]&&!p?escA(EXCL[k]):p!=null?fmt(p)+' 💎':''}</span>
+   <div class="s3pbt">${own&&lk?`<button class="btn pri" data-s3eq="${k}">Equipar</button>`:''}${!own&&p!=null?`<button class="btn pri" data-s3buy="${k}">Comprar</button><button class="btn" data-s3gift="${k}">🎁 Presentear</button>`:''}<button class="btn s" data-s3clear="1">Tirar prévia</button></div>`
+   :`<span class="s3d">Toque num item para <b>experimentar</b> no seu personagem. Nada é cobrado e sua aparência não muda.</span>`}
+  <p class="muted" style="font-size:11px;margin:6px 0 0">Itens da loja são só visuais. Não mudam dano, defesa nem atributos.</p></div>`}
+function modalHTML(){const m=S3.modal;if(!m)return'';const o=(ACC&&ACC.dia)|0;
+  if(m.t==='buy'||m.t==='bund'||m.t==='use'||m.t==='pass'){const after=o-m.price;return`<div class="s3mod"><div class="pnl"><h4>Confirmar compra</h4><p>${escA(m.label)}</p><p>Preço: <b style="color:#6ad8ff">${fmt(m.price)} 💎</b> · Seu saldo: ${fmt(o)} 💎${after>=0?' → '+fmt(after)+' 💎':''}</p>${after<0?`<p class="up">Faltam ${fmt(-after)} diamantes.</p>`:''}<div class="row"><button class="btn pri" id="s3ok" ${after<0||S3.busy?'disabled':''}>${S3.busy?'Comprando...':'Confirmar'}</button>${after<0?'<button class="btn" data-s3cat="dia" id="s3get">Ver diamantes</button>':''}<button class="btn" id="s3no">Cancelar</button></div></div></div>`}
+  if(m.t==='gift')return`<div class="s3mod"><div class="pnl"><h4>🎁 Presentear</h4><p>${escA(nameOf(m.key))} · <b style="color:#6ad8ff">${fmt(m.price)} 💎</b> (sai do seu saldo: ${fmt(o)} 💎)</p><input id="s3gto" class="ninput gin" maxlength="16" placeholder="Nome do jogador" autocomplete="off" value="${escA(m.to||'')}"><p id="s3gmsg" class="muted" style="min-height:1.2em;font-size:13px">${escA(m.msg||'')}</p><div class="row"><button class="btn pri" id="s3gok" ${S3.busy?'disabled':''}>${S3.busy?'Enviando...':'Enviar presente'}</button><button class="btn" id="s3no">Cancelar</button></div></div></div>`;
+  return''}
+shopHTML=function(){const dia=logged()?(ACC.dia|0):0;
+  return`<div class="s3"><div class="s3top"><div class="s3acc">${logged()?`Conta <b>${escA(ACC.name)}</b>`:'<button class="btn s pri" id="shoplogin">Entrar / Criar conta</button>'}</div><div class="s3dia" data-s3cat="dia" title="Comprar diamantes">💎 <b>${fmt(dia)}</b><span class="s3plus">+</span></div></div>
+  <div class="s3body"><nav class="s3side">${CATS.map(([k,n,e])=>`<button class="${S3.cat===k?'on':''}" data-s3cat="${k}"><span>${e}</span>${n}</button>`).join('')}</nav>
+  <div class="s3main">${centerHTML()}</div><aside class="s3pvw">${previewHTML()}</aside></div>
+  <div class="s3foot">✔ Itens da loja são apenas visuais e de personalização. Não afetam o equilíbrio do combate. Diamantes também caem de chefes, baús e missões.</div>${modalHTML()}</div>`};
+/* ---- ações ---- */
+function useApply(k){S.buffs=S.buffs||{};const now=Date.now();if(k==='boost:xp')S.buffs.bxp=Math.max(now,S.buffs.bxp||0)+3600e3;if(k==='boost:gold')S.buffs.bgold=Math.max(now,S.buffs.bgold||0)+3600e3;if(k==='scroll5')S.scroll=(S.scroll||0)+5;
+  if(k==='chest:rare'){const T=pick(['sword','bow','staff','shield','quiver','helm','hood','hat','chest_h','chest_l','robe','legs','boots','gloves','cape','belt','ring','amulet']);const it=genItem(T,null,3,Math.max(1,S.lvl));S.inv.unshift(it);toast('O baú tinha: '+dname(it),RCOL[3]);sfx('chest')}}
+function equip(k){const L=lookOf(k);if(!L)return;const cls=L.cls||S3.cls||S.cls;S.look[cls][L.cat]=L.i;save();toast(nameOf(k)+' equipado!','#8bd86a')}
+function afterAcc(r){if(r.dia!=null){ACC.dia=r.dia;S.dia=r.dia}if(r.owned){ACC.owned=r.owned}accStore();accOwned()}
+async function doConfirm(){const m=S3.modal;if(!m||S3.busy)return;S3.busy=true;renderMenu();
+  try{let r;if(m.t==='buy'||m.t==='use')r=await api('spend',{item:m.key,rid:m.rid});else if(m.t==='bund')r=await api('bundle',{id:m.key,rid:m.rid,price:m.price});else if(m.t==='pass'){r=await api('pass/buy',{rid:m.rid});S3.pass=Object.assign({},S3.pass,{pass:r.pass})}
+    afterAcc(r);sfx('lvl');if(m.t==='use'){if(!r.dup)useApply(m.key);toast('Comprado: '+m.label,'#6ad8ff')}else if(m.t==='buy'){toast(nameOf(m.key)+' é seu!','#6ad8ff');if(lookOf(m.key))equip(m.key)}else if(m.t==='bund')toast('Pacote comprado! Os itens já estão na aba Aparência.','#6ad8ff');else toast('Passe Premium ativado!','#ffd04a');
+    S3.modal=null;S3.hist=null;save()}catch(e){toast(e.message,'#ff7a6e');if(e.message&&/preço mudou/i.test(e.message)){S3.modal=null}}
+  S3.busy=false;renderMenu()}
+async function doGift(){const m=S3.modal;if(!m||S3.busy)return;const to=($('s3gto').value||'').trim();if(!to){m.msg='Digite o nome do jogador.';renderMenu();return}m.to=to;S3.busy=true;renderMenu();
+  try{const r=await api('gift',{item:m.key,to,rid:m.rid});afterAcc(r);sfx('lvl');toast('Presente enviado para '+r.to+'!','#ffd04a');S3.modal=null;S3.hist=null}catch(e){m.msg=e.message;m.rid=rid()}S3.busy=false;renderMenu()}
+async function passLoad(){if(!logged())return;try{S3.pass=await api('pass')}catch(e){toast(e.message,'#ff7a6e')}if(menuTab==='shop'&&!menuEl.hidden)renderMenu()}
+async function histLoad(){if(!logged())return;try{S3.hist=await api('history')}catch(e){S3.hist={tx:[],pays:[]}}if(menuTab==='shop'&&!menuEl.hidden)renderMenu()}
+shopBind=function(){const q=s=>mbody.querySelectorAll(s);cancelAnimationFrame(PVT);
+  if($('shoplogin'))$('shoplogin').onclick=()=>{closeMenu();openLogin()};if($('s3login'))$('s3login').onclick=()=>{closeMenu();openLogin()};
+  q('[data-s3cat]').forEach(b=>b.onclick=e=>{e.stopPropagation();S3.cat=b.dataset.s3cat;S3.modal=null;if(S3.cat==='passe'&&!S3.pass)passLoad();if(S3.cat==='hist')histLoad();renderMenu();const m=mbody.querySelector('.s3main');if(m)m.scrollTop=0});
+  q('[data-s3sel]').forEach(b=>b.onclick=e=>{if(e.target.closest('button'))return;e.stopPropagation();const k=b.dataset.s3sel;S3.sel=S3.sel===k?null:k;const L=lookOf(k);if(L&&L.cls)S3.cls=L.cls;renderMenu();if(innerWidth<900){const p=mbody.querySelector('.s3pvw');if(p)p.scrollIntoView({behavior:'smooth',block:'nearest'})}});
+  q('[data-s3cls]').forEach(b=>b.onclick=e=>{e.stopPropagation();S3.cls=b.dataset.s3cls;renderMenu()});
+  q('[data-s3clear]').forEach(b=>b.onclick=e=>{e.stopPropagation();S3.sel=null;renderMenu()});
+  q('[data-s3eq]').forEach(b=>b.onclick=e=>{e.stopPropagation();equip(b.dataset.s3eq);renderMenu()});
+  q('[data-s3buy]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!logged()){openLogin('Entre na sua conta para usar diamantes.');return}const k=b.dataset.s3buy;S3.sel=k;S3.modal={t:'buy',key:k,price:price(k),label:'Comprar '+nameOf(k)+'?',rid:rid()};renderMenu()});
+  q('[data-s3use]').forEach(b=>b.onclick=e=>{e.stopPropagation();const k=b.dataset.s3use;S3.modal={t:'use',key:k,price:price(k),label:'Comprar '+b.dataset.n+'?',rid:rid()};renderMenu()});
+  q('[data-s3bund]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.s3bund;S3.modal={t:'bund',key:id,price:+b.dataset.pr,label:'Comprar o '+S3.info.bundles[id].n+'?',rid:rid()};renderMenu()});
+  q('[data-s3gift]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!logged()){openLogin('Entre na sua conta para presentear.');return}const k=b.dataset.s3gift;S3.modal={t:'gift',key:k,price:price(k),rid:rid()};renderMenu();setTimeout(()=>{const i=$('s3gto');if(i)i.focus()},30)});
+  q('[data-s3pack]').forEach(b=>b.onclick=async e=>{e.stopPropagation();b.disabled=true;b.textContent='Abrindo...';try{const r=await api('buy',{pack:b.dataset.s3pack});window.open(r.url,'_blank');toast('Termine o pagamento na página do Mercado Pago. Os diamantes chegam sozinhos quando o pagamento for aprovado.','#6ad8ff');accPoll()}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3coll]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('collection/claim',{id:b.dataset.s3coll});afterAcc(r);sfx('lvl');toast('Título desbloqueado!','#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3title]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('title',{title:b.dataset.s3title});afterAcc(r);toast(b.dataset.s3title?'Título: '+TITLES[b.dataset.s3title]:'Título removido','#8bd86a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3evt]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('event/claim',{id:b.dataset.s3evt});afterAcc(r);giftsTake();sfx('lvl');toast('Presente do evento recebido!','#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3mis]').forEach(b=>b.onclick=async e=>{e.stopPropagation();b.disabled=true;try{const r=await api('pass/mission',{id:b.dataset.s3mis});S3.pass.pass=r.pass;sfx('lvl');toast('Missão concluída! +XP no passe','#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3claim]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const[tr,t]=b.dataset.s3claim.split(':');b.disabled=true;try{const r=await api('pass/claim',{track:tr,tier:+t});S3.pass.pass=r.pass;afterAcc(r);giftsTake();sfx('chest');toast('Recompensa: '+rewTxt(r.reward),'#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  if($('s3pbuy'))$('s3pbuy').onclick=e=>{e.stopPropagation();const P=S3.info.pass;S3.modal={t:'pass',key:'pass',price:P.price,label:'Ativar o Passe Premium da temporada '+P.n+'?',rid:rid()};renderMenu()};
+  if($('s3ok'))$('s3ok').onclick=e=>{e.stopPropagation();doConfirm()};if($('s3gok'))$('s3gok').onclick=e=>{e.stopPropagation();doGift()};if($('s3gto'))$('s3gto').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')doGift()};
+  if($('s3no'))$('s3no').onclick=e=>{e.stopPropagation();S3.modal=null;S3.busy=false;renderMenu()};
+  const go=()=>redeemCode($('rd-code').value,$('rd-out'));if($('rd-go'))$('rd-go').onclick=go;if($('rd-code'))$('rd-code').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')go()};
+  if(!S3.info)s3info().then(()=>{if(menuTab==='shop'&&!menuEl.hidden)renderMenu()});if(S3.cat==='passe'&&!S3.pass)passLoad();if(S3.cat==='hist'&&!S3.hist)histLoad();
+  PVT=requestAnimationFrame(drawPreview)};
+/* ---- missões: contadores locais (o servidor só aceita cada missão uma vez por dia/semana) ---- */
+const brtDay=()=>new Date(Date.now()-3*3600e3).toISOString().slice(0,10);const brtWeek=()=>{const x=new Date(Date.now()-3*3600e3);x.setUTCDate(x.getUTCDate()-((x.getUTCDay()+6)%7));return x.toISOString().slice(0,10)};
+function p3(){if(!S)return null;S.p3=S.p3||{};const d=brtDay(),w=brtWeek();if(!S.p3.d||S.p3.d.k!==d)S.p3.d={k:d,m:0,b:0,t:0};if(!S.p3.w||S.p3.w.k!==w)S.p3.w={k:w,m:0,b:0,t:0};return S.p3}
+function missCount(){const c=p3()||{d:{m:0,b:0,t:0},w:{m:0,b:0,t:0}};return{d1:[c.d.m,40],d2:[c.d.b,1],d3:[c.d.t,20],w1:[c.w.m,400],w2:[c.w.b,5],w3:[c.w.t,180]}}
+{const _k=killEnemy;killEnemy=function(e){try{if(e&&!e.minion&&mode==='play'){const c=p3();if(c){if(e.boss){c.d.b++;c.w.b++}else{c.d.m++;c.w.m++}}}}catch(_){}return _k.apply(this,arguments)}}
+setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidden){const c=p3();c.d.t++;c.w.t++}}catch(_){}},60000);
+/* largura do menu e rolagem do miolo */
+(function(){const st=document.createElement('style');st.textContent=`
+.s3{display:flex;flex-direction:column;gap:8px;height:100%;min-height:0;position:relative}
+.s3top{display:flex;justify-content:space-between;align-items:center;gap:8px}.s3acc{font-size:13px;color:#d8d0ea}
+.s3dia{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 14px;border:2px solid #c8962a;border-radius:12px;background:linear-gradient(180deg,#1c2350,#0e1234);font-size:18px;cursor:pointer;box-shadow:0 0 12px rgba(242,193,78,.25)}.s3plus{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:linear-gradient(180deg,#ffe08a,#e8a02a);color:#3a1a00;font-weight:900}
+.s3body{display:grid;grid-template-columns:200px minmax(0,1fr) 260px;gap:10px;min-height:0;flex:1}
+.s3side{display:flex;flex-direction:column;gap:4px;overflow:auto;padding:8px;border:2px solid #8a6a2a;border-radius:12px;background:linear-gradient(180deg,#151a3c,#0b0e26)}
+.s3side button{display:flex;align-items:center;gap:8px;text-align:left;font:600 14px var(--body);color:#e8e0f8;background:transparent;border:1px solid transparent;border-radius:9px;padding:8px 10px;cursor:pointer}.s3side button span{width:22px;text-align:center;font-size:17px}
+.s3side button:hover{background:rgba(255,255,255,.05)}.s3side button.on{background:linear-gradient(180deg,#ffe08a,#e8a02a);color:#2a1406;border-color:#fff3c0;box-shadow:0 0 12px rgba(242,193,78,.45)}
+.s3main{overflow:auto;min-height:0;padding-right:4px}.s3h{margin:4px 0 10px;color:#ffd77a;font-family:var(--display);letter-spacing:.04em;font-size:18px}
+.s3grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.s3grid.wide{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.s3c{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 10px 10px;border:2px solid #7a5a22;border-radius:12px;background:radial-gradient(circle at 50% 30%,rgba(120,100,220,.18),transparent 60%),linear-gradient(180deg,#1a1f48,#0d1030);cursor:pointer;transition:transform .15s,box-shadow .15s;text-align:center}
+.s3c:hover{transform:translateY(-2px);box-shadow:0 0 16px rgba(242,193,78,.35)}.s3c.sel{border-color:#ffe08a;box-shadow:0 0 0 2px #ffe08a,0 0 22px rgba(255,224,138,.5)}
+.s3c.r1{border-color:#3a7acc}.s3c.r2{border-color:#9a4acc}.s3c.r3{border-color:#d8962a}.s3c.r4{border-color:#e83a5a;box-shadow:0 0 12px rgba(232,58,90,.3)}
+.s3c b{font-size:13px;line-height:1.2;min-height:2.4em;display:flex;align-items:center}.s3ic{height:70px;display:grid;place-items:center}.s3ic img{max-height:68px;max-width:100%;image-rendering:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6));animation:s3f 3s ease-in-out infinite}
+@keyframes s3f{50%{transform:translateY(-3px)}}.s3c .btn{width:100%}.s3b{background:linear-gradient(180deg,#8a4ae8,#5a2ab8)!important;border-color:#c8a0ff!important;color:#fff!important}
+.s3g{position:absolute;top:6px;left:6px;width:auto!important;padding:2px 6px!important;font-size:13px}.s3own{opacity:.85;color:#8bd86a!important}.s3ex{font-size:11px!important;opacity:.8}
+.s3bad{position:absolute;top:-8px;right:8px;background:linear-gradient(180deg,#ff5a5a,#c02a2a);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:7px;border:1px solid #ffb0a0}
+.s3d{font-size:12px;color:#c8c0dc;line-height:1.35}.s3note{font-size:12px;margin:10px 0}
+.s3ban{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px;margin-bottom:12px;border:2px solid #c8962a;border-radius:14px;background:radial-gradient(circle at 80% 40%,rgba(140,100,255,.35),transparent 60%),linear-gradient(120deg,#1d1650,#0d1236);box-shadow:inset 0 0 30px rgba(0,0,0,.4)}
+.s3bt{font-family:var(--display);font-size:22px;color:#ffd77a}.s3bs{font-size:12px;color:#ffb0d8;font-weight:700}.s3ban p{margin:6px 0 10px;font-size:13px;color:#e0d8f0;max-width:420px}.s3banart{display:flex;gap:6px}.s3banart img{height:64px;filter:drop-shadow(0 0 10px rgba(160,140,255,.7));animation:s3f 3s ease-in-out infinite}
+.s3pvw{min-height:0;overflow:auto}.s3pvb{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;border:2px solid #c8962a;border-radius:14px;background:linear-gradient(180deg,#151a3c,#0b0e26);text-align:center}
+.s3pvb h4{margin:0;color:#ffd77a}.s3pvc{width:100%;border-radius:10px;background:radial-gradient(circle at 50% 70%,rgba(120,100,220,.35),transparent 65%),#0a0c22;border:1px solid rgba(242,193,78,.35)}.s3pvc canvas{width:100%;height:auto;display:block}
+.s3cls{width:100%}.s3pn{font-size:15px;color:#fff3c0}.s3pbt{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.s3foot{font-size:12px;text-align:center;color:#c8e8b0;padding:6px;border:1px solid rgba(242,193,78,.4);border-radius:10px;background:rgba(10,14,40,.7)}
+.s3bic{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}.s3bic div{position:relative;width:52px;height:52px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);cursor:pointer}.s3bic img{max-width:46px;max-height:46px}.s3bic div:not(.ok) img{filter:grayscale(.6) brightness(.7)}.s3bic i{position:absolute;right:2px;bottom:0;color:#8bd86a;font-style:normal;font-weight:900}
+.s3coll{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}.s3cl{padding:10px 12px;border:2px solid #5a4a8a;border-radius:12px;background:linear-gradient(180deg,#171c42,#0c0f2a)}.s3cl.done{border-color:#c8962a}.s3clh{display:flex;justify-content:space-between;margin-bottom:8px}.s3clh span{color:#ffd77a;font-weight:700}.s3clf{margin-top:8px;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ok{color:#8bd86a;font-weight:700}
+.s3mod{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:rgba(4,4,14,.7);padding:12px}.s3mod .pnl{max-width:420px;width:100%;border:2px solid #c8962a!important}
+.s3red{max-width:520px}
+.s3pass .s3ph{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px;align-items:center;padding:12px 14px;border:2px solid #c8962a;border-radius:14px;background:radial-gradient(circle at 85% 30%,rgba(140,100,255,.3),transparent 60%),linear-gradient(120deg,#1d1650,#0d1236)}
+.s3pt{font-family:var(--display);font-size:20px;color:#ffd77a}.s3plv small{display:block;font-size:12px;color:#c8c0dc}.s3prem{display:flex;flex-direction:column;gap:4px}.s3prem small{font-size:11px;color:#e0d0ff}.s3prem.on{color:#ffd77a;font-weight:800;text-align:center}
+.s3bar{height:8px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden;flex:1}.s3bar.big{height:12px;margin:4px 0}.s3bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd04a,#ff9a3a)}
+.s3mis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 4px}.s3mis h4{margin:0 0 6px;color:#ffd77a}.s3m{display:grid;grid-template-columns:1fr 70px auto auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px;background:rgba(0,0,0,.25);margin-bottom:6px;font-size:13px}.s3m small{color:#c8c0dc}.s3m b{color:#ffd77a;font-size:12px}.s3m.ok{opacity:.7}
+.s3trk{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 10px}.s3tl{display:flex;flex-direction:column;justify-content:space-around;padding-top:22px;font-size:12px;color:#ffd77a;font-weight:800;min-width:56px}
+.s3t{display:flex;flex-direction:column;gap:6px;min-width:104px}.s3tn{text-align:center;font-weight:800;color:#a89cc8}.s3t.un .s3tn{color:#ffd77a}
+.s3tr{position:relative;height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;border-radius:10px;border:2px solid #4a5a9a;background:#10153a;font-size:22px;text-align:center}.s3tr img{max-height:40px}.s3tr small{font-size:10px;line-height:1.2;color:#d8d0ea}
+.s3tr.p{border-color:#c8962a;background:linear-gradient(180deg,#2a1e48,#140f30);cursor:pointer}.s3tr.lock{opacity:.75}.s3tr em{position:absolute;top:4px;right:6px;font-style:normal;font-size:13px}.s3tr i{position:absolute;top:2px;right:6px;color:#8bd86a;font-style:normal;font-weight:900;font-size:16px}.s3tr.got{opacity:.6}.s3tr .btn{padding:2px 10px!important;font-size:12px}
+@media(max-width:1000px){.s3body{display:flex;flex-direction:column;overflow-y:auto;gap:8px}.s3body>*{flex:none}.s3side{flex-direction:row;overflow-x:auto;padding:6px}.s3side button{white-space:nowrap;flex:none}.s3main{overflow:visible}.s3pvw{order:-1;overflow:visible}
+.s3pvb{display:grid;grid-template-columns:110px minmax(0,1fr);text-align:left;align-items:center;gap:4px 10px;padding:8px}.s3pvb h4,.s3pvb>p.muted{display:none}.s3pvc{grid-row:1/span 4;grid-column:1;width:110px}.s3pvb>*:not(.s3pvc){grid-column:2}.s3pbt{justify-content:flex-start}.s3cls button{padding:4px 6px;font-size:12px}
+.s3foot{display:none}.s3ban{flex-direction:column;align-items:flex-start}.s3bt{font-size:18px}.s3banart img{height:44px}.s3grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}.s3pass .s3ph{grid-template-columns:1fr}.s3mis{grid-template-columns:1fr}.s3m{grid-template-columns:1fr 50px auto auto auto}.s3pt{font-size:16px}}
+@media(max-height:520px) and (min-width:700px){.s3body{display:grid;grid-template-columns:150px minmax(0,1fr) 190px;overflow:hidden}.s3side{flex-direction:column;overflow-y:auto;overflow-x:hidden}.s3side button{white-space:normal;font-size:12px;padding:6px 8px}.s3main{overflow:auto}.s3pvw{order:0;overflow:auto}
+.s3pvb{display:flex;flex-direction:column;text-align:center;padding:6px}.s3pvc{width:100%;grid-row:auto}.s3pvc canvas{max-height:120px;width:auto;margin:0 auto}.s3pvb>*:not(.s3pvc){grid-column:auto}.s3pbt{justify-content:center}.s3pbt .btn{padding:4px 8px;font-size:12px}.s3top .s3dia{font-size:14px;padding:2px 4px 2px 10px}.s3plus{width:20px;height:20px}.s3cls button{padding:3px 2px!important;font-size:10px!important}.s3ban p{display:none}.s3ban{padding:8px 12px;margin-bottom:8px}}
+@media(max-height:500px){.s3ic{height:52px}.s3ic img{max-height:50px}.s3pvc{width:130px}}
+`;document.head.appendChild(st)})();
+/* ranking com título */
+{const _rh=rankHTML;rankHTML=function(){let h=_rh();try{if(RANK)for(const r of RANK){if(r.title&&TITLES[r.title]){const nm=escA(r.name);h=h.replace('<td>'+nm+'</td>','<td>'+nm+' <small style="color:#ffd77a">« '+escA(TITLES[r.title])+' »</small></td>')}}}catch(_){}return h}}
+/* aba Loja mais larga e prévia parada quando sai */
+{const _cm=closeMenu;closeMenu=function(){cancelAnimationFrame(PVT);S3.sel=null;S3.modal=null;return _cm.apply(this,arguments)}}
+}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}

@@ -50,11 +50,11 @@ const db = {
         await pool.query(`create table if not exists tokens(tok text primary key, acc int not null references accounts(id) on delete cascade, created timestamptz default now())`);
         await pool.query(`create table if not exists support(id serial primary key, acc int, name text, contact text, msg text not null, done boolean not null default false, at timestamptz default now())`);
         await pool.query(`create table if not exists payments(id text primary key, acc int not null, dia int not null, status text, at timestamptz default now())`);
-        console.log('Banco de dados Postgres conectado.'); await G.init(); return;
+        console.log('Banco de dados Postgres conectado.'); await G.init(); await S3.init(); return;
       } catch (e) { console.log('Não consegui usar o Postgres (' + e.message + '). Usando arquivo local.'); pool = null; }
     }
     try { MEM = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { }
-    await G.init();
+    await G.init(); await S3.init();
     console.log('Sem DATABASE_URL: contas guardadas em arquivo local (somem quando o servidor reinicia).');
   },
   saveMem() { clearTimeout(db._t); db._t = setTimeout(() => { try { fs.writeFileSync(FILE, JSON.stringify(MEM)); } catch (e) { } }, 1500); },
@@ -71,7 +71,7 @@ const db = {
   async addTok(id) { const t = crypto.randomBytes(24).toString('hex'); if (pool) { await pool.query('insert into tokens(tok,acc) values($1,$2)', [t, id]); await pool.query('delete from tokens where acc=$1 and tok not in (select tok from tokens where acc=$1 order by created desc limit 8)', [id]); } else { MEM.toks[t] = id; db.saveMem(); } return t; },
   async tokAcc(t) { if (!t || typeof t !== 'string') return null; if (pool) { const r = (await pool.query('select acc from tokens where tok=$1', [t])).rows[0]; return r ? db.byId(r.acc) : null; } const id = MEM.toks[t]; return id ? db.byId(id) : null; },
   async dropToks(id) { if (pool) await pool.query('delete from tokens where acc=$1', [id]); else { for (const k in MEM.toks) if (MEM.toks[k] === id) delete MEM.toks[k]; db.saveMem(); } },
-  async rank(n) { if (pool) return (await pool.query('select name,lvl,txp,cls from accounts where op=false and lvl>1 order by lvl desc, txp desc, id asc limit $1', [n])).rows; return MEM.accs.filter(a => !a.op && a.lvl > 1).sort((a, b) => b.lvl - a.lvl || b.txp - a.txp || a.id - b.id).slice(0, n).map(a => ({ name: a.name, lvl: a.lvl, txp: a.txp, cls: a.cls })); },
+  async rank(n) { if (pool) return (await pool.query('select name,lvl,txp,cls,owned->>\'title\' as title from accounts where op=false and lvl>1 order by lvl desc, txp desc, id asc limit $1', [n])).rows; return MEM.accs.filter(a => !a.op && a.lvl > 1).sort((a, b) => b.lvl - a.lvl || b.txp - a.txp || a.id - b.id).slice(0, n).map(a => ({ name: a.name, lvl: a.lvl, txp: a.txp, cls: a.cls, title: (a.owned || {}).title || null })); },
   async payNew(pid, acc, dia, status) { if (pool) { const r = await pool.query('insert into payments(id,acc,dia,status) values($1,$2,$3,$4) on conflict (id) do nothing returning id', [pid, acc, dia, status]); return r.rowCount > 0; } if (MEM.pays[pid]) return false; MEM.pays[pid] = { acc, dia, status, at: Date.now() }; db.saveMem(); return true; },
   async supAdd(o) { if (pool) { await pool.query('insert into support(acc,name,contact,msg) values($1,$2,$3,$4)', [o.acc, o.name, o.contact, o.msg]); return; } MEM.sup = MEM.sup || []; MEM.sup.push(Object.assign({ id: Date.now(), done: false, at: new Date().toISOString() }, o)); db.saveMem(); },
   async supList() { if (pool) return (await pool.query('select id,acc,name,contact,msg,done,at from support order by done asc, at desc limit 100')).rows; return (MEM.sup || []).slice().reverse().slice(0, 100); },
@@ -195,7 +195,9 @@ const ITEMNAME = { 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura
   'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda',
   'ev:coelho_pascoa': 'Coelho da Páscoa', 'ev:abobora': 'Abóbora Assombrada', 'ev:rena': 'Rena de Natal', 'ev:gorro_natal': 'Gorro de Natal', 'ev:chapeu_bruxa': 'Chapéu de Bruxa', 'ev:espada_alada': 'Espada Alada de Fogo', 'ev:arco_gelo': 'Arco do Relâmpago Gelado', 'ev:cajado_galaxia': 'Cajado da Galáxia' };
 for (let i = 1; i <= 20; i++) ITEMNAME['cos:any.pet.' + i] = 'Mascote nº ' + i;
+Object.assign(ITEMNAME, { 'cos:any.pet.16': 'Unicórnio Arco-Íris', 'cos:any.pet.19': 'Espírito da Floresta', 'cos:any.pet.20': 'Pequeno Arqueiro de Luz', 'cos:any.pet.25': 'Lobo Celestial', 'cos:any.aura.9': 'Aura Estelar', 'cos:any.trail.7': 'Rastro Estelar', 'cos:any.aura.4': 'Aura Sombras', 'cos:any.aura.5': 'Aura Dourada', 'cos:any.aura.6': 'Aura Arco-Íris', 'cos:any.trail.3': 'Rastro de Pétalas', 'cos:any.trail.4': 'Rastro de Estrelas', 'cos:any.trail.5': 'Rastro de Fogo' });
 async function handleExtra(req, res, u, a) {
+  { const r3 = await handleShop3(req, res, u, a); if (r3 !== null && r3 !== undefined) return r3; if (res.writableEnded) return true; }
   /* ---------- públicas ---------- */
   if (u === '/api/guild/rank') { const all = await G.stats(); return send(res, 200, { min: GUILD_RANK_MIN, list: all.filter(g => g.n >= GUILD_RANK_MIN).slice(0, 50).map((g, i) => ({ pos: i + 1, name: g.name, tag: g.tag, n: g.n, avg: g.avg, wins: g.wins || 0 })) }); }
   if (u === '/api/guild/list') { const q = (new URL(req.url, 'http://x').searchParams.get('q') || '').toLowerCase(); const all = await G.stats(); return send(res, 200, { list: all.filter(g => !q || g.name.toLowerCase().includes(q) || g.tag.toLowerCase().includes(q)).slice(0, 40).map(g => ({ id: g.id, name: g.name, tag: g.tag, n: g.n, avg: g.avg, open: g.open, wins: g.wins || 0, descr: g.descr, full: g.n >= GUILD_MAX })) }); }
@@ -297,6 +299,158 @@ async function handleExtra(req, res, u, a) {
   return null;
 }
 
+
+/* ================= loja v3: itens de evento à venda, pacotes, presentes, histórico, coleções, eventos e passe ================= */
+// itens de evento que passam a ser vendidos (os do Fundador, Coroa do Torneio e auras de Campeão/Fundador continuam exclusivos)
+const EVSALE = { 'ev:gorro_natal': 150, 'ev:chapeu_bruxa': 150, 'ev:capa_estelar': 300, 'ev:estandarte': 200, 'ev:coelho_pascoa': 900, 'ev:abobora': 900, 'ev:rena': 900,
+  'ev:dragao_cristal': 2000, 'ev:espada_alada': 400, 'ev:arco_gelo': 400, 'ev:cajado_galaxia': 400, 'cos:any.trail.6': 300,
+  'cos:any.pet.16': 900, 'cos:any.pet.19': 2000, 'cos:any.pet.20': 2000 };
+for (const k in EVSALE) SHOP[k] = { p: EVSALE[k], kind: 'perm' };
+const BUNDLES = {
+  natal: { n: 'Kit Natal', items: ['ev:gorro_natal', 'ev:rena'] },
+  halloween: { n: 'Kit Halloween', items: ['ev:chapeu_bruxa', 'ev:abobora'] },
+  estelar: { n: 'Kit Estelar', items: ['ev:capa_estelar', 'cos:any.trail.6', 'ev:dragao_cristal'] },
+  armas: { n: 'Kit Armas Lendárias', items: ['ev:espada_alada', 'ev:arco_gelo', 'ev:cajado_galaxia'] },
+  brilho: { n: 'Kit Brilho', items: ['cos:any.aura.5', 'cos:any.trail.4', 'pal:neon'] },
+};
+const BUNDLE_OFF = 0.2;
+const COLL = [
+  { id: 'natal', n: 'Natal', items: ['ev:gorro_natal', 'ev:rena'], reward: 'title:natal' },
+  { id: 'halloween', n: 'Halloween', items: ['ev:chapeu_bruxa', 'ev:abobora'], reward: 'title:halloween' },
+  { id: 'pascoa', n: 'Páscoa', items: ['ev:coelho_pascoa', 'cos:any.pet.4'], reward: 'title:pascoa' },
+  { id: 'estelar', n: 'Estelar', items: ['ev:capa_estelar', 'cos:any.trail.6', 'ev:dragao_cristal'], reward: 'title:estelar' },
+  { id: 'fundador', n: 'Fundador', items: ['ev:asas_fundador', 'cos:any.aura.8'], reward: 'title:fundador' },
+  { id: 'armas', n: 'Armas Lendárias', items: ['ev:espada_alada', 'ev:arco_gelo', 'ev:cajado_galaxia'], reward: 'title:armeiro' },
+];
+// eventos com datas reais (horário de Brasília)
+const EVENTS = [
+  { id: 'natal2026', n: 'Natal em Eldmor', from: '2026-12-15T00:00:00-03:00', to: '2027-01-06T23:59:59-03:00', gift: { dia: 20, gold: 2000, hp: 3, mp: 3 }, coll: 'natal' },
+  { id: 'pascoa2027', n: 'Páscoa em Eldmor', from: '2027-03-21T00:00:00-03:00', to: '2027-04-04T23:59:59-03:00', gift: { dia: 20, gold: 2000, hp: 3, mp: 3 }, coll: 'pascoa' },
+  { id: 'halloween2027', n: 'Halloween em Eldmor', from: '2027-10-24T00:00:00-03:00', to: '2027-11-02T23:59:59-03:00', gift: { dia: 20, gold: 2000, hp: 3, mp: 3 }, coll: 'halloween' },
+  { id: 'aniv2027', n: '1º Aniversário de Eldmor', from: '2027-11-01T00:00:00-03:00', to: '2027-11-15T23:59:59-03:00', gift: { dia: 50, gold: 5000, hp: 5, mp: 5 }, coll: null },
+];
+// passe de temporada
+const PASS = { s: 1, n: 'Estrelas de Eldmor', from: '2026-11-07T00:00:00-03:00', to: '2027-01-31T23:59:59-03:00', price: 450, tiers: 30, per: 500 };
+const MISS = { d1: { n: 'Derrote 40 monstros', xp: 50, per: 'd' }, d2: { n: 'Derrote 1 chefe', xp: 60, per: 'd' }, d3: { n: 'Jogue 20 minutos', xp: 40, per: 'd' },
+  w1: { n: 'Derrote 400 monstros', xp: 200, per: 'w' }, w2: { n: 'Derrote 5 chefes', xp: 250, per: 'w' }, w3: { n: 'Jogue 3 horas', xp: 200, per: 'w' } };
+function passReward(track, t) {
+  if (track === 'f') { if (t === 30) return { dia: 30, items: ['title:estrela'] }; if (t % 5 === 0) return { dia: 15 }; return t % 2 ? { gold: 300 + t * 60 } : { hp: 2, mp: 2 }; }
+  if (t === 1) return { items: ['cos:any.aura.9'] }; if (t === 10) return { items: ['cos:any.trail.7'] }; if (t === 20) return { items: ['cos:any.pet.25'] };
+  if (t === 30) return { dia: 30, items: ['title:lenda'] }; if (t % 3 === 0) return { dia: 20 }; if (t % 3 === 1) return { gold: 800 + t * 100 }; return { hp: 4, mp: 4, scroll: 1 };
+}
+const brtDay = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).toISOString().slice(0, 10);
+const brtWeek = (d = new Date()) => { const x = new Date(d.getTime() - 3 * 3600e3); const day = (x.getUTCDay() + 6) % 7; x.setUTCDate(x.getUTCDate() - day); return x.toISOString().slice(0, 10); };
+const passActive = () => { const n = Date.now(); return n >= Date.parse(PASS.from) && n <= Date.parse(PASS.to); };
+function passState(o) { const p = o.pass && o.pass.s === PASS.s ? o.pass : { s: PASS.s, xp: 0, prem: false, cf: [], cp: [] };
+  const d = brtDay(), w = brtWeek(); if (!p.md || p.md.k !== d) p.md = { k: d, done: [] }; if (!p.mw || p.mw.k !== w) p.mw = { k: w, done: [] }; return p; }
+const passLvl = p => Math.min(PASS.tiers, Math.floor((p.xp || 0) / PASS.per));
+// trava por conta: evita compras duplicadas quando o botão é apertado duas vezes ou duas abas compram juntas
+const S3LOCK = new Map();
+function withLock(id, fn) { const prev = S3LOCK.get(id) || Promise.resolve(); const run = prev.then(fn, fn); const tail = run.catch(() => {}); S3LOCK.set(id, tail); tail.then(() => { if (S3LOCK.get(id) === tail) S3LOCK.delete(id); }); return run; }
+const S3 = {
+  async init() {
+    if (pool) { await pool.query(`create table if not exists tx(id serial primary key, acc int not null, kind text not null, item text, price int not null default 0, other text, rid text, at timestamptz default now())`);
+      await pool.query('create unique index if not exists tx_rid on tx(acc, rid) where rid is not null'); await pool.query('create index if not exists tx_acc on tx(acc, id desc)'); }
+    else { MEM.tx = MEM.tx || []; MEM.txn = MEM.txn || 1; }
+  },
+  async txFind(acc, rid) { if (!rid) return null; if (pool) return (await pool.query('select * from tx where acc=$1 and rid=$2', [acc, rid])).rows[0] || null; return MEM.tx.find(t => t.acc === acc && t.rid === rid) || null; },
+  async txAdd(acc, kind, item, price, other, rid) { if (pool) { await pool.query('insert into tx(acc,kind,item,price,other,rid) values($1,$2,$3,$4,$5,$6) on conflict do nothing', [acc, kind, item, price, other || null, rid || null]); return; }
+    MEM.tx.push({ id: MEM.txn++, acc, kind, item, price, other: other || null, rid: rid || null, at: new Date().toISOString() }); if (MEM.tx.length > 20000) MEM.tx.splice(0, 5000); db.saveMem(); },
+  async txList(acc) { if (pool) { const t = (await pool.query('select kind,item,price,other,at from tx where acc=$1 order by id desc limit 60', [acc])).rows; const p = (await pool.query('select id,dia,status,at from payments where acc=$1 order by at desc limit 30', [acc])).rows; return { tx: t, pays: p }; }
+    return { tx: MEM.tx.filter(t => t.acc === acc).slice(-60).reverse(), pays: Object.entries(MEM.pays || {}).filter(([, v]) => v.acc === acc).map(([id, v]) => ({ id, dia: v.dia, status: v.st || v.status, at: v.at || null })) }; },
+  grant(owned, r) { for (const k of r.items || []) owned[k] = 1; if (r.gold || r.hp || r.mp || r.scroll) owned.gifts = (owned.gifts || []).concat([{ gold: r.gold | 0, hp: r.hp | 0, mp: r.mp | 0, scroll: r.scroll | 0, from: r.from || 'Recompensa' }]).slice(-20); },
+};
+const validRid = r => typeof r === 'string' && /^[\w-]{8,64}$/.test(r) ? r : null;
+const sellable = k => { const it = SHOP[k]; return it && it.kind === 'perm' ? it : null; };
+async function handleShop3(req, res, u, a) {
+  if (u === '/api/shop3') {
+    return send(res, 200, { bundles: Object.fromEntries(Object.entries(BUNDLES).map(([k, b]) => [k, { n: b.n, items: b.items, full: b.items.reduce((s, i) => s + SHOP[i].p, 0), off: BUNDLE_OFF }])),
+      coll: COLL, events: EVENTS.map(e => ({ id: e.id, n: e.n, from: e.from, to: e.to, gift: e.gift, coll: e.coll })), pass: Object.assign({}, PASS, { miss: MISS, rewards: { f: Array.from({ length: PASS.tiers }, (_, i) => passReward('f', i + 1)), p: Array.from({ length: PASS.tiers }, (_, i) => passReward('p', i + 1)) } }), now: new Date().toISOString() });
+  }
+  if (!a) return null;
+  if (u === '/api/history') return send(res, 200, await S3.txList(a.id));
+  if (u === '/api/spend' && req.method === 'POST') {
+    const b = await body(req); const rid = validRid(b.rid); const key = String(b.item || ''); const it = SHOP[key]; if (!it) return send(res, 400, { err: 'Item desconhecido.' });
+    return withLock(a.id, async () => {
+      if (rid) { const old = await S3.txFind(a.id, rid); if (old) { const f = await db.byId(a.id); return send(res, 200, { dia: f.dia, owned: f.owned || {}, item: key, dup: true }); } }
+      const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const d = today();
+      if (it.kind === 'perm' && owned[key]) return send(res, 400, { err: 'Você já tem este item.' });
+      if (it.kind === 'count' && (owned[key] || 0) >= it.max) return send(res, 400, { err: 'Você já comprou o máximo deste item.' });
+      if (it.day) { const k2 = key + '@' + d; if ((owned[k2] || 0) >= it.day) return send(res, 400, { err: 'Limite de hoje atingido. Volte amanhã.' }); }
+      const dia = await db.spendDia(a.id, it.p); if (dia === null) return send(res, 400, { err: 'Diamantes insuficientes.', need: it.p });
+      if (it.kind === 'perm') owned[key] = 1; else if (it.kind === 'count') owned[key] = (owned[key] || 0) + 1;
+      if (it.day) { for (const k in owned) if (k.includes('@') && !k.endsWith(d)) delete owned[k]; owned[key + '@' + d] = (owned[key + '@' + d] || 0) + 1; }
+      await db.set(a.id, { owned }); await S3.txAdd(a.id, 'compra', key, it.p, null, rid); return send(res, 200, { dia, owned, item: key });
+    });
+  }
+  if (u === '/api/bundle' && req.method === 'POST') {
+    const b = await body(req); const rid = validRid(b.rid); const B = BUNDLES[b.id]; if (!B) return send(res, 400, { err: 'Pacote desconhecido.' });
+    return withLock(a.id, async () => {
+      if (rid && await S3.txFind(a.id, rid)) { const f = await db.byId(a.id); return send(res, 200, { dia: f.dia, owned: f.owned || {}, dup: true }); }
+      const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const miss = B.items.filter(k => !owned[k]);
+      if (!miss.length) return send(res, 400, { err: 'Você já tem todos os itens deste pacote.' });
+      const price = Math.round(miss.reduce((s, k) => s + SHOP[k].p, 0) * (1 - BUNDLE_OFF));
+      if (b.price != null && +b.price !== price) return send(res, 409, { err: 'O preço mudou. Confira de novo.', price });
+      const dia = await db.spendDia(a.id, price); if (dia === null) return send(res, 400, { err: 'Diamantes insuficientes.', need: price });
+      for (const k of miss) owned[k] = 1; await db.set(a.id, { owned }); await S3.txAdd(a.id, 'pacote', B.n + ': ' + miss.join(','), price, null, rid); return send(res, 200, { dia, owned, got: miss });
+    });
+  }
+  if (u === '/api/gift' && req.method === 'POST') {
+    if (limited(req, 'gift', 30, 3600e3)) return send(res, 429, { err: 'Muitos presentes seguidos. Espere um pouco.' });
+    const b = await body(req); const rid = validRid(b.rid); const key = String(b.item || ''); const it = sellable(key); if (!it) return send(res, 400, { err: 'Este item não pode ser presenteado.' });
+    const ln = String(b.to || '').trim().toLowerCase(); if (!ln) return send(res, 400, { err: 'Digite o nome do jogador.' });
+    const t = await db.byName(ln); if (!t) return send(res, 404, { err: 'Não achei nenhum jogador com esse nome.' }); if (t.id === a.id) return send(res, 400, { err: 'Para você mesmo, use o botão Comprar.' });
+    return withLock(a.id, async () => {
+      if (rid && await S3.txFind(a.id, rid)) { const f = await db.byId(a.id); return send(res, 200, { dia: f.dia, dup: true, to: t.name }); }
+      return withLock(t.id, async () => {
+        const tf = await db.byId(t.id); const towned = tf.owned || {}; if (towned[key]) return send(res, 400, { err: t.name + ' já tem este item.' });
+        const dia = await db.spendDia(a.id, it.p); if (dia === null) return send(res, 400, { err: 'Diamantes insuficientes.', need: it.p });
+        towned[key] = 1; towned.gifts = (towned.gifts || []).concat([{ gold: 0, hp: 0, mp: 0, scroll: 0, from: a.name }]).slice(-20); await db.set(t.id, { owned: towned });
+        await S3.txAdd(a.id, 'presente enviado', key, it.p, t.name, rid); await S3.txAdd(t.id, 'presente recebido', key, 0, a.name, null);
+        notify(t.id, { t: 'gift' }); notify(t.id, { t: 'gmsg', msg: a.name + ' te deu um presente: ' + (ITEMNAME[key] || key) + '!' });
+        return send(res, 200, { dia, to: t.name });
+      });
+    });
+  }
+  if (u === '/api/collection/claim' && req.method === 'POST') {
+    const b = await body(req); const C = COLL.find(c => c.id === b.id); if (!C) return send(res, 400, { err: 'Coleção desconhecida.' });
+    return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {}; if (owned[C.reward]) return send(res, 400, { err: 'Você já pegou esta recompensa.' });
+      if (C.items.some(k => !owned[k])) return send(res, 400, { err: 'Complete a coleção primeiro.' }); owned[C.reward] = 1; await db.set(a.id, { owned }); await S3.txAdd(a.id, 'coleção', C.reward, 0, C.n, null); return send(res, 200, { owned }); });
+  }
+  if (u === '/api/title' && req.method === 'POST') {
+    const b = await body(req); const k = String(b.title || ''); return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {};
+      if (k && !(k.startsWith('title:') && owned[k])) return send(res, 400, { err: 'Você não tem este título.' }); owned.title = k || null; await db.set(a.id, { owned }); return send(res, 200, { owned }); });
+  }
+  if (u === '/api/event/claim' && req.method === 'POST') {
+    const b = await body(req); const E = EVENTS.find(e => e.id === b.id); if (!E) return send(res, 400, { err: 'Evento desconhecido.' });
+    const n = Date.now(); if (n < Date.parse(E.from) || n > Date.parse(E.to)) return send(res, 400, { err: 'Este evento não está acontecendo agora.' });
+    return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {}; const k = 'evc:' + E.id; if (owned[k]) return send(res, 400, { err: 'Você já pegou o presente deste evento.' });
+      owned[k] = 1; S3.grant(owned, Object.assign({ from: E.n }, E.gift)); await db.set(a.id, { owned }); let dia = f.dia; if (E.gift.dia) dia = await db.addDia(a.id, E.gift.dia);
+      await S3.txAdd(a.id, 'evento', E.id, 0, E.n, null); return send(res, 200, { dia, owned }); });
+  }
+  if (u === '/api/pass') { const f = await db.byId(a.id); return send(res, 200, { pass: passState(f.owned || {}), active: passActive() }); }
+  if (u === '/api/pass/buy' && req.method === 'POST') {
+    const b = await body(req); const rid = validRid(b.rid); if (!passActive()) return send(res, 400, { err: 'A temporada não está ativa.' });
+    return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {}; const p = passState(owned); if (p.prem) return send(res, 400, { err: 'Você já tem o Passe Premium.' });
+      const dia = await db.spendDia(a.id, PASS.price); if (dia === null) return send(res, 400, { err: 'Diamantes insuficientes.', need: PASS.price });
+      p.prem = true; owned.pass = p; await db.set(a.id, { owned }); await S3.txAdd(a.id, 'passe premium', 'pass:' + PASS.s, PASS.price, null, rid); return send(res, 200, { dia, pass: p, owned }); });
+  }
+  if (u === '/api/pass/mission' && req.method === 'POST') {
+    const b = await body(req); const M = MISS[b.id]; if (!M) return send(res, 400, { err: 'Missão desconhecida.' }); if (!passActive()) return send(res, 400, { err: 'A temporada não está ativa.' });
+    return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {}; const p = passState(owned); const box = M.per === 'd' ? p.md : p.mw;
+      if (box.done.includes(b.id)) return send(res, 400, { err: 'Missão já concluída neste período.' }); box.done.push(b.id); p.xp = Math.min(PASS.tiers * PASS.per, (p.xp || 0) + M.xp); owned.pass = p; await db.set(a.id, { owned }); return send(res, 200, { pass: p }); });
+  }
+  if (u === '/api/pass/claim' && req.method === 'POST') {
+    const b = await body(req); const tr = b.track === 'p' ? 'p' : 'f', t = b.tier | 0; if (t < 1 || t > PASS.tiers) return send(res, 400, { err: 'Nível inválido.' });
+    return withLock(a.id, async () => { const f = await db.byId(a.id); const owned = f.owned || {}; const p = passState(owned);
+      if (t > passLvl(p)) return send(res, 400, { err: 'Você ainda não chegou neste nível do passe.' }); if (tr === 'p' && !p.prem) return send(res, 400, { err: 'Esta recompensa é do Passe Premium.' });
+      const L = tr === 'p' ? p.cp : p.cf; if (L.includes(t)) return send(res, 400, { err: 'Recompensa já resgatada.' });
+      const r = passReward(tr, t); L.push(t); owned.pass = p; S3.grant(owned, Object.assign({ from: 'Passe de Temporada' }, r)); await db.set(a.id, { owned }); let dia = f.dia; if (r.dia) dia = await db.addDia(a.id, r.dia);
+      return send(res, 200, { dia, pass: p, owned, reward: r }); });
+  }
+  return null;
+}
+
 /* ---------- rotas ---------- */
 async function handle(req, res, u) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -320,7 +474,7 @@ async function handle(req, res, u) {
       if (!a || hashPw(b.pass || '', a.salt) !== a.ph) return send(res, 401, { err: 'Nome ou senha errados.' });
       return send(res, 200, { tok: await db.addTok(a.id), acc: pubAcc(a), save: a.save || null });
     }
-    if (u === '/api/rank') { const l = await db.rank(50); return send(res, 200, { list: l.map((x, i) => ({ pos: i + 1, name: x.name, lvl: x.lvl, cls: x.cls })) }); }
+    if (u === '/api/rank') { const l = await db.rank(50); return send(res, 200, { list: l.map((x, i) => ({ pos: i + 1, name: x.name, lvl: x.lvl, cls: x.cls, title: x.title || null })) }); }
     if (u === '/api/mp/webhook') {
       const b = req.method === 'POST' ? await body(req) : {}; const q = new URL(req.url, 'http://x').searchParams;
       const pid = (b.data && b.data.id) || q.get('data.id') || (q.get('topic') === 'payment' ? q.get('id') : null);
@@ -338,7 +492,7 @@ async function handle(req, res, u) {
       const who = await auth(req); await db.supAdd({ acc: who ? who.id : null, name: who ? who.name : cleanName(b.name) || null, contact: String(b.contact || '').replace(/[<>]/g, '').trim().slice(0, 120) || null, msg });
       return send(res, 200, { ok: true });
     }
-    if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war') return handleExtra(req, res, u, null);
+    if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war' || u === '/api/shop3') return handleExtra(req, res, u, null);
     const a = await auth(req); if (!a) return send(res, 401, { err: 'Entre na sua conta de novo.' });
     if (u === '/api/me') return send(res, 200, { acc: pubAcc(a), save: a.save || null });
     if (u === '/api/save' && req.method === 'POST') {
@@ -351,7 +505,7 @@ async function handle(req, res, u) {
       n = Math.min(n, EARN_DAY - earned); if (n > 0) { earned += n; await db.set(a.id, { earn_day: d, earned }); const dia = await db.addDia(a.id, n); return send(res, 200, { dia, got: n }); }
       return send(res, 200, { dia: a.dia, got: 0, cap: true });
     }
-    if (u === '/api/spend' && req.method === 'POST') {
+    if (u === '/api/spend_old' && req.method === 'POST') {
       const b = await body(req); const key = String(b.item || ''); const it = SHOP[key]; if (!it) return send(res, 400, { err: 'Item desconhecido.' });
       const owned = a.owned || {}; const d = today();
       if (it.kind === 'perm' && owned[key]) return send(res, 400, { err: 'Você já tem este item.' });
