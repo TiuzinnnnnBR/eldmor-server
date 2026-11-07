@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v57 · 07/11/2026';
+const ELD_VER='v58 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3999,6 +3999,68 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
     const pk=L.pet|0;if(pk&&PETSPR[pk]&&!p.dead){if(!p.pet)p.pet={x:p.x-10,y:p.y+3,h:0};const q=p.pet,tx=p.x-(dir>0?11:-11),ty=p.y+3,dx=tx-q.x,dy=ty-q.y,d=hyp(dx,dy);if(d>60){q.x=tx;q.y=ty}else if(d>3){const s=Math.min(d,(40+d*3)*dt);q.x+=dx/d*s;q.y+=dy/d*s;q.h+=dt*10}else q.h=0;
       const fr=PETSPR[pk][Math.floor(q.h)%2],w=fr.width/2/(fr._bk||1),h=fr.height/2/(fr._bk||1);shadow(q.x,q.y,3.5);ctx.save();ctx.translate(q.x,q.y);ctx.imageSmoothingEnabled=true;if(dir<0)ctx.scale(-1,1);ctx.drawImage(fr,-w/2,-h+1,w,h);ctx.restore()}}catch(_){}}}
 
+/* ================= v58: monstros sincronizados entre todos os jogadores do servidor =================
+   Cada região (zona) tem um "dono": o jogador de menor id que está nela (ou, se ninguém está, o de menor id do servidor).
+   O dono simula os monstros daquela zona e manda a posição/vida para os outros; quem bate manda o golpe para o dono.
+   Quando o dono muda, o novo dono assume os monstros que já estava vendo, então ninguém vê monstro sumir ou duplicar. */
+const MS={owned:{},stash:{},rem:new Map(),sendT:0,chkT:0,hurtT:{},cur:null};
+const msOn=()=>typeof SRV!=='undefined'&&SRV.on&&SRV.id!=null&&NET.role!=='host'&&NET.role!=='guest';
+const msZ=e=>e.sz===undefined?e.z:e.sz;
+const msSync=e=>e&&!e.boss&&!e.rift&&!e.minion&&!e.dummy&&!e.srv&&e.def&&typeof msZ(e)==='number'&&msZ(e)>=0;
+const msHidden=()=>typeof GOD!=='undefined'&&GOD&&GOD.hide&&GOD.srv;
+function msOwner(z){const L=[];if(!msHidden())L.push({id:SRV.id,z:curZone});for(const p of SRV.players.values())L.push({id:p.id,z:p.z});if(!L.length)return SRV.id;let c=L.filter(x=>x.z===z);if(!c.length)c=L;let b=c[0].id;for(const x of c)if(x.id<b)b=x.id;return b}
+const msMine=z=>!msOn()||msOwner(z)===SRV.id;
+window.__MSNO=z=>msOn()&&MS.owned[z]===false;
+function msRemove(o){const i=enemies.indexOf(o);if(i>=0)enemies.splice(i,1);if(P.target===o)P.target=null}
+function msMakeLocal(o){if(!ED[o.type])return null;const e=makeEnemy(o.type,o.x,o.y);e.sz=o.z;if(o.elite)makeElite(e,o.elite);e.max=o.max;e.hp=Math.max(1,o.hp);e.dir=o.dir||1;e.aggro=true;return e}
+function msLose(z){MS.owned[z]=false;const L=enemies.filter(e=>!e.net&&msSync(e)&&msZ(e)===z);MS.stash[z]=L;for(const e of L)msRemove(e)}
+function msGain(z){MS.owned[z]=true;const got=[];for(const[k,o]of[...MS.rem]){if(o.z!==z)continue;MS.rem.delete(k);msRemove(o);const e=msMakeLocal(o);if(e){enemies.push(e);got.push(e)}}
+  const st=MS.stash[z]||[];delete MS.stash[z];for(const e of st){if(got.length&&got.some(g=>hyp(g.x-e.x,g.y-e.y)<34*T))continue;if(got.length&&hyp(e.x-P.x,e.y-P.y)<34*T)continue;enemies.push(e)}}
+function msCheck(){if(!msOn())return;for(let z=0;z<NZT;z++){const m=msMine(z);if(m&&MS.owned[z]===false)msGain(z);else if(!m&&MS.owned[z]!==false)msLose(z)}}
+function msReset(){for(const o of[...MS.rem.values()])msRemove(o);MS.rem.clear();for(const z in MS.stash){for(const e of MS.stash[z])enemies.push(e)}MS.stash={};MS.owned={};projs=projs.filter(p=>p.mso===undefined);teles=teles.filter(t=>t.mso===undefined)}
+/* envio: o dono manda os monstros que estão perto de algum outro jogador */
+function msSend(){const rp=[...SRV.players.values()];if(!rp.length)return;const R=34*T,near=(x,y)=>rp.some(p=>hyp(p.x-x,p.y-y)<R);
+  const e=enemies.filter(e=>!e.net&&msSync(e)&&MS.owned[msZ(e)]!==false&&e.hp>0&&near(e.x,e.y)).slice(0,140).map(e=>[e.id,e.type,Math.round(e.x),Math.round(e.y),Math.ceil(e.hp),e.max,e.dir,e.elite||0,Math.round(e.h||0),e.state==='windup'?1:0,e.slow>0?1:0,msZ(e)]);
+  const pr=projs.filter(p=>p.owner==='e'&&near(p.x,p.y)).slice(0,60).map(p=>[Math.round(p.x),Math.round(p.y),Math.round(p.vx),Math.round(p.vy),p.r,p.col,p.kind]);
+  const te=teles.filter(t=>t.dmg&&t.mso===undefined&&near(t.x,t.y)).slice(0,30).map(t=>[Math.round(t.x),Math.round(t.y),t.r,+t.t.toFixed(2),t.max,t.col]);
+  srvSend({t:'me',e,pr,te})}
+/* recebimento */
+function msSnap(m){const o=m.o;if(o===SRV.id)return;const seen=new Set();
+  for(const r of m.e||[]){const[id,ty,x,y,hp,max,dir,el,h,wu,sl,z]=r;if(MS.owned[z]!==false&&msMine(z))continue;const k=o+':'+id;seen.add(k);let e=MS.rem.get(k);
+    if(!e){const def=ED[ty];if(!def)continue;const sc=el===2?1.45:el===1?1.25:1;e={id:'m'+k,rid:id,ms:o,net:true,type:ty,def,boss:false,x,y,tx:x,ty:y,r:def.r,hp,max,dir,elite:el,sc,sh:Math.round(SP2[def.sp].hh*sc),anim:Math.random()*6,flash:0,slow:0,moving:false,z,sz:z,h:0,state:'idle',minion:false,dmg:def.dmg};MS.rem.set(k,e);enemies.push(e)}
+    if(hp<e.hp)e.flash=0.14;e.tx=x;e.ty=y;if(hyp(e.x-x,e.y-y)>200){e.x=x;e.y=y}e.hp=hp;e.max=max;e.dir=dir;e.h=h;e.state=wu?'windup':'idle';e.slow=sl?1:0;e.z=e.sz=z;e.ms=o;e.seen=time}
+  for(const[k,e]of[...MS.rem])if(e.ms===o&&!seen.has(k)){MS.rem.delete(k);msRemove(e)}
+  projs=projs.filter(p=>p.mso!==o);for(const r of m.pr||[])projs.push({x:r[0],y:r[1],vx:r[2],vy:r[3],r:r[4],col:r[5],kind:r[6],owner:'n',life:0.35,mso:o});
+  teles=teles.filter(t=>t.mso!==o).concat((m.te||[]).map(r=>({x:r[0],y:r[1],r:r[2],t:r[3],max:r[4],col:r[5],dmg:0,mso:o})))}
+function msKill(m){const k=m.o+':'+m.id;const e=MS.rem.get(k);const hit=e&&e.hitMe;if(e){MS.rem.delete(k);msRemove(e)}
+  if(hit)netKill({id:-1,ty:m.ty,x:m.x,y:m.y,el:m.el,mn:m.mn,rf:m.rf});else burst(m.x,m.y-4,['#ffffff','#ffd0a0'],m.el?30:12,80,0.6,2)}
+{const _sd=srvData;srvData=function(m){if(m&&SRV.on){
+  if(m.t==='me'){msSnap(m);return}
+  if(m.t==='mh'){const e=enemies.find(x=>!x.net&&x.id===m.id);if(e&&e.hp>0){if(m.sl)e.slow=Math.max(e.slow,m.sl);damageEnemy(e,m.d,0,{crit:0,noKb:true,remote:true})}return}
+  if(m.t==='mk'){msKill(m);return}
+  if(m.t==='hu'){if(mode==='play'&&!P.dead)hurtPlayer(m.d,m.sx,m.sy);return}
+  if(m.t==='pl'){const r0=_sd(m);try{msCheck();for(const[k,e]of[...MS.rem])if(e.ms===m.id){MS.rem.delete(k);msRemove(e)}projs=projs.filter(p=>p.mso!==m.id);teles=teles.filter(t=>t.mso!==m.id)}catch(_){}return r0}}
+  const r=_sd(m);if(m&&m.t==='welcome'){MS.owned={};MS.chkT=0}return r}}
+{const _dr=srvDrop;srvDrop=function(){msReset();return _dr.apply(this,arguments)}}
+/* golpe em monstro de outro jogador: vai para o dono */
+{const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(e&&e.ms!==undefined&&e.net){MS.cur=e;try{return _de.apply(this,arguments)}finally{MS.cur=null}}return _de.apply(this,arguments)}}
+{const _ns=netSend;netSend=function(o){if(MS.cur&&o&&o.t==='hit'){const e=MS.cur;e.hitMe=true;srvSend({t:'mh',o:e.ms,id:e.rid,d:o.d,sl:o.sl});return}return _ns.apply(this,arguments)}}
+/* o dono avisa quando o monstro morre */
+{const _ke=killEnemy;killEnemy=function(e){try{if(msOn()&&e&&!e.net&&msSync(e)&&SRV.players.size)srvSend({t:'mk',id:e.id,ty:e.type,x:Math.round(e.x),y:Math.round(e.y),el:e.elite||0,mn:e.minion?1:0,rf:e.rift?1:0})}catch(_){}return _ke.apply(this,arguments)}}
+/* monstros do dono também atacam os outros jogadores */
+const msTG=p=>{const t=p._tg||(p._tg={rp:p});t.x=p.x;t.y=p.y;t.dead=!!p.dead;return t};
+window.__MTG=(e,cur)=>{if(!msOn()||!SRV.players.size)return null;let bd=cur?hyp(cur.x-e.x,cur.y-e.y):1e9,best=null;for(const p of SRV.players.values()){if(p.dead||p.op)continue;const d=hyp(p.x-e.x,p.y-e.y);if(d<bd){bd=d;best=p}}return best?msTG(best):null};
+function msHurt(p,d,sx,sy){const k=p.id;if((MS.hurtT[k]||0)>time)return;MS.hurtT[k]=time+0.5;srvSend({t:'hu',to:p.id,d:Math.round(d),sx:Math.round(sx),sy:Math.round(sy)})}
+window.__MHURT=(tg,d,sx,sy)=>{if(tg&&tg.rp)msHurt(tg.rp,d,sx,sy)};
+window.__MPROJ=pj=>{if(!msOn()||pj.mso!==undefined||!pj.dmg)return false;for(const p of SRV.players.values()){if(p.dead||p.op)continue;if(hyp(p.x-pj.x,p.y-4-pj.y)<pj.r+5){msHurt(p,pj.dmg,pj.x-pj.vx,pj.y-pj.vy);return true}}return false};
+window.__MTELE=t=>{if(!msOn()||!t.dmg||t.mso!==undefined)return;for(const p of SRV.players.values()){if(p.dead||p.op)continue;if(hyp(p.x-t.x,p.y-t.y)<t.r+3)msHurt(p,t.dmg,t.x,t.y)}};
+/* laço: checa donos, suaviza os monstros recebidos e envia os nossos */
+{const _up=update;update=function(dt){const r=_up.apply(this,arguments);try{if(msOn()){MS.chkT-=dt;if(MS.chkT<=0){MS.chkT=0.5;msCheck()}
+    const k=Math.min(1,dt*12);for(const e of MS.rem.values()){const ox=e.x,oy=e.y;e.x+=(e.tx-e.x)*k;e.y+=(e.ty-e.y)*k;e.moving=hyp(e.x-ox,e.y-oy)>0.05;e.flash=Math.max(0,e.flash-dt);e.anim+=dt*(e.moving?7:3)}
+    for(const[k2,e]of[...MS.rem])if(time-(e.seen||0)>3){MS.rem.delete(k2);msRemove(e)}
+    MS.sendT-=dt;if(MS.sendT<=0){MS.sendT=0.1;msSend()}}else if(Object.keys(MS.owned).length||MS.rem.size)msReset()}catch(err){console.log('mobsync',err)}return r}}
+window.__MS=()=>({owned:JSON.stringify(MS.owned),rem:MS.rem.size,cz:curZone,on:msOn()});
+
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
 if(window.ARTC&&window.ARTC.v_banner){const bn=window.ARTC.v_banner;for(const o of STRO)if(o.kind==='deco'&&o.img&&o.img!==bn&&o.img.height>o.img.width*1.8&&o.img.width<80){const h=o.h;bn._bk=bn.height/(G*h);o.img=bn;o.w=bn.width/G/bn._bk}}
@@ -4011,7 +4073,7 @@ function update(dt){
   updateP2(dt);netUpdate(dt);
   if(mode==='play'){if(NET.role!=='guest')updateRift();if(!P2.on){const gp=navigator.getGamepads?[...navigator.getGamepads()].find(Boolean):null;if(gp&&gp.buttons[9]&&gp.buttons[9].pressed)p2Join()}achT-=dt;if(achT<=0){achT=2;checkAch()}
     updatePlayer(dt);if(NET.role==='guest')netGuestEnemies(dt);else updateEnemies(dt);updateProj(dt);updateTeles(dt);updateRains(dt);updateDrops(dt);
-    if(NET.role!=='guest')spawnT-=dt;if(spawnT<=0){spawnT=0.7;for(let z=0;z<NZT;z++){const c=enemies.filter(e=>!e.boss&&!e.minion&&!e.rift&&(e.sz===undefined?e.z:e.sz)===z).length;if(c+(RESP.pend[z]||0)<ZCOUNT[z])spawnIn(z,false)}}
+    if(NET.role!=='guest')spawnT-=dt;if(spawnT<=0){spawnT=0.7;for(let z=0;z<NZT;z++){const c=enemies.filter(e=>!e.net&&!e.boss&&!e.minion&&!e.rift&&(e.sz===undefined?e.z:e.sz)===z).length;if(c+(RESP.pend[z]||0)<ZCOUNT[z]&&!(window.__MSNO&&window.__MSNO(z)))spawnIn(z,false)}}
     if(NET.role!=='guest')bossCheck();updateBossChests(dt);zoneCheck();
     const st=stats();const inV=curZone===-1;const calm=time-P.lastHurt>5;
     S.mp=Math.min(st.mmp,S.mp+dt*((inV?st.mmp*0.15:2+S.lvl*0.25)+st.mreg));
@@ -4071,19 +4133,19 @@ function updatePlayer(dt){
     if(t&&hyp(t.x-P.x,t.y-P.y)<=attackRange(st,t)&&(S.cls==='warrior'||los(P,t)))basicAttack(st,t)}
   caveCheck(dt)}
 function updateEnemies(dt){const inV=(P.x<19.5*T&&P.y<SURF*T)||pauloIn(P.x,P.y,6);
-  for(const e of enemies.slice()){
+  for(const e of enemies.slice()){if(e.net)continue;
     e.flash=Math.max(0,e.flash-dt);e.slow=Math.max(0,e.slow-dt);e.hitCd-=dt;
     if(e.boss){if(P2.on&&!P2.dead&&mode==='play'&&hyp(P2.x-e.x,P2.y-e.y)<e.r+7&&(e.hc2||0)<=0){hurtP2(e.dmg,e.x,e.y);e.hc2=0.8}e.hc2=(e.hc2||0)-dt;const c1=!P.dead?hyp(P.x-e.x,P.y-e.y):1e9,c2=P2.on&&!P2.dead?hyp(P2.x-e.x,P2.y-e.y):1e9;BT=c2<c1?P2:P;if(mode==='play'&&Math.min(c1,c2)<14*T)updateBoss(e,dt);else{e.hp=Math.min(e.max,e.hp+e.max*0.03*dt);e.anim+=dt*2}continue}
-    let TG=P;if(P2.on&&!P2.dead&&(P.dead||hyp(P2.x-e.x,P2.y-e.y)<hyp(P.x-e.x,P.y-e.y)))TG=P2;const tD=TG===P?P.dead:P2.dead;
+    let TG=P;if(P2.on&&!P2.dead&&(P.dead||hyp(P2.x-e.x,P2.y-e.y)<hyp(P.x-e.x,P.y-e.y)))TG=P2;if(window.__MTG){const r9=window.__MTG(e,(TG===P&&P.dead)?null:TG);if(r9)TG=r9}const tD=TG===P?P.dead:TG===P2?P2.dead:!!TG.dead;const inVt=TG.rp?TG.rp.z===-1:inV;
     const dx=TG.x-e.x,dy=TG.y-e.y,d=hyp(dx,dy),ang=Math.atan2(dy,dx);if(d>30*T&&!e.rift){e.anim+=dt*3;continue}
-    if(d>190||inV||tD)e.aggro=false;const chase=!inV&&!tD&&(d<95||e.aggro);if(d<95&&!inV&&!tD)e.aggro=true;
+    if(d>190||inVt||tD)e.aggro=false;const chase=!inVt&&!tD&&(d<95||e.aggro);if(d<95&&!inVt&&!tD)e.aggro=true;
     if(e.def.heal){e.healCd-=dt;if(e.healCd<=0){e.healCd=rand(5,7);let best=null;for(const o of enemies){if(o===e||o.boss)continue;if(hyp(o.x-e.x,o.y-e.y)<70&&o.hp<o.max*0.75&&(!best||o.hp/o.max<best.hp/best.max))best=o}if(!best&&e.hp<e.max*0.6)best=e;if(best){const h=Math.round(best.max*0.2);best.hp=Math.min(best.max,best.hp+h);addText(best.x,best.y-best.sh-2,'+'+h,'#8bd86a');burst(best.x,best.y-6,['#8bd86a','#d8ffc0'],12,40,0.6,1.5,-30)}}}
     const sp=e.def.spd*(e.slow>0?0.45:1);let vx=0,vy=0;
     if(chase){e.dir=dx>=0?1:-1;const rg=e.def.ranged;
       if(rg){if(d>rg.keep+16){vx=Math.cos(ang);vy=Math.sin(ang)}else if(d<rg.keep-16){vx=-Math.cos(ang);vy=-Math.sin(ang)}else{vx=-Math.sin(ang)*0.4;vy=Math.cos(ang)*0.4}
         e.shot-=dt;if(e.shot<=0&&d<rg.range){e.shot=rg.cd*rand(0.8,1.2);eShoot(e,ang+rand(-0.06,0.06),rg.spd,e.dmg,rg.col,rg.kind,rg.kind==='arrow'?2.5:3,1.6)}}
       else if(d>e.r+5){vx=Math.cos(ang);vy=Math.sin(ang)}
-      if(d<e.r+7&&e.hitCd<=0){if(TG===P)hurtPlayer(e.dmg,e.x,e.y);else hurtP2(e.dmg,e.x,e.y);e.hitCd=0.9}}
+      if(d<e.r+7&&e.hitCd<=0){if(TG===P)hurtPlayer(e.dmg,e.x,e.y);else if(TG===P2)hurtP2(e.dmg,e.x,e.y);else if(window.__MHURT)window.__MHURT(TG,e.dmg,e.x,e.y);e.hitCd=0.9}}
     else{e.wt-=dt;if(e.wt<=0){e.wt=rand(1,3);if(Math.random()<0.4){e.wx=0;e.wy=0}else{const a=Math.random()*Math.PI*2;e.wx=Math.cos(a)*0.4;e.wy=Math.sin(a)*0.4;if(e.wx)e.dir=e.wx>=0?1:-1}}vx=e.wx;vy=e.wy}
     let mx=(vx*sp+e.kx)*dt,my=(vy*sp+e.ky)*dt;if(e.x+mx<20*T&&e.y<SURF*T)mx=Math.max(0,mx);
     e.moving=moveEnt(e,mx,my)&&!!(vx||vy);e.kx*=Math.max(0,1-dt*9);e.ky*=Math.max(0,1-dt*9);e.anim+=dt*(e.moving?7:3)}}
@@ -4100,10 +4162,10 @@ function updateProj(dt){const F=foes();
     if(blockedP(p.x,p.y))dead=true;
     if(!dead&&p.owner==='p'){for(const e of F){if(hyp(e.x-p.x,e.y-Math.min(8,e.sh/2)-p.y)<e.r+p.r+4){dead=true;p.hit=e;break}}}
     else if(!dead&&p.owner==='e'&&hyp(P.x-p.x,P.y-4-p.y)<p.r+5){hurtPlayer(p.dmg,p.x-p.vx,p.y-p.vy);if(p.slow)P.slowT=Math.max(P.slowT,p.slow);dead=true;burst(p.x,p.y,p.col,6,50,0.3,2)}
-    else if(!dead&&p.owner==='e'&&P2.on&&!P2.dead&&hyp(P2.x-p.x,P2.y-4-p.y)<p.r+5){hurtP2(p.dmg,p.x-p.vx,p.y-p.vy);dead=true;burst(p.x,p.y,p.col,6,50,0.3,2)}
+    else if(!dead&&p.owner==='e'&&P2.on&&!P2.dead&&hyp(P2.x-p.x,P2.y-4-p.y)<p.r+5){hurtP2(p.dmg,p.x-p.vx,p.y-p.vy);dead=true;burst(p.x,p.y,p.col,6,50,0.3,2)}else if(!dead&&p.owner==='e'&&window.__MPROJ&&window.__MPROJ(p)){dead=true;burst(p.x,p.y,p.col,6,50,0.3,2)}
     if(p.life<=0)dead=true;
     if(dead){if(p.aoe)explode(p);else if(p.hit)damageEnemy(p.hit,p.dmg,Math.atan2(p.vy,p.vx),{crit:p.crit,ls:p.ls,col:p.kind==='porb'?['#c36bff','#ffffff']:undefined});else if(p.owner==='e'||p.kind==='porb')burst(p.x,p.y,p.col,4,40,0.25,1);projs.splice(i,1)}}}
-function updateTeles(dt){for(let i=teles.length-1;i>=0;i--){const t=teles[i];t.t-=dt;if(t.t<=0){if(t.dmg){burst(t.x,t.y,['#ff8a2a','#ffe04a','#5a4a44'],20,100,0.5,2);sfx('boom');shake(3);if(hyp(P.x-t.x,P.y-t.y)<t.r+3){hurtPlayer(t.dmg,t.x,t.y);if(t.slow)P.slowT=Math.max(P.slowT,t.slow)}if(P2.on&&!P2.dead&&hyp(P2.x-t.x,P2.y-t.y)<t.r+3)hurtP2(t.dmg,t.x,t.y)}teles.splice(i,1)}}}
+function updateTeles(dt){for(let i=teles.length-1;i>=0;i--){const t=teles[i];t.t-=dt;if(t.t<=0){if(t.dmg){burst(t.x,t.y,['#ff8a2a','#ffe04a','#5a4a44'],20,100,0.5,2);sfx('boom');shake(3);if(hyp(P.x-t.x,P.y-t.y)<t.r+3){hurtPlayer(t.dmg,t.x,t.y);if(t.slow)P.slowT=Math.max(P.slowT,t.slow)}if(P2.on&&!P2.dead&&hyp(P2.x-t.x,P2.y-t.y)<t.r+3)hurtP2(t.dmg,t.x,t.y);if(window.__MTELE)window.__MTELE(t)}teles.splice(i,1)}}}
 function updateRains(dt){for(let i=rains.length-1;i>=0;i--){const r=rains[i];r.next-=dt;if(r.next<=0){r.next=0.32;r.waves--;for(let k=0;k<10;k++)parts.push({x:r.x+rand(-28,28),y:r.y+rand(-18,18)-34,vx:0,vy:150,life:0.22,max:0.22,col:'#e8eef5',s:1.5,g:0});burst(r.x,r.y,['#bce8ff','#ffffff'],10,60,0.3,1);sfx('hit');for(const e of foes().slice()){if(hyp(e.x-r.x,e.y-r.y)<32+e.r)damageEnemy(e,r.dmg,Math.atan2(e.y-r.y,e.x-r.x),{crit:r.crit,noKb:true})}if(r.waves<=0)rains.splice(i,1)}}}
 function updateDrops(dt){for(let i=drops.length-1;i>=0;i--){const d=drops[i];if(!d)continue;d.t+=dt;d.vx*=1-dt*4;d.vy*=1-dt*4;const dx=P.x-d.x,dy=P.y-d.y,dist=hyp(dx,dy);
   if(d.t>0.35&&dist<44){const s=170*dt;d.x+=dx/dist*s;d.y+=dy/dist*s}else{d.x+=d.vx*dt;d.y+=d.vy*dt}
