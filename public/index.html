@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v55 · 07/11/2026';
+const ELD_VER='v56 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3910,6 +3910,22 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
  {const _sd=srvData;srvData=function(m){if(m&&m.t==='sup'){SUPN=m.n|0;toast('📩 Nova mensagem de suporte de '+escA(m.from||'um jogador')+'!','#ffd04a');try{sfx('lvl')}catch(_){}show();return}return _sd(m)}}
  document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('[data-supdone]');if(d)setTimeout(check,800)},true);
  {const _a=accApply;if(typeof _a==='function')accApply=function(){const r=_a.apply(this,arguments);setTimeout(check,500);return r}}}
+
+/* ---- montar/desmontar rápido (botão ao lado das poções e tecla G) e escolha no Inventário ---- */
+{const ownedM=()=>MOUNTS.map((m,i)=>m&&ownsK('mount:'+m.k)?i:0).filter(Boolean);
+ const mIco=i=>{const c=A['mt_'+MOUNTS[i].k+'_side_0'];return c?bboxIcon(c,72):''};
+ window.__toggleMount=function(){const L=ownedM();if(!L.length){toast('Você ainda não tem montaria. Veja na Loja › Montarias.','#a597bd');return}
+   if(S.mount|0){S.lastMount=S.mount;S.mount=0;toast('Você desmontou.','#8bd86a')}else{const m=L.includes(S.lastMount|0)?S.lastMount:L[0];S.mount=m;toast(MOUNTS[m].n+': montado!','#8bd86a')}try{sfx('pick')}catch(_){}save();qmUpd()};
+ const q=$('quick');const b=document.createElement('button');b.className='sk';b.id='q-mt';b.setAttribute('aria-label','Montar ou desmontar');b.innerHTML='<img alt=""><span class="k">G</span>';if(q)q.appendChild(b);
+ b.addEventListener('click',e=>{e.stopPropagation();window.__toggleMount()});b.addEventListener('touchstart',e=>{e.stopPropagation()},{passive:true});
+ function qmUpd(){const L=ownedM();b.style.display=L.length?'':'none';const cur=S.mount|0||(L.includes(S.lastMount|0)?S.lastMount:L[0]);if(cur){const u=mIco(cur);const im=b.querySelector('img');if(im.getAttribute('src')!==u)im.src=u}b.classList.toggle('on',!!(S.mount|0));b.title=(S.mount|0)?'Desmontar (G)':'Montar (G)'}
+ setInterval(()=>{try{if(typeof S!=='undefined'&&S)qmUpd()}catch(_){}},1000);
+ const st=document.createElement('style');st.textContent=`#q-mt img{width:80%;height:80%;object-fit:contain;filter:grayscale(.55) brightness(.8)}#q-mt.on img{filter:none}#q-mt.on{box-shadow:0 0 0 2px #ffd04a,0 0 12px rgba(255,208,74,.6)!important}
+ .invmt{margin:0 0 10px;padding:10px 12px}.invmt h4{margin:0 0 8px}.invmtg{display:flex;gap:8px;flex-wrap:wrap}.invmtg button{display:flex;flex-direction:column;align-items:center;gap:2px;width:96px;padding:6px;border-radius:10px;border:2px solid #5a4a8a;background:#11163a;color:#e8e0f8;font:600 11px var(--body);cursor:pointer}.invmtg button img{width:64px;height:48px;object-fit:contain}.invmtg button.on{border-color:#ffd04a;box-shadow:0 0 10px rgba(255,208,74,.5)}.invmtg button.lock{opacity:.5}`;document.head.appendChild(st);
+ document.addEventListener('keydown',e=>{const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.isContentEditable))return;if(e.code==='KeyG'&&typeof mode!=='undefined'&&mode==='play'&&menuEl.hidden){e.preventDefault();window.__toggleMount()}});
+ const _rm=renderMenu;renderMenu=function(){_rm();try{if(menuTab!=='inv'||!mbody)return;if(mbody.querySelector('.invmt'))return;const L=ownedM();const cur=S.mount|0;
+   const html=`<div class="pnl invmt"><h4>🐴 Montarias</h4><p class="muted" style="font-size:12px;margin:0 0 8px">Toque para montar. No jogo, use o botão ao lado das poções ou a tecla G para montar e desmontar. Montarias são só visuais.</p><div class="invmtg">${MOUNTS.map((m,i)=>{if(!m)return'';const own=L.includes(i);return`<button data-invmt="${i}" class="${cur===i?'on':''}${own?'':' lock'}"><img src="${mIco(i)}" alt=""><span>${escA(m.n)}</span><small>${own?(cur===i?'Montado ✔':'Montar'):'🔒 Ver na Loja'}</small></button>`}).join('')}<button data-invmt="0" class="${cur?'':'on'}"><span style="font-size:30px;line-height:48px">🚶</span><span>A pé</span><small>${cur?'Desmontar':'Atual ✔'}</small></button></div></div>`;
+   mbody.insertAdjacentHTML('afterbegin',html);mbody.querySelectorAll('[data-invmt]').forEach(x=>x.onclick=e=>{e.stopPropagation();const i=+x.dataset.invmt;if(i&&!L.includes(i)){menuTab='shop';S3.cat='mont';S3.sel='mount:'+MOUNTS[i].k;renderMenu();return}if(i){S.mount=i;S.lastMount=i;toast(MOUNTS[i].n+': montado!','#8bd86a')}else{if(S.mount)S.lastMount=S.mount;S.mount=0;toast('Você desmontou.','#8bd86a')}save();qmUpd();renderMenu()})}catch(_){}}}
 }
 
 /* chefes das Terras Distantes com arte desenhada */
