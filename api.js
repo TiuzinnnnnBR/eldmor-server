@@ -62,11 +62,11 @@ const db = {
   async byId(id) { if (pool) return (await pool.query('select * from accounts where id=$1', [id])).rows[0]; return MEM.accs.find(a => a.id === id); },
   async create(a) {
     if (pool) return (await pool.query('insert into accounts(name,lname,ph,salt,op) values($1,$2,$3,$4,$5) returning *', [a.name, a.lname, a.ph, a.salt, !!a.op])).rows[0];
-    const r = Object.assign({ id: MEM.next++, dia: 0, owned: {}, save: null, lvl: 1, txp: 0, cls: null, earned: 0, earn_day: null }, a); MEM.accs.push(r); db.saveMem(); return r;
+    const r = Object.assign({ id: MEM.next++, created: new Date().toISOString(), dia: 0, owned: {}, save: null, lvl: 1, txp: 0, cls: null, earned: 0, earn_day: null }, a); MEM.accs.push(r); db.saveMem(); return r;
   },
   async set(id, f) {
     if (pool) { const ks = Object.keys(f); if (!ks.length) return; const q = 'update accounts set ' + ks.map((k, i) => k + '=$' + (i + 2)).join(',') + ',updated=now() where id=$1'; await pool.query(q, [id, ...ks.map(k => (k === 'owned' || k === 'save') && f[k] !== null ? JSON.stringify(f[k]) : f[k])]); return; }
-    const a = MEM.accs.find(x => x.id === id); if (a) Object.assign(a, f); db.saveMem();
+    const a = MEM.accs.find(x => x.id === id); if (a) Object.assign(a, f, { updated: new Date().toISOString() }); db.saveMem();
   },
   async addTok(id) { const t = crypto.randomBytes(24).toString('hex'); if (pool) { await pool.query('insert into tokens(tok,acc) values($1,$2)', [t, id]); await pool.query('delete from tokens where acc=$1 and tok not in (select tok from tokens where acc=$1 order by created desc limit 8)', [id]); } else { MEM.toks[t] = id; db.saveMem(); } return t; },
   async tokAcc(t) { if (!t || typeof t !== 'string') return null; if (pool) { const r = (await pool.query('select acc from tokens where tok=$1', [t])).rows[0]; return r ? db.byId(r.acc) : null; } const id = MEM.toks[t]; return id ? db.byId(id) : null; },
@@ -89,7 +89,7 @@ const hashPw = (pw, salt) => crypto.scryptSync(String(pw), salt, 32).toString('h
 const cleanName = s => String(s || '').replace(/[<>"'`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const validName = n => n.length >= 3 && /^[\p{L}\p{N} _.\-@]+$/u.test(n);
 const today = () => new Date().toISOString().slice(0, 10);
-let isOpName = () => false, notify = () => { };
+let isOpName = () => false, notify = () => { }, onlineFn = () => [];
 function pubAcc(a) { return { id: a.id, name: a.op ? 'Operador level 0' : a.name, realName: a.name, dia: a.dia, owned: a.owned || {}, op: !!a.op, lvl: a.lvl, guild: a.guild || null }; }
 function body(req) { return new Promise(res => { let d = ''; req.on('data', c => { d += c; if (d.length > 600000) req.destroy(); }); req.on('end', () => { try { res(d ? JSON.parse(d) : {}); } catch (e) { res({}); } }); }); }
 function send(res, code, o) { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, authorization', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); }
@@ -546,6 +546,33 @@ async function handle(req, res, u) {
         statement_descriptor: 'ELDMOR', metadata: { acc: a.id, pack: b.pack } }) });
       return send(res, 200, { url: pref.init_point });
     }
+    if (u === '/api/op/players') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' });
+      const on = new Map(); for (const o of onlineFn()) if (o.acc) on.set(o.acc, o); const guests = onlineFn().filter(o => !o.acc).length;
+      let rows, spent = {}, paid = {};
+      if (pool) {
+        rows = (await pool.query("select id,name,lvl,cls,dia,earned,earn_day,created,updated,op,owned,(save->>'gold') as gold from accounts order by updated desc limit 1000")).rows;
+        for (const r of (await pool.query("select acc,coalesce(sum(price),0)::int s,count(*)::int n from tx where price>0 group by acc")).rows) spent[r.acc] = r;
+        for (const r of (await pool.query("select acc,coalesce(sum(dia),0)::int d,count(*)::int n from payments where status='approved' group by acc")).rows) paid[r.acc] = r;
+      } else {
+        rows = MEM.accs.map(x => Object.assign({}, x, { gold: x.save && x.save.gold })).sort((x, y) => String(y.updated || '').localeCompare(String(x.updated || '')));
+        for (const t of MEM.tx || []) if (t.price > 0) { const o = spent[t.acc] || (spent[t.acc] = { s: 0, n: 0 }); o.s += t.price; o.n++; }
+        for (const v of Object.values(MEM.pays || {})) if ((v.status || v.st) === 'approved') { const o = paid[v.acc] || (paid[v.acc] = { d: 0, n: 0 }); o.d += v.dia; o.n++; }
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const list = rows.map(r => { const ow = r.owned || {}; const o = on.get(r.id); const pk = Object.values(PACKS);
+        return { id: r.id, name: r.name, op: !!r.op, lvl: r.lvl, cls: r.cls, dia: r.dia | 0, gold: +r.gold || 0, earned: r.earn_day === today ? r.earned | 0 : 0,
+          items: Object.keys(ow).filter(k => ow[k] === 1 || ow[k] === true).length, pass: !!(ow.pass && ow.pass.prem), title: ow.title || null,
+          spent: (spent[r.id] || {}).s || 0, buys: (spent[r.id] || {}).n || 0, bought: (paid[r.id] || {}).d || 0, pays: (paid[r.id] || {}).n || 0,
+          created: r.created || null, updated: r.updated || null, online: !!o, zone: o ? o.z : null }; });
+      const real = list.filter(x => !x.op);
+      return send(res, 200, { list, guests, sum: { accs: real.length, online: real.filter(x => x.online).length + guests, dia: real.reduce((t, x) => t + x.dia, 0), bought: real.reduce((t, x) => t + x.bought, 0), spent: real.reduce((t, x) => t + x.spent, 0), buyers: real.filter(x => x.pays).length } });
+    }
+    if (u === '/api/op/player') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const id = +new URL(req.url, 'http://x').searchParams.get('id'); const r = await db.byId(id); if (!r) return send(res, 404, { err: 'Conta não encontrada.' });
+      const sv = r.save || {}; const ow = r.owned || {}; const hist = await S3.txList(r.id); const names = {}; for (const k of [...Object.keys(ow), ...hist.tx.map(t => t.item || '')]) if (ITEMNAME[k]) names[k] = ITEMNAME[k];
+      return send(res, 200, { id: r.id, name: r.name, lvl: r.lvl, cls: r.cls, dia: r.dia | 0, gold: sv.gold | 0, hp: sv.pot ? sv.pot.hp | 0 : 0, mp: sv.pot ? sv.pot.mp | 0 : 0,
+        bosses: sv.bosses ? Object.keys(sv.bosses).filter(k => sv.bosses[k]).length : 0, created: r.created || null, updated: r.updated || null,
+        owned: Object.keys(ow).filter(k => ow[k] === 1 || ow[k] === true), pass: ow.pass ? { prem: !!ow.pass.prem, xp: ow.pass.xp | 0 } : null, title: ow.title || null, hist, names }); 
+    }
     if (u === '/api/support/count') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { n: await db.supOpen() }); }
     if (u === '/api/support/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: await db.supList() }); }
     if (u === '/api/support/done' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); await db.supDone(+b.id); return send(res, 200, { ok: true }); }
@@ -555,4 +582,4 @@ async function handle(req, res, u) {
     return send(res, 404, { err: 'rota desconhecida' });
   } catch (e) { console.log('api erro', u, e.message); return send(res, 500, { err: 'Erro no servidor. Tente de novo.' }); }
 }
-module.exports = { db, handle, setHooks(h) { if (h.isOpName) isOpName = h.isOpName; if (h.notify) notify = h.notify; }, pubAcc };
+module.exports = { db, handle, setHooks(h) { if (h.isOpName) isOpName = h.isOpName; if (h.notify) notify = h.notify; if (h.online) onlineFn = h.online; }, pubAcc };

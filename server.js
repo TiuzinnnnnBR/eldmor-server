@@ -166,5 +166,5 @@ setInterval(() => {
   for (const c of clients.values()) if (now - c.last > 45e3) drop(c);
 }, 100);
 
-API.setHooks({ isOpName: n => isOp(n), notify: (acc, o) => { for (const c of clients.values()) if (c.acc === acc) send(c, o); } });
+API.setHooks({ online: () => [...clients.values()].filter(c => c.joined).map(c => ({ acc: c.acc || 0, name: c.name, z: c.h && c.h.z, lv: c.h && c.h.lv })), isOpName: n => isOp(n), notify: (acc, o) => { for (const c of clients.values()) if (c.acc === acc) send(c, o); } });
 API.db.init().catch(e => console.log('banco:', e.message)).finally(() => server.listen(PORT, () => console.log('Servidor Eldmor ligado na porta ' + PORT)));
