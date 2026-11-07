@@ -273,7 +273,7 @@ async function handleExtra(req, res, u, a) {
   if (u === '/api/gifts/take' && req.method === 'POST') { const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const gifts = owned.gifts || []; if (!gifts.length) return send(res, 200, { gifts: [], owned }); delete owned.gifts; await db.set(a.id, { owned }); return send(res, 200, { gifts, owned }); }
   if (u === '/api/code/create' && req.method === 'POST') {
     if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const n = Math.max(1, Math.min(200, b.count | 0 || 1)); const r = b.reward || {};
-    const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)).slice(0, 10) };
+    const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)).slice(0, 10) };
     if (!rw.dia && !rw.gold && !rw.hp && !rw.mp && !rw.scroll && !rw.items.length) return send(res, 400, { err: 'Escolha pelo menos um prêmio.' });
     const max = Math.max(1, Math.min(100000, b.max | 0 || 1)); const until = b.days ? new Date(Date.now() + Math.min(3650, +b.days) * 864e5).toISOString() : null; const note = cleanG(b.note).slice(0, 60) || 'Código especial';
     const AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const rnd = k => Array.from(crypto.randomBytes(k), x => AL[x % 32]).join(''); const out = [];
@@ -284,7 +284,7 @@ async function handleExtra(req, res, u, a) {
   if (u === '/api/op/gift' && req.method === 'POST') {
     if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req);
     const t = await db.byName(cleanName(b.name || '').toLowerCase()); if (!t) return send(res, 404, { err: 'Não achei nenhum jogador com esse nome.' });
-    const owned = t.owned || {}; const keys = (b.keys || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)).slice(0, 200); for (const k of keys) owned[k] = 1;
+    const owned = t.owned || {}; const keys = (b.keys || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)).slice(0, 200); for (const k of keys) owned[k] = 1;
     const g = { gold: Math.max(0, Math.min(1e8, b.gold | 0)), hp: Math.max(0, Math.min(5000, b.hp | 0)), mp: Math.max(0, Math.min(5000, b.mp | 0)), scroll: 0, from: 'Presente do Operador' };
     if (g.gold || g.hp || g.mp) owned.gifts = (owned.gifts || []).concat([g]).slice(-20);
     await db.set(t.id, { owned }); let dia = t.dia; const nd = Math.max(0, Math.min(100000, b.dia | 0)); if (nd) dia = await db.addDia(t.id, nd);
@@ -293,7 +293,7 @@ async function handleExtra(req, res, u, a) {
     const txt = parts.join(', '); notify(t.id, { t: 'gmsg', msg: '🎁 O Operador te deu um presente: ' + txt + '!' }); notify(t.id, { t: 'gift' }); if (nd) notify(t.id, { t: 'dia', dia, add: nd, why: 'Presente do Operador' });
     console.log('presente do operador para', t.name, txt); return send(res, 200, { ok: true, name: t.name, text: txt });
   }
-  if (u === '/api/op/grant' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const fresh = await db.byId(a.id); const owned = fresh.owned || {}; for (const k of (b.keys || []).slice(0, 500)) if (typeof k === 'string' && /^(cos:|ev:|pal:)[\w.:]+$/.test(k)) owned[k] = 1; await db.set(a.id, { owned }); return send(res, 200, { owned }); }
+  if (u === '/api/op/grant' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const fresh = await db.byId(a.id); const owned = fresh.owned || {}; for (const k of (b.keys || []).slice(0, 500)) if (typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)) owned[k] = 1; await db.set(a.id, { owned }); return send(res, 200, { owned }); }
   if (u === '/api/code/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: (await G.codeList()).map(c => ({ code: c.plain || '(código pronto)', text: rewardText(typeof c.reward === 'string' ? JSON.parse(c.reward) : c.reward), max: c.max, uses: c.uses, until: c.until, note: c.note })) }); }
   /* ---------- loja pelo site (só itens que ficam na conta) ---------- */
   return null;
@@ -306,12 +306,17 @@ const EVSALE = { 'ev:gorro_natal': 150, 'ev:chapeu_bruxa': 150, 'ev:capa_estelar
   'ev:dragao_cristal': 2000, 'ev:espada_alada': 400, 'ev:arco_gelo': 400, 'ev:cajado_galaxia': 400, 'cos:any.trail.6': 300,
   'cos:any.pet.16': 900, 'cos:any.pet.19': 2000, 'cos:any.pet.20': 2000 };
 for (const k in EVSALE) SHOP[k] = { p: EVSALE[k], kind: 'perm' };
+// montarias e molduras (só visuais). O Lobo Celestial e a Moldura Celestial são do Passe.
+Object.assign(EVSALE, { 'mount:cavalo': 600, 'mount:unic': 1200, 'mount:dragao': 2000, 'frame:1': 50, 'frame:2': 100, 'frame:3': 200, 'frame:4': 250, 'frame:5': 250 });
+for (const k in EVSALE) SHOP[k] = { p: EVSALE[k], kind: 'perm' };
+Object.assign(ITEMNAME, { 'mount:lobo': 'Montaria Lobo Celestial', 'mount:cavalo': 'Montaria Cavalo de Guerra', 'mount:unic': 'Montaria Unicórnio Arco-Íris', 'mount:dragao': 'Montaria Dragão de Fogo', 'frame:1': 'Moldura de Bronze', 'frame:2': 'Moldura de Prata', 'frame:3': 'Moldura Real', 'frame:4': 'Moldura de Gelo', 'frame:5': 'Moldura de Fogo', 'frame:6': 'Moldura Celestial' });
 const BUNDLES = {
   natal: { n: 'Kit Natal', items: ['ev:gorro_natal', 'ev:rena'] },
   halloween: { n: 'Kit Halloween', items: ['ev:chapeu_bruxa', 'ev:abobora'] },
   estelar: { n: 'Kit Estelar', items: ['ev:capa_estelar', 'cos:any.trail.6', 'ev:dragao_cristal'] },
   armas: { n: 'Kit Armas Lendárias', items: ['ev:espada_alada', 'ev:arco_gelo', 'ev:cajado_galaxia'] },
   brilho: { n: 'Kit Brilho', items: ['cos:any.aura.5', 'cos:any.trail.4', 'pal:neon'] },
+  montaria: { n: 'Kit Cavaleiro', items: ['mount:cavalo', 'frame:3'] },
 };
 const BUNDLE_OFF = 0.2;
 const COLL = [
@@ -335,7 +340,7 @@ const MISS = { d1: { n: 'Derrote 40 monstros', xp: 50, per: 'd' }, d2: { n: 'Der
   w1: { n: 'Derrote 400 monstros', xp: 200, per: 'w' }, w2: { n: 'Derrote 5 chefes', xp: 250, per: 'w' }, w3: { n: 'Jogue 3 horas', xp: 200, per: 'w' } };
 function passReward(track, t) {
   if (track === 'f') { if (t === 30) return { dia: 30, items: ['title:estrela'] }; if (t % 5 === 0) return { dia: 15 }; return t % 2 ? { gold: 300 + t * 60 } : { hp: 2, mp: 2 }; }
-  if (t === 1) return { items: ['cos:any.aura.9'] }; if (t === 10) return { items: ['cos:any.trail.7'] }; if (t === 20) return { items: ['cos:any.pet.25'] };
+  if (t === 1) return { items: ['cos:any.aura.9'] }; if (t === 10) return { items: ['cos:any.trail.7'] }; if (t === 15) return { items: ['frame:6'] }; if (t === 20) return { items: ['cos:any.pet.25'] }; if (t === 25) return { items: ['mount:lobo'] };
   if (t === 30) return { dia: 30, items: ['title:lenda'] }; if (t % 3 === 0) return { dia: 20 }; if (t % 3 === 1) return { gold: 800 + t * 100 }; return { hp: 4, mp: 4, scroll: 1 };
 }
 const brtDay = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).toISOString().slice(0, 10);
