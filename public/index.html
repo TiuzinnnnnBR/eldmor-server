@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v54 · 07/11/2026';
+const ELD_VER='v55 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3898,6 +3898,18 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
 {const _rh=rankHTML;rankHTML=function(){let h=_rh();try{if(RANK)for(const r of RANK){if(r.title&&TITLES[r.title]){const nm=escA(r.name);h=h.replace('<td>'+nm+'</td>','<td>'+tbImg(r.title,20)+' '+nm+' <small style="color:#ffd77a">« '+escA(TITLES[r.title])+' »</small></td>')}}}catch(_){}return h}}
 /* aba Loja mais larga e prévia parada quando sai */
 {const _cm=closeMenu;closeMenu=function(){cancelAnimationFrame(PVT);S3.sel=null;S3.modal=null;return _cm.apply(this,arguments)}}
+
+/* ---- aviso de mensagens de suporte para o Operador ---- */
+{let SUPN=0,SUPSEEN=-1;const st=document.createElement('style');st.textContent=`#supbell{position:fixed;z-index:30;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:2px solid #f2c14e;background:linear-gradient(180deg,#3a1a10,#1c0e08);color:#ffe49a;font:800 13px var(--body);cursor:pointer;box-shadow:0 0 14px rgba(242,193,78,.5);animation:supp 1.6s ease-in-out infinite}#supbell b{background:#e83a3a;color:#fff;border-radius:999px;padding:0 7px}@keyframes supp{50%{box-shadow:0 0 22px rgba(242,193,78,.9)}}.tab[data-tab=opts]{position:relative}.tab[data-tab=opts] .supdot{position:absolute;top:2px;right:4px;background:#e83a3a;color:#fff;font:800 11px var(--body);border-radius:999px;padding:0 6px}`;document.head.appendChild(st);
+ const bell=document.createElement('div');bell.id='supbell';bell.innerHTML='📩 Mensagens de suporte <b>0</b>';document.body.appendChild(bell);
+ bell.onclick=e=>{e.stopPropagation();openMenu('opts');setTimeout(()=>{const b=$('sup-list');if(b){b.click();b.scrollIntoView({block:'center'})}},250)};
+ const show=()=>{const on=!!(ACC&&ACC.op&&SUPN>0&&typeof mode!=='undefined'&&mode==='play'&&menuEl.hidden);bell.style.display=on?'flex':'none';bell.querySelector('b').textContent=SUPN;
+   try{const t=document.querySelector('#tabs .tab[data-tab=opts]');if(t){let d=t.querySelector('.supdot');if(ACC&&ACC.op&&SUPN>0){if(!d){d=document.createElement('span');d.className='supdot';t.appendChild(d)}d.textContent=SUPN}else if(d)d.remove()}}catch(_){}};
+ const check=async()=>{if(!ACC||!ACC.op||!ACC.tok)return;try{const r=await api('support/count');SUPN=r.n|0;if(SUPN>0&&SUPSEEN<0)toast('📩 Você tem '+SUPN+' mensagem(ns) de suporte sem resposta.','#ffd04a');if(SUPSEEN<0)SUPSEEN=SUPN}catch(_){}show()};
+ setInterval(check,60000);setTimeout(check,4000);setInterval(show,1000);
+ {const _sd=srvData;srvData=function(m){if(m&&m.t==='sup'){SUPN=m.n|0;toast('📩 Nova mensagem de suporte de '+escA(m.from||'um jogador')+'!','#ffd04a');try{sfx('lvl')}catch(_){}show();return}return _sd(m)}}
+ document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('[data-supdone]');if(d)setTimeout(check,800)},true);
+ {const _a=accApply;if(typeof _a==='function')accApply=function(){const r=_a.apply(this,arguments);setTimeout(check,500);return r}}}
 }
 
 /* chefes das Terras Distantes com arte desenhada */

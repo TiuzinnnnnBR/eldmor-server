@@ -75,6 +75,8 @@ const db = {
   async payNew(pid, acc, dia, status) { if (pool) { const r = await pool.query('insert into payments(id,acc,dia,status) values($1,$2,$3,$4) on conflict (id) do nothing returning id', [pid, acc, dia, status]); return r.rowCount > 0; } if (MEM.pays[pid]) return false; MEM.pays[pid] = { acc, dia, status, at: Date.now() }; db.saveMem(); return true; },
   async supAdd(o) { if (pool) { await pool.query('insert into support(acc,name,contact,msg) values($1,$2,$3,$4)', [o.acc, o.name, o.contact, o.msg]); return; } MEM.sup = MEM.sup || []; MEM.sup.push(Object.assign({ id: Date.now(), done: false, at: new Date().toISOString() }, o)); db.saveMem(); },
   async supList() { if (pool) return (await pool.query('select id,acc,name,contact,msg,done,at from support order by done asc, at desc limit 100')).rows; return (MEM.sup || []).slice().reverse().slice(0, 100); },
+  async supOpen() { if (pool) return +(await pool.query('select count(*)::int n from support where done=false')).rows[0].n; return (MEM.sup || []).filter(m => !m.done).length; },
+  async opIds() { if (pool) return (await pool.query('select id from accounts where op=true')).rows.map(r => r.id); return MEM.accs.filter(a => a.op).map(a => a.id); },
   async supDone(id) { if (pool) await pool.query('update support set done=true where id=$1', [id]); else { const x = (MEM.sup || []).find(m => m.id === id); if (x) x.done = true; db.saveMem(); } },
   async delAcc(id) { if (pool) { await pool.query('delete from tokens where acc=$1', [id]); await pool.query('delete from accounts where id=$1', [id]); return; } MEM.accs = MEM.accs.filter(a => a.id !== id); for (const k in MEM.toks) if (MEM.toks[k] === id) delete MEM.toks[k]; db.saveMem(); },
   // soma diamantes de forma segura (sem corrida entre duas compras)
@@ -495,6 +497,7 @@ async function handle(req, res, u) {
       if (limited(req, 'sup', 5, 3600e3)) return send(res, 429, { err: 'Você já mandou várias mensagens. Espere um pouco.' });
       const b = await body(req); const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 2000); if (msg.length < 2) return send(res, 400, { err: 'Escreva sua mensagem.' });
       const who = await auth(req); await db.supAdd({ acc: who ? who.id : null, name: who ? who.name : cleanName(b.name) || null, contact: String(b.contact || '').replace(/[<>]/g, '').trim().slice(0, 120) || null, msg });
+      try { const n = await db.supOpen(); for (const id of await db.opIds()) notify(id, { t: 'sup', n, from: who ? who.name : (cleanName(b.name) || 'Visitante') }); } catch (_) {}
       return send(res, 200, { ok: true });
     }
     if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war' || u === '/api/shop3') return handleExtra(req, res, u, null);
@@ -543,6 +546,7 @@ async function handle(req, res, u) {
         statement_descriptor: 'ELDMOR', metadata: { acc: a.id, pack: b.pack } }) });
       return send(res, 200, { url: pref.init_point });
     }
+    if (u === '/api/support/count') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { n: await db.supOpen() }); }
     if (u === '/api/support/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: await db.supList() }); }
     if (u === '/api/support/done' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); await db.supDone(+b.id); return send(res, 200, { ok: true }); }
     if (u === '/api/delete' && req.method === 'POST') { const b = await body(req); if (hashPw(b.pass || '', a.salt) !== a.ph) return send(res, 401, { err: 'Senha errada.' }); await db.delAcc(a.id); return send(res, 200, { ok: true }); }
