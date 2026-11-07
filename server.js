@@ -144,7 +144,7 @@ function onMsg(c, m) {
   // monstros sincronizados: o dono da zona manda, o servidor repassa
   if (m.t === 'me') { if (!Array.isArray(m.e) || m.e.length > 160) return; const now = Date.now(); if (now - (c.meT || 0) < 60) return; c.meT = now; all({ t: 'me', o: c.id, e: m.e, pr: Array.isArray(m.pr) ? m.pr.slice(0, 60) : [], te: Array.isArray(m.te) ? m.te.slice(0, 30) : [], pp: Array.isArray(m.pp) ? m.pp.slice(0, 40) : [], fx: Array.isArray(m.fx) ? m.fx.slice(0, 20) : [], rn: Array.isArray(m.rn) ? m.rn.slice(0, 6) : [] }, c); return; }
   if (m.t === 'mh') { const t = clients.get(m.o); if (t && t.joined && t !== c) send(t, { t: 'mh', id: m.id, d: Math.max(0, Math.min(+m.d || 0, 5e6)), sl: Math.max(0, Math.min(+m.sl || 0, 5)), f: c.id }); return; }
-  if (m.t === 'mk') { all({ t: 'mk', o: c.id, id: m.id, ty: String(m.ty || '').slice(0, 30), x: +m.x || 0, y: +m.y || 0, el: m.el | 0, mn: m.mn ? 1 : 0, rf: m.rf ? 1 : 0 }, c); return; }
+  if (m.t === 'mk') { all({ t: 'mk', o: c.id, id: m.id, ty: String(m.ty || '').slice(0, 30), x: +m.x || 0, y: +m.y || 0, el: m.el | 0, mn: m.mn ? 1 : 0, rf: m.rf ? 1 : 0, k: m.k === c.id || clients.has(m.k) ? m.k : c.id }, c); return; }
   if (m.t === 'hu') { const t = clients.get(m.to); if (t && t.joined && t !== c) send(t, { t: 'hu', d: Math.max(0, Math.min(+m.d || 0, 1e6)), sx: +m.sx || 0, sy: +m.sy || 0 }); return; }
   if (m.t === 'chat') { const t = String(m.m || '').replace(/[<>]/g, '').trim().slice(0, 80); if (t && Date.now() - (c.chatT || 0) > 800) { c.chatT = Date.now(); all({ t: 'chat', n: c.name, m: t }, c); } return; }
 }

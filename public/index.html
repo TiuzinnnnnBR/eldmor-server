@@ -2545,7 +2545,7 @@ function srvData(m){
     if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;srvExitBtn(true);$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
     if(!modal.hidden&&mode==='modal'&&$('srvbox'))closeModal();toast(`Bem-vindo ao servidor, ${SRV.name}! ${SRV.players.size?SRV.players.size+' jogador(es) online.':'Você é o primeiro aqui.'}`,'#6ad8ff');sfx('lvl');return}
   if(!SRV.on)return;
-  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null})}}
+  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null,gid:h.gid||0})}}
   else if(m.t==='pj'){if(m.p.id!==SRV.id){srvAdd(m.p);toast(`${m.p.name} entrou no servidor.`,'#6ad8ff')}}
   else if(m.t==='pl'){const p=SRV.players.get(m.id);if(p){SRV.players.delete(m.id);toast(`${p.name} saiu do servidor.`,'#a597bd')}}
   else if(m.t==='ev'){if(m.k&&EVD[m.k]){EVT={k:m.k,end:Date.now()+m.rem};const d=EVD[m.k];banner(d.n,d.d);toast('Evento no servidor: '+d.n+'. '+d.d+'.',d.c);sfx('boss')}else EVT=null}
@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v59 · 07/11/2026';
+const ELD_VER='v60 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4003,7 +4003,7 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
    Cada região (zona) tem um "dono": o jogador de menor id que está nela (ou, se ninguém está, o de menor id do servidor).
    O dono simula os monstros daquela zona e manda a posição/vida para os outros; quem bate manda o golpe para o dono.
    Quando o dono muda, o novo dono assume os monstros que já estava vendo, então ninguém vê monstro sumir ou duplicar. */
-const MS={vr:[],owned:{},stash:{},rem:new Map(),sendT:0,chkT:0,hurtT:{},cur:null};
+const MS={gid:0,gidT:0,lastBy:null,vr:[],owned:{},stash:{},rem:new Map(),sendT:0,chkT:0,hurtT:{},cur:null};
 const msOn=()=>typeof SRV!=='undefined'&&SRV.on&&SRV.id!=null&&NET.role!=='host'&&NET.role!=='guest';
 const msZ=e=>e.sz===undefined?e.z:e.sz;
 const msSync=e=>e&&!e.boss&&!e.rift&&!e.minion&&!e.dummy&&!e.srv&&e.def&&typeof msZ(e)==='number'&&msZ(e)>=0;
@@ -4038,21 +4038,24 @@ function msSnap(m){const o=m.o;if(o===SRV.id)return;const seen=new Set();
   for(const r of m.fx||[])effects.push({type:'ring',x:r[0],y:r[1],r0:r[2],r1:r[3],t:0,max:r[4],col:r[5],_rm:1});
   for(const r of m.rn||[])MS.vr.push({x:r[0],y:r[1],w:Math.min(5,r[2]||3),n:0.25});
   teles=teles.filter(t=>t.mso!==o).concat((m.te||[]).map(r=>({x:r[0],y:r[1],r:r[2],t:r[3],max:r[4],col:r[5],dmg:0,mso:o})))}
-function msKill(m){const k=m.o+':'+m.id;const e=MS.rem.get(k);const hit=e&&e.hitMe;if(e){MS.rem.delete(k);msRemove(e)}
+function msKill(m){const k=m.o+':'+m.id;const e=MS.rem.get(k);const hit=(e&&e.hitMe)||(m.k!==SRV.id&&msMate(m.k)&&msNear(m.x,m.y));if(e){MS.rem.delete(k);msRemove(e)}
   if(hit)netKill({id:-1,ty:m.ty,x:m.x,y:m.y,el:m.el,mn:m.mn,rf:m.rf});else burst(m.x,m.y-4,['#ffffff','#ffd0a0'],m.el?30:12,80,0.6,2)}
 {const _sd=srvData;srvData=function(m){if(m&&SRV.on){
   if(m.t==='me'){msSnap(m);return}
-  if(m.t==='mh'){const e=enemies.find(x=>!x.net&&x.id===m.id);if(e&&e.hp>0){if(m.sl)e.slow=Math.max(e.slow,m.sl);damageEnemy(e,m.d,0,{crit:0,noKb:true,remote:true})}return}
+  if(m.t==='mh'){const e=enemies.find(x=>!x.net&&x.id===m.id);if(e&&e.hp>0){if(m.sl)e.slow=Math.max(e.slow,m.sl);MS.lastBy=m.f;try{damageEnemy(e,m.d,0,{crit:0,noKb:true,remote:true})}finally{MS.lastBy=null}}return}
   if(m.t==='mk'){msKill(m);return}
   if(m.t==='hu'){if(mode==='play'&&!P.dead)hurtPlayer(m.d,m.sx,m.sy);return}
   if(m.t==='pl'){const r0=_sd(m);try{msCheck();for(const[k,e]of[...MS.rem])if(e.ms===m.id){MS.rem.delete(k);msRemove(e)}projs=projs.filter(p=>p.mso!==m.id&&p.pso!==m.id);teles=teles.filter(t=>t.mso!==m.id)}catch(_){}return r0}}
-  const r=_sd(m);if(m&&m.t==='welcome'){MS.owned={};MS.chkT=0}return r}}
+  const r=_sd(m);if(m&&m.t==='welcome'){MS.owned={};MS.chkT=0;msGidLoad()}return r}}
 {const _dr=srvDrop;srvDrop=function(){msReset();return _dr.apply(this,arguments)}}
 /* golpe em monstro de outro jogador: vai para o dono */
-{const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(e&&e.ms!==undefined&&e.net){MS.cur=e;try{return _de.apply(this,arguments)}finally{MS.cur=null}}return _de.apply(this,arguments)}}
+{const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(e&&!e.net&&!(opt&&opt.remote))e.myHit=true;if(e&&e.ms!==undefined&&e.net){MS.cur=e;try{return _de.apply(this,arguments)}finally{MS.cur=null}}return _de.apply(this,arguments)}}
 {const _ns=netSend;netSend=function(o){if(MS.cur&&o&&o.t==='hit'){const e=MS.cur;e.hitMe=true;srvSend({t:'mh',o:e.ms,id:e.rid,d:o.d,sl:o.sl});return}return _ns.apply(this,arguments)}}
 /* o dono avisa quando o monstro morre */
-{const _ke=killEnemy;killEnemy=function(e){try{if(msOn()&&e&&!e.net&&msSync(e)&&SRV.players.size)srvSend({t:'mk',id:e.id,ty:e.type,x:Math.round(e.x),y:Math.round(e.y),el:e.elite||0,mn:e.minion?1:0,rf:e.rift?1:0})}catch(_){}return _ke.apply(this,arguments)}}
+{const _ke=killEnemy;killEnemy=function(e){let silent=false;try{if(msOn()&&e&&!e.net&&msSync(e)&&SRV.players.size){const k=MS.lastBy!=null?MS.lastBy:SRV.id;srvSend({t:'mk',id:e.id,ty:e.type,x:Math.round(e.x),y:Math.round(e.y),el:e.elite||0,mn:e.minion?1:0,rf:e.rift?1:0,k});
+    if(k!==SRV.id&&!e.myHit&&!(msMate(k)&&msNear(e.x,e.y)))silent=true}}catch(_){}
+  if(silent){const i=enemies.indexOf(e);if(i>=0)enemies.splice(i,1);if(P.target===e)P.target=null;burst(e.x,e.y-4,['#ffffff','#ffd0a0'],e.elite?30:12,80,0.6,2);const z=msZ(e);if(typeof z==='number'){RESP.q.push({z,at:Date.now()+rand(7,15)*1000});RESP.pend[z]=(RESP.pend[z]||0)+1}return}
+  return _ke.apply(this,arguments)}}
 /* monstros do dono também atacam os outros jogadores */
 const msTG=p=>{const t=p._tg||(p._tg={rp:p});t.x=p.x;t.y=p.y;t.dead=!!p.dead;return t};
 window.__MTG=(e,cur)=>{if(!msOn()||!SRV.players.size)return null;let bd=cur?hyp(cur.x-e.x,cur.y-e.y):1e9,best=null;for(const p of SRV.players.values()){if(p.dead||p.op)continue;const d=hyp(p.x-e.x,p.y-e.y);if(d<bd){bd=d;best=p}}return best?msTG(best):null};
@@ -4068,6 +4071,14 @@ window.__MTELE=t=>{if(!msOn()||!t.dmg||t.mso!==undefined)return;for(const p of S
     MS.sendT-=dt;if(MS.sendT<=0){MS.sendT=0.1;msSend()}}else if(Object.keys(MS.owned).length||MS.rem.size)msReset()}catch(err){console.log('mobsync',err)}return r}}
 window.__MS=()=>({owned:JSON.stringify(MS.owned),rem:MS.rem.size,cz:curZone,on:msOn()});
 window.__MSV=()=>({pv:projs.filter(p=>p.owner==="v").length,fx:effects.filter(f=>f._rm).length,vr:MS.vr.length});
+
+/* v60: experiência só para quem bateu no monstro (ou para quem está na mesma guilda e perto) */
+const msMyG=()=>{try{if(GUILD&&!GUILD.err)return GUILD.guild&&GUILD.guild.id||0}catch(_){}return MS.gid||0};
+function msGidLoad(){if(typeof ACC==='undefined'||!ACC||!ACC.tok)return;api('guild/me').then(r=>{MS.gid=r&&r.guild?r.guild.id:0}).catch(()=>{})}
+const msMate=id=>{if(id==null||id===SRV.id)return false;const g=msMyG();const p=SRV.players.get(id);return!!(g&&p&&p.gid&&p.gid===g)};
+const msNear=(x,y)=>hyp(P.x-x,P.y-y)<20*T;
+{const _hm=heroMsg;heroMsg=function(){const m=_hm();try{m.gid=msMyG()}catch(_){}return m}}
+{const _sd=srvData;srvData=function(m){if(m&&m.t==='gmsg'){MS.gid=0;setTimeout(msGidLoad,1500)}return _sd(m)}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
