@@ -75,8 +75,15 @@ function parse(c) {
     if (op === 1 || op === 0) { c.frag.push(p); if (fin) { const s = Buffer.concat(c.frag).toString('utf8'); c.frag = []; let m; try { m = JSON.parse(s); } catch (e) { continue; } onMsg(c, m); } }
   }
 }
+const PARTIES = new Map(); let PID = 1; const HUNT = new Map();
+const huntLeft = c => { const t = HUNT.get(String(c.name || '').toLowerCase()); return t && t > Date.now() ? t - Date.now() : 0; };
+function partyOf(c) { return c.party ? PARTIES.get(c.party) || null : null; }
+function partySend(p) { const mem = [...p.m].map(id => clients.get(id)).filter(x => x && x.joined); const roster = mem.map(x => ({ id: x.id, name: x.name })); for (const x of mem) send(x, { t: 'party', id: p.id, lead: p.lead, m: roster }); }
+function partyLeave(c) { const p = partyOf(c); c.party = 0; if (!p) return; p.m.delete(c.id); send(c, { t: 'party', id: 0, m: [] });
+  if (p.m.size <= 1) { for (const id of p.m) { const x = clients.get(id); if (x) { x.party = 0; send(x, { t: 'party', id: 0, m: [] }); } } PARTIES.delete(p.id); return; }
+  if (p.lead === c.id) p.lead = [...p.m][0]; partySend(p); }
 function drop(c) {
-  if (c.dead) return; c.dead = true; clients.delete(c.id); try { c.sock.destroy(); } catch (e) { }
+  if (c.dead) return; try { partyLeave(c); } catch (e) { } c.dead = true; clients.delete(c.id); try { c.sock.destroy(); } catch (e) { }
   if (c.joined) { all({ t: 'pl', id: c.id }); console.log('saiu:', c.name, '| online:', online()); }
 }
 const online = () => [...clients.values()].filter(c => c.joined).length;
@@ -101,7 +108,7 @@ async function onJoin(c, m) {
   if (c.dead) return;
   c.name = name; c.h = m.h || null; c.joined = true;
   send(c, { t: 'welcome', id: c.id, name, acc: !!acc, op: !!c.op, tiles: [...W.tiles], players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
-  all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c);
+  all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c); setTimeout(() => { if (huntLeft(c) > 0) all({ t: 'hunt', id: c.id, name: c.name, rem: huntLeft(c) }); }, 800);
   console.log('entrou:', name, '| online:', online());
 }
 function onMsg(c, m) {
@@ -120,7 +127,7 @@ function onMsg(c, m) {
     if (isOp(m.k)) { c.op = true; name = 'Operador level 0'; }
     c.name = name; c.h = m.h || null; c.joined = true;
     send(c, { t: 'welcome', id: c.id, name, op: !!c.op, tiles: [...W.tiles], players: [...clients.values()].filter(x => x.joined && (!x.hide || x === c)).map(x => ({ id: x.id, name: x.name, h: pub(x) })), boss: bossMsg(), ev: W.ev ? { k: W.ev.k, rem: W.ev.end - Date.now() } : null });
-    all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c);
+    all({ t: 'pj', p: { id: c.id, name, h: pub(c) } }, c); setTimeout(() => { if (huntLeft(c) > 0) all({ t: 'hunt', id: c.id, name: c.name, rem: huntLeft(c) }); }, 800);
     console.log('entrou:', name, '| online:', online()); return;
   }
   if (!c.joined) return;
@@ -146,6 +153,34 @@ function onMsg(c, m) {
   if (m.t === 'mh') { const t = clients.get(m.o); if (t && t.joined && t !== c) send(t, { t: 'mh', id: m.id, d: Math.max(0, Math.min(+m.d || 0, 5e6)), sl: Math.max(0, Math.min(+m.sl || 0, 5)), f: c.id }); return; }
   if (m.t === 'mk') { all({ t: 'mk', o: c.id, id: m.id, ty: String(m.ty || '').slice(0, 30), x: +m.x || 0, y: +m.y || 0, el: m.el | 0, mn: m.mn ? 1 : 0, rf: m.rf ? 1 : 0, k: m.k === c.id || clients.has(m.k) ? m.k : c.id }, c); return; }
   if (m.t === 'hu') { const t = clients.get(m.to); if (t && t.joined && t !== c) send(t, { t: 'hu', d: Math.max(0, Math.min(+m.d || 0, 1e6)), sx: +m.sx || 0, sy: +m.sy || 0 }); return; }
+  // ---- social: chat por canal, amizade, grupo, PvP e caçada ----
+  if (m.t === 'chat2') { const t = String(m.m || '').replace(/[<>]/g, '').trim().slice(0, 120); if (!t || Date.now() - (c.chatT || 0) < 700) return; c.chatT = Date.now();
+    const o = { t: 'chat', n: c.name, m: t, ch: m.ch, id: c.id };
+    if (m.ch === 'party') { const p = partyOf(c); if (p) for (const id of p.m) { const x = clients.get(id); if (x && x !== c) send(x, o); } }
+    else if (m.ch === 'guild') { const g = c.h && c.h.gid; if (g) for (const x of clients.values()) if (x.joined && x !== c && x.h && x.h.gid === g) send(x, o); }
+    else if (m.ch === 'w') { const x = clients.get(m.to); if (x && x.joined) send(x, o); }
+    else { o.ch = 'all'; all(o, c); }
+    return; }
+  if (m.t === 'freq' || m.t === 'facc' || m.t === 'pinv') { const x = clients.get(m.to); if (!x || !x.joined || x === c) return; if (Date.now() - (c.reqT || 0) < 1500) return; c.reqT = Date.now();
+    if (m.t === 'pinv') { (c.inv || (c.inv = new Set())).add(x.id); const p = partyOf(c); if (p && p.m.size >= 4) return send(c, { t: 'perr', m: 'O grupo já está cheio (4).' }); }
+    send(x, { t: m.t, from: c.id, n: c.name }); return; }
+  if (m.t === 'pacc') { const x = clients.get(m.to); if (!x || !x.joined || !x.inv || !x.inv.has(c.id)) return send(c, { t: 'perr', m: 'Esse convite não vale mais.' }); x.inv.delete(c.id);
+    let p = partyOf(x); if (p && p.m.size >= 4) return send(c, { t: 'perr', m: 'O grupo já está cheio.' });
+    if (partyOf(c) && partyOf(c) !== p) partyLeave(c);
+    if (!p) { p = { id: PID++, lead: x.id, m: new Set([x.id]) }; PARTIES.set(p.id, p); x.party = p.id; }
+    p.m.add(c.id); c.party = p.id; partySend(p); return; }
+  if (m.t === 'pleave') { partyLeave(c); return; }
+  if (m.t === 'pvph') { const x = clients.get(m.to); if (!x || !x.joined || x === c || x.hide) return; const now = Date.now(); if (now - (c.pvT || 0) < 90) return; c.pvT = now;
+    send(x, { t: 'pvph', f: c.id, d: Math.max(0, Math.min(+m.d || 0, 1e5)), sx: +m.sx || 0, sy: +m.sy || 0 }); return; }
+  if (m.t === 'pvpk') { const k = clients.get(m.by); if (!k || !k.joined || k === c) return; const now = Date.now(); if (now - (c.pkT || 0) < 3000) return; c.pkT = now;
+    const kg = k.h && k.h.gid, vg = c.h && c.h.gid; const war = m.war && kg && vg && kg !== vg; let kind;
+    if (war) kind = 'war';
+    else if (huntLeft(c) > 0) { kind = 'bounty'; const gold = 200 + 20 * ((c.h && c.h.lv) | 0); HUNT.delete(c.name.toLowerCase()); all({ t: 'hunt', id: c.id, rem: 0 }); send(k, { t: 'pvpres', kind, n: c.name, gold }); }
+    else if (!(c.h && c.h.pv) && k.h && k.h.pv) { kind = 'murder'; const rem = 10 * MIN; HUNT.set(k.name.toLowerCase(), now + rem); const gold = 200 + 20 * ((k.h && k.h.lv) | 0); all({ t: 'hunt', id: k.id, name: k.name, rem, gold, new: 1 }); send(k, { t: 'pvpres', kind, n: c.name, rem }); }
+    else kind = 'duel';
+    if (kind === 'war' || kind === 'duel') send(k, { t: 'pvpres', kind, n: c.name });
+    all({ t: 'kfeed', k: k.name, v: c.name, kind }); return; }
+  if (m.t === 'hunts') { send(c, { t: 'hunts', l: [...clients.values()].filter(x => x.joined && huntLeft(x) > 0).map(x => [x.id, huntLeft(x)]) }); return; }
   if (m.t === 'chat') { const t = String(m.m || '').replace(/[<>]/g, '').trim().slice(0, 80); if (t && Date.now() - (c.chatT || 0) > 800) { c.chatT = Date.now(); all({ t: 'chat', n: c.name, m: t }, c); } return; }
 }
 

@@ -2545,7 +2545,7 @@ function srvData(m){
     if(m.boss)srvBoss(m.boss,false);$('p2hud').hidden=false;srvExitBtn(true);$('p2hud').querySelector('b').textContent='Servidor: '+(SRV.players.size+1)+' online';
     if(!modal.hidden&&mode==='modal'&&$('srvbox'))closeModal();toast(`Bem-vindo ao servidor, ${SRV.name}! ${SRV.players.size?SRV.players.size+' jogador(es) online.':'Você é o primeiro aqui.'}`,'#6ad8ff');sfx('lvl');return}
   if(!SRV.on)return;
-  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null,gid:h.gid||0})}}
+  if(m.t==='ps'){for(const r of m.l){if(r[0]===SRV.id)continue;let p=SRV.players.get(r[0]);if(!p)continue;const h=r[1];p.tx=h.x;p.ty=h.y;if(hyp(p.x-h.x,p.y-h.y)>220){p.x=h.x;p.y=h.y}Object.assign(p,{op:h.op,wv:h.wv,ov:h.ov,dn:h.dn,actT:h.at,actMax:h.am||0.3,walk:h.w,cls:h.cls,look:h.look,dead:h.dead,lv:h.lv,hp:h.hp,mhp:h.mhp,z:h.z,mt:h.mt|0,fr:h.fr|0,tt:h.tt||null,gid:h.gid||0,pv:h.pv|0})}}
   else if(m.t==='pj'){if(m.p.id!==SRV.id){srvAdd(m.p);toast(`${m.p.name} entrou no servidor.`,'#6ad8ff')}}
   else if(m.t==='pl'){const p=SRV.players.get(m.id);if(p){SRV.players.delete(m.id);toast(`${p.name} saiu do servidor.`,'#a597bd')}}
   else if(m.t==='ev'){if(m.k&&EVD[m.k]){EVT={k:m.k,end:Date.now()+m.rem};const d=EVD[m.k];banner(d.n,d.d);toast('Evento no servidor: '+d.n+'. '+d.d+'.',d.c);sfx('boss')}else EVT=null}
@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v61 · 07/11/2026';
+const ELD_VER='v62 · 08/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4075,7 +4075,7 @@ window.__MSV=()=>({pv:projs.filter(p=>p.owner==="v").length,fx:effects.filter(f=
 /* v60: experiência só para quem bateu no monstro (ou para quem está na mesma guilda e perto) */
 const msMyG=()=>{try{if(GUILD&&!GUILD.err)return GUILD.guild&&GUILD.guild.id||0}catch(_){}return MS.gid||0};
 function msGidLoad(){if(typeof ACC==='undefined'||!ACC||!ACC.tok)return;api('guild/me').then(r=>{MS.gid=r&&r.guild?r.guild.id:0}).catch(()=>{})}
-const msMate=id=>{if(id==null||id===SRV.id)return false;const g=msMyG();const p=SRV.players.get(id);return!!(g&&p&&p.gid&&p.gid===g)};
+const msMate=id=>{if(id==null||id===SRV.id)return false;if(window.__inParty&&window.__inParty(id))return true;const g=msMyG();const p=SRV.players.get(id);return!!(g&&p&&p.gid&&p.gid===g)};
 const msNear=(x,y)=>hyp(P.x-x,P.y-y)<20*T;
 {const _hm=heroMsg;heroMsg=function(){const m=_hm();try{m.gid=msMyG()}catch(_){}return m}}
 {const _sd=srvData;srvData=function(m){if(m&&m.t==='gmsg'){MS.gid=0;setTimeout(msGidLoad,1500)}return _sd(m)}}
@@ -4086,6 +4086,167 @@ function srvAuto(manual){if(NET.role){if(manual)toast('Saia da sala com código 
 function srvGoLocal(){lsSet('eldmor-mode','local');if(SRV.want||SRV.on)srvLeave();toast('Modo local: você está jogando no seu próprio mundo. Para voltar, vá em Opções → Jogar online.','#a597bd')}
 {const _sg=startGame;startGame=function(s){const r=_sg.apply(this,arguments);try{if(lsGet('eldmor-mode')!=='local')setTimeout(()=>{if(mode!=='title')srvAuto(false)},900)}catch(_){}return r}}
 {const _oo=openOnline;openOnline=function(){_oo();try{mbox.querySelectorAll('#sname,#surl').forEach(el=>{const r=el.closest('.row');if(r)r.style.display='none'})}catch(_){}}}
+
+/* ================= v62: chat, amigos, grupo, PvP, PvP de guildas e caçada ================= */
+const SOC={pv:lsGet('eldmor-pvp')==='1',pvT:0,party:{id:0,lead:0,m:[]},hunts:new Map(),log:[],ch:'all',to:null,toName:'',open:false,lastBy:null,lastByT:-99,atkT:-99,hitT:0,proxy:new Map(),reqs:[],unread:0};
+const socOn=()=>typeof SRV!=='undefined'&&SRV.on;
+const socMyG=()=>{try{return msMyG()}catch(_){return 0}};
+const socInParty=id=>SOC.party.id&&SOC.party.m.some(x=>x.id===id)&&id!==SRV.id;
+window.__inParty=socInParty;
+const socHunted=id=>{const t=SOC.hunts.get(id);return!!(t&&t>Date.now())};
+const socWar=p=>{try{const g=socMyG();return warOn()&&g&&p.gid&&p.gid!==g}catch(_){return false}};
+const socFriends=()=>{if(!Array.isArray(S.friends))S.friends=[];return S.friends};
+const socIsFriend=n=>socFriends().some(f=>f.toLowerCase()===String(n||'').toLowerCase());
+const socSafe=z=>z===-1||z===undefined||z===null;
+/* posso atacar esse jogador? */
+function socCanHit(p){if(!socOn()||!p||p.dead||p.op||mode!=='play'||P.dead)return false;if(socSafe(curZone)||socSafe(p.z))return false;if(socInParty(p.id))return false;
+  const g=socMyG();if(g&&p.gid===g)return false;if(socWar(p))return true;if(SOC.pv)return true;return socHunted(p.id)}
+/* ele pode me atacar? (checado do meu lado quando o golpe chega) */
+function socCanBeHit(p){if(!p||p.op||socSafe(curZone)||socSafe(p.z))return false;if(socInParty(p.id))return false;const g=socMyG();if(g&&p.gid===g)return false;if(socWar(p))return true;if(p.pv)return true;return socHunted(SRV.id)}
+/* jogadores atacáveis viram "alvos" dentro da lista de inimigos (não são desenhados como monstros) */
+function socProxySync(){const want=new Set();if(socOn())for(const p of SRV.players.values())if(socCanHit(p))want.add(p.id);
+  for(const[id,o]of[...SOC.proxy])if(!want.has(id)){SOC.proxy.delete(id);const i=enemies.indexOf(o);if(i>=0)enemies.splice(i,1);if(P.target===o)P.target=null}
+  for(const id of want){const p=SRV.players.get(id);let o=SOC.proxy.get(id);if(!o){o={pvpP:true,net:true,rp:p,id:'pv'+id,x:p.x,y:p.y,r:5,hp:1,max:1,def:{n:p.name,lvl:p.lv||1,tier:0,fam:'jogador',xp:0,gold:[0,0]},sh:22,sc:1,flash:0,slow:0,dir:1,anim:0,aggro:false,boss:false,minion:false,elite:0,state:'idle',z:p.z,sz:-9};SOC.proxy.set(id,o);enemies.push(o)}
+    o.rp=p;o.def.n=p.name+(socHunted(id)?' ☠':'');o.def.lvl=p.lv||1}}
+function socProxyMove(){for(const o of SOC.proxy.values()){const p=o.rp;o.x=p.x;o.y=p.y;o.hp=Math.max(1,p.hp||1);o.max=Math.max(1,p.mhp||1);o.flash=Math.max(0,o.flash-0.016)}}
+{const _de=drawEnemy;drawEnemy=function(e){if(e&&e.pvpP){if(P.target===e){ctx.strokeStyle='rgba(255,70,60,.95)';ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(e.x,e.y+4,9,4,0,0,7);ctx.stroke()}return}return _de.apply(this,arguments)}}
+/* golpe em jogador */
+{const _dm=damageEnemy;damageEnemy=function(e,base,ang,opt){if(e&&e.pvpP){const p=e.rp;if(!socCanHit(p))return;if(!p.pv&&!socHunted(p.id)&&!socWar(p)&&P.target!==e)return;if(time-SOC.hitT<0.12)return;SOC.hitT=time;
+    const cr=Math.random()<((opt&&opt.crit)||0);const d=Math.max(1,Math.round(base*rand(0.9,1.1)*(cr?1.6:1)*0.5));
+    srvSend({t:'pvph',to:p.id,d,sx:Math.round(P.x),sy:Math.round(P.y),war:socWar(p)?1:0});SOC.atkT=time;e.flash=0.14;addText(e.x,e.y-24,(cr?'Crítico! ':'')+d,cr?'#ffd04a':'#ffffff');return}
+  return _dm.apply(this,arguments)}}
+/* morreu para outro jogador: avisa o servidor (ele decide se abre caçada, paga recompensa ou conta ponto de guerra) */
+{const _di=die;die=function(){try{if(socOn()&&SOC.lastBy!=null&&time-SOC.lastByT<8){const p=SRV.players.get(SOC.lastBy);srvSend({t:'pvpk',by:SOC.lastBy,war:p&&socWar(p)?1:0})}}catch(_){}SOC.lastBy=null;return _di.apply(this,arguments)}}
+/* azar: quem matou alguém sem PvP fica 10 minutos sem dropar itens */
+const socAzar=()=>S&&S.azar&&S.azar>Date.now();
+{const _ml=mobLoot;mobLoot=function(){if(socAzar())return;return _ml.apply(this,arguments)}}
+{const _el=eliteLoot;eliteLoot=function(){if(socAzar())return;return _el.apply(this,arguments)}}
+{const _md=mobDrops;mobDrops=function(){if(socAzar())return;return _md.apply(this,arguments)}}
+{const _hm=heroMsg;heroMsg=function(){const m=_hm();m.pv=SOC.pv?1:0;return m}}
+/* ---------- chat ---------- */
+const CHC={all:'#e8e0ff',party:'#7ae0ff',guild:'#8bd86a',w:'#ff9ae8',sys:'#ffd04a',pvp:'#ff7a6e'};
+const CHN={all:'Todos',party:'Grupo',guild:'Guilda',w:'Privado',sys:'Aviso',pvp:'PvP'};
+function socLog(ch,n,m,id){SOC.log.push({ch,n,m,id,t:Date.now()});if(SOC.log.length>80)SOC.log.shift();if(!SOC.open&&ch!=='sys')SOC.unread++;chatDraw()}
+const sesc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function chatDraw(){const lg=$('chatlog');if(lg){const now=Date.now();lg.innerHTML=SOC.open?'':SOC.log.filter(x=>now-x.t<25000).slice(-5).map(x=>`<div style="color:${CHC[x.ch]||'#fff'}">${x.ch!=='all'&&x.ch!=='sys'?'['+CHN[x.ch]+'] ':''}${x.n?'<b>'+sesc(x.n)+':</b> ':''}${sesc(x.m)}</div>`).join('')}
+  const b=$('socchat');if(b)b.querySelector('i').textContent=SOC.unread?String(Math.min(99,SOC.unread)):'',b.querySelector('i').hidden=!SOC.unread;
+  const pl=$('chatp-log');if(pl){const at=pl.scrollTop+pl.clientHeight>=pl.scrollHeight-8;pl.innerHTML=SOC.log.map(x=>`<div class="cl" style="color:${CHC[x.ch]||'#fff'}"><small>${new Date(x.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small> ${x.ch!=='all'&&x.ch!=='sys'?'['+CHN[x.ch]+'] ':''}${x.n?`<b class="cn" data-id="${x.id==null?'':x.id}" data-n="${sesc(x.n)}">${sesc(x.n)}</b>: `:''}${sesc(x.m)}</div>`).join('')||'<p class="muted" style="padding:8px">Nenhuma mensagem ainda. Diga oi! 👋</p>';if(at)pl.scrollTop=pl.scrollHeight}}
+function chatSend(){const el=$('chatp-in');if(!el)return;const m=el.value.trim().slice(0,120);if(!m)return;if(!socOn()){toast('Entre no servidor online para conversar.','#a597bd');return}
+  const ch=SOC.ch;if(ch==='party'&&!SOC.party.id){toast('Você não está em um grupo. Convide alguém em 👥 Social.','#a597bd');return}if(ch==='guild'&&!socMyG()){toast('Você não está em uma guilda.','#a597bd');return}
+  if(ch==='w'){const p=[...SRV.players.values()].find(x=>x.name.toLowerCase()===String(SOC.toName).toLowerCase());if(!p){toast('Esse jogador não está online.','#a597bd');return}srvSend({t:'chat2',ch:'w',to:p.id,m});socLog('w','Você → '+p.name,m,null)}
+  else{srvSend({t:'chat2',ch,m});socLog(ch,SRV.name,m,SRV.id)}el.value='';el.focus()}
+function chatOpen(ch,toName){SOC.open=true;SOC.unread=0;if(ch)SOC.ch=ch;if(toName){SOC.ch='w';SOC.toName=toName}let el=$('chatp');if(!el){el=document.createElement('div');el.id='chatp';el.className='hud';document.body.appendChild(el)}
+  const T2=(k,l)=>`<button class="ct${SOC.ch===k?' on':''}" data-ch="${k}">${l}</button>`;
+  el.innerHTML=`<div class="chd"><b>💬 Chat</b>${T2('all','Todos')}${T2('party','Grupo')}${T2('guild','Guilda')}${T2('w','Privado')}<button class="cx" data-x="1">✕</button></div>
+  <div id="chatp-log"></div>${SOC.ch==='w'?`<div class="cto">Para: <input id="chatp-to" maxlength="16" placeholder="nome do jogador" value="${sesc(SOC.toName)}"></div>`:''}
+  <div class="cin"><input id="chatp-in" maxlength="120" placeholder="${SOC.ch==='all'?'Mensagem para todos no servidor':SOC.ch==='party'?'Mensagem para o seu grupo':SOC.ch==='guild'?'Mensagem para a sua guilda':'Mensagem privada'}" autocomplete="off"><button class="btn pri" data-send="1">Enviar</button></div>`;
+  el.hidden=false;
+  el.querySelectorAll('input').forEach(i=>['keydown','keyup','keypress'].forEach(t=>i.addEventListener(t,e=>{e.stopPropagation();if(t==='keydown'&&e.key==='Enter'&&i.id==='chatp-in')chatSend();if(t==='keydown'&&e.key==='Escape')chatClose()})));
+  const to=$('chatp-to');if(to)to.addEventListener('input',()=>SOC.toName=to.value);
+  el.onclick=e=>{e.stopPropagation();const t=e.target;if(t.dataset.ch){SOC.ch=t.dataset.ch;chatOpen();return}if(t.dataset.x){chatClose();return}if(t.dataset.send){chatSend();return}if(t.classList.contains('cn')){const id=+t.dataset.id;if(t.dataset.id!==''&&id!==SRV.id)socPlayerMenu(id,t.dataset.n)}};
+  el.onpointerdown=e=>e.stopPropagation();chatDraw();setTimeout(()=>{const i=$('chatp-in');if(i&&!('ontouchstart'in window))i.focus()},30)}
+function chatClose(){SOC.open=false;const el=$('chatp');if(el)el.hidden=true;chatDraw()}
+/* ---------- menu de um jogador (amizade, grupo, privado) ---------- */
+function socPlayerMenu(id,name){const p=SRV.players.get(id);mode='modal';const fr=socIsFriend(name);
+  openModal(`<div class="mhead"><h2>${sesc(name)}</h2><button class="btn s" data-act="close">Fechar</button></div>
+  <p class="muted">${p?`Nível ${p.lv||1} · ${({warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'})[p.cls]||''}${p.pv?' · <b style="color:#ff7a6e">⚔️ PvP ligado</b>':''}${socHunted(id)?' · <b style="color:#ff5a4a">☠ Caçado</b>':''}`:'Offline agora'}</p>
+  <div class="row" style="flex-wrap:wrap;gap:8px">
+   ${p?`<button class="btn" data-act="soc" data-id="w:${id}">✉️ Mensagem privada</button>`:''}
+   ${fr?`<button class="btn" data-act="soc" data-id="unf:${encodeURIComponent(name)}">💔 Desfazer amizade</button>`:p?`<button class="btn pri" data-act="soc" data-id="freq:${id}">🤝 Pedir amizade</button>`:''}
+   ${p&&!socInParty(id)?`<button class="btn" data-act="soc" data-id="pinv:${id}">👥 Convidar para o grupo</button>`:''}</div>`,false,'small')}
+/* ---------- painel social: amigos, grupo, online ---------- */
+function socPanel(tab){tab=tab||SOC.tab||'friends';SOC.tab=tab;mode='modal';const on=socOn();const pl=on?[...SRV.players.values()].filter(p=>!p.op):[];
+  const T2=(k,l)=>`<button class="btn s${tab===k?' pri':''}" data-act="soc" data-id="tab:${k}">${l}</button>`;
+  const online=n=>pl.find(p=>p.name.toLowerCase()===String(n).toLowerCase());
+  let body='';
+  if(tab==='friends'){const F=socFriends();body=F.length?F.map(n=>{const p=online(n);return`<div class="socr"><span>${p?'<i class="mon-on"></i>':'<i class="soff"></i>'}<b>${sesc(n)}</b><small>${p?'online · Nv '+(p.lv||1):'offline'}</small></span><span>${p?`<button class="btn s" data-act="soc" data-id="w:${p.id}">✉️</button>${socInParty(p.id)?'':`<button class="btn s" data-act="soc" data-id="pinv:${p.id}">👥</button>`}`:''}<button class="btn s" data-act="soc" data-id="unf:${encodeURIComponent(n)}">✕</button></span></div>`}).join(''):'<p class="muted">Você ainda não tem amigos aqui. Vá em "Online agora" e toque em 🤝 para pedir amizade.</p>'}
+  else if(tab==='party'){const P2_=SOC.party;body=P2_.id?`<p class="muted">No grupo, todo mundo que estiver perto ganha a experiência, o ouro e o progresso das missões dos monstros que qualquer um derrotar. Máximo de 4 jogadores.</p>`+P2_.m.map(m=>`<div class="socr"><span><i class="mon-on"></i><b>${sesc(m.name)}</b><small>${m.id===P2_.lead?'👑 líder':''}${m.id===SRV.id?' (você)':''}</small></span><span>${m.id!==SRV.id?`<button class="btn s" data-act="soc" data-id="w:${m.id}">✉️</button>`:''}</span></div>`).join('')+`<div class="row" style="margin-top:10px"><button class="btn" data-act="soc" data-id="pleave">Sair do grupo</button><button class="btn" data-act="soc" data-id="chatp">💬 Chat do grupo</button></div>`
+    :'<p class="muted">Você não está em um grupo. Convide amigos ou jogadores online com 👥. Em grupo, as missões e a experiência dos monstros são divididas com quem estiver perto.</p>'}
+  else{body=pl.length?pl.map(p=>`<div class="socr"><span><i class="mon-on"></i><b>${sesc(p.name)}</b><small>Nv ${p.lv||1}${p.pv?' · ⚔️ PvP':''}${socHunted(p.id)?' · ☠ caçado':''}</small></span><span><button class="btn s" data-act="soc" data-id="w:${p.id}">✉️</button>${socIsFriend(p.name)?'':`<button class="btn s" data-act="soc" data-id="freq:${p.id}">🤝</button>`}${socInParty(p.id)?'':`<button class="btn s" data-act="soc" data-id="pinv:${p.id}">👥</button>`}</span></div>`).join(''):`<p class="muted">${on?'Ninguém mais online agora.':'Você está no modo local. Entre no servidor em Opções → Jogar online.'}</p>`}
+  openModal(`<div class="mhead"><h2>👥 Social</h2><button class="btn s" data-act="close">Fechar</button></div><div class="row" style="gap:6px;flex-wrap:wrap">${T2('friends','🤝 Amigos ('+socFriends().length+')')}${T2('party','👥 Grupo'+(SOC.party.id?' ('+SOC.party.m.length+')':''))}${T2('online','🌐 Online agora ('+pl.length+')')}</div><div class="socl">${body}</div>
+  <p class="muted" style="font-size:12.5px;margin-top:10px">⚔️ <b>PvP:</b> ligue a espada para lutar contra outros jogadores fora da vila. Se você matar alguém que está com o PvP desligado, abre uma <b style="color:#ff5a4a">caçada</b> contra você (10 min, quem te derrotar ganha recompensa) e você fica com <b>azar</b> (10 min sem dropar itens). Membros da mesma guilda e do mesmo grupo não se atacam. Durante a Guerra de Guildas, guildas diferentes lutam entre si mesmo sem PvP, e cada vitória vale pontos de guerra.</p>`,false,'small')}
+function socCmd(id){const[a,b]=String(id).split(/:(.*)/s);
+  if(a==='tab'){socPanel(b);return}
+  if(a==='w'){const p=SRV.players.get(+b);closeModal();chatOpen('w',p?p.name:'');return}
+  if(a==='chatp'){closeModal();chatOpen('party');return}
+  if(a==='freq'){const p=SRV.players.get(+b);if(!p)return;srvSend({t:'freq',to:p.id});toast('Pedido de amizade enviado para '+p.name+'.','#8ad8ff');closeModal();return}
+  if(a==='unf'){const n=decodeURIComponent(b);S.friends=socFriends().filter(f=>f.toLowerCase()!==n.toLowerCase());save();toast('Amizade desfeita com '+n+'.','#a597bd');socPanel('friends');return}
+  if(a==='pinv'){const p=SRV.players.get(+b);if(!p)return;if(SOC.party.id&&SOC.party.m.length>=4){toast('O grupo já está cheio (4).','#a597bd');return}srvSend({t:'pinv',to:p.id});toast('Convite de grupo enviado para '+p.name+'.','#8ad8ff');closeModal();return}
+  if(a==='pleave'){srvSend({t:'pleave'});closeModal();return}}
+/* pedidos (amizade / grupo) com botões de aceitar */
+function socReq(kind,from,name){const box=$('socreq')||(()=>{const d=document.createElement('div');d.id='socreq';d.className='hud';document.body.appendChild(d);return d})();
+  const id='r'+Date.now()+Math.random().toString(36).slice(2,6);const el=document.createElement('div');el.className='sreq';el.id=id;
+  el.innerHTML=`<p>${kind==='f'?'🤝 <b>'+sesc(name)+'</b> quer ser seu amigo.':'👥 <b>'+sesc(name)+'</b> te convidou para um grupo.'}</p><div><button class="btn pri s">Aceitar</button><button class="btn s">Recusar</button></div>`;
+  const [ok,no]=el.querySelectorAll('button');ok.onclick=e=>{e.stopPropagation();if(kind==='f'){srvSend({t:'facc',to:from});socAddFriend(name)}else srvSend({t:'pacc',to:from});el.remove()};no.onclick=e=>{e.stopPropagation();el.remove()};el.onpointerdown=e=>e.stopPropagation();
+  box.appendChild(el);setTimeout(()=>el.remove(),30000);sfx('coin')}
+function socAddFriend(n){if(!socIsFriend(n)){socFriends().push(n);save()}toast('🤝 Agora você e '+n+' são amigos!','#8bd86a')}
+/* ---------- botão PvP ---------- */
+function socPvpToggle(){if(!socOn()){toast('O PvP só funciona no servidor online.','#a597bd');return}if(SOC.pv&&time-SOC.atkT<30){toast('Você atacou alguém agora há pouco. Espere '+Math.ceil(30-(time-SOC.atkT))+'s para desligar o PvP.','#ff7a6e');return}
+  if(time<SOC.pvT){toast('Espere um pouco para trocar o PvP de novo.','#a597bd');return}SOC.pvT=time+3;SOC.pv=!SOC.pv;lsSet('eldmor-pvp',SOC.pv?'1':'0');
+  toast(SOC.pv?'⚔️ PvP LIGADO: você pode atacar e ser atacado fora da vila.':'🛡️ PvP desligado. Atacar quem está sem PvP abre caçada contra o agressor.',SOC.pv?'#ff7a6e':'#8bd86a');socHud();socProxySync()}
+function socHud(){const b=$('socpvp');if(b){b.classList.toggle('on',SOC.pv);b.title=SOC.pv?'PvP ligado (toque para desligar)':'PvP desligado (toque para ligar)'}
+  const pill=$('socpill');if(pill){const h=socHunted(SRV.id)&&socOn(),az=socAzar();let t='';if(h){const s=Math.ceil((SOC.hunts.get(SRV.id)-Date.now())/1000);t+=`<span class="hp">☠ Caçado ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span>`}if(az){const s=Math.ceil((S.azar-Date.now())/1000);t+=`<span class="az">🍀 Azar ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span>`}pill.innerHTML=t;pill.hidden=!t||mode==='title'}
+  const bar=$('socbar');if(bar)bar.style.display=mode==='title'?'none':''}
+/* ---------- servidor → cliente ---------- */
+{const _sd=srvData;srvData=function(m){if(m&&SRV.on||m&&m.t==='welcome'){
+  if(m.t==='chat'){if(m.n!==SRV.name||m.id!==SRV.id)socLog(m.ch||'all',m.n,m.m,m.id);return}
+  if(m.t==='freq'){socReq('f',m.from,m.n);return}
+  if(m.t==='facc'){socAddFriend(m.n);return}
+  if(m.t==='pinv'){socReq('p',m.from,m.n);return}
+  if(m.t==='party'){const was=SOC.party.id;SOC.party={id:m.id||0,lead:m.lead||0,m:m.m||[]};if(m.id&&!was)toast('👥 Você entrou em um grupo! Experiência e missões dos monstros serão divididas com quem estiver perto.','#7ae0ff');if(!m.id&&was)toast('Você saiu do grupo.','#a597bd');socProxySync();if(!menuEl.hidden||document.querySelector('.socl'))try{if(document.querySelector('.socl'))socPanel()}catch(_){}return}
+  if(m.t==='perr'){toast(m.m,'#ff7a6e');return}
+  if(m.t==='pvph'){const p=SRV.players.get(m.f);if(!p||!socCanBeHit(p)||mode!=='play'||P.dead)return;SOC.lastBy=m.f;SOC.lastByT=time;hurtPlayer(m.d,m.sx,m.sy);return}
+  if(m.t==='pvpres'){if(m.kind==='murder'){S.azar=Date.now()+(m.rem||600000);save();banner('Caçada aberta contra você!','Você derrotou '+m.n+' que estava sem PvP. 10 min de azar: sem itens');sfx('boss')}
+    else if(m.kind==='bounty'){S.gold+=m.gold|0;banner('Recompensa da caçada!','+'+(m.gold|0)+' de ouro por derrotar '+m.n);sfx('lvl');save()}
+    else if(m.kind==='war'){try{WARP+=10}catch(_){}toast('⚔️ Vitória na Guerra de Guildas contra '+m.n+'! +10 pontos de guerra','#ffd04a')}
+    else toast('⚔️ Você derrotou '+m.n+' no PvP!','#ffd04a');return}
+  if(m.t==='hunt'){if(m.rem>0){SOC.hunts.set(m.id,Date.now()+m.rem);if(m.id!==SRV.id&&m.new)socLog('pvp','',`☠ Caçada aberta contra ${m.name}! Quem derrotar ganha ${m.gold||0} de ouro.`)}else SOC.hunts.delete(m.id);socProxySync();return}
+  if(m.t==='hunts'){SOC.hunts.clear();for(const[id,rem]of m.l||[])SOC.hunts.set(id,Date.now()+rem);return}
+  if(m.t==='kfeed'){socLog('pvp','',m.kind==='war'?`⚔️ ${m.k} venceu ${m.v} (Guerra de Guildas)`:m.kind==='bounty'?`🏹 ${m.k} cumpriu a caçada contra ${m.v}!`:m.kind==='murder'?`☠ ${m.k} derrotou ${m.v} sem PvP e agora está sendo caçado!`:`⚔️ ${m.k} venceu ${m.v} no PvP`);return}}
+  const r=_sd(m);if(m&&m.t==='welcome'){SOC.party={id:0,lead:0,m:[]};setTimeout(()=>srvSend({t:'hunts'}),500)}if(m&&m.t==='pl'){SOC.hunts.delete(m.id);socProxySync()}return r}}
+{const _dr=srvDrop;srvDrop=function(){const r=_dr.apply(this,arguments);for(const o of SOC.proxy.values()){const i=enemies.indexOf(o);if(i>=0)enemies.splice(i,1);if(P.target===o)P.target=null}SOC.proxy.clear();SOC.party={id:0,lead:0,m:[]};return r}}
+/* ---------- desenho: espada (PvP) e caveira (caçado) sobre os nomes ---------- */
+{const _rn=render;render=function(){_rn();if(!socOn()||mode==='title')return;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.textAlign='center';ctx.font='14px system-ui, sans-serif';
+  const mark=(x,y,id,pv,me)=>{const h=socHunted(id);let s='';if(pv)s+='⚔️';if(h)s+='☠️';if(!s&&!(me&&SOC.party.id))return;if(socInParty(id))s='👥'+s;ctx.fillText(s,x,y)};
+  for(const p of SRV.players.values()){const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2-14;if(x<-80||y<-40||x>W+80||y>H+40)continue;mark(x,y,p.id,p.pv,false);
+    if(socHunted(p.id)){ctx.save();ctx.strokeStyle='rgba(255,60,50,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,(p.y+4-cam.y)*SCALE+H/2,9*SCALE/2,4*SCALE/2,0,0,7);ctx.stroke();ctx.restore()}}
+  const x=(P.x-cam.x)*SCALE+W/2,y=(P.y-30-cam.y)*SCALE+H/2-6;const s=(SOC.pv?'⚔️':'')+(socHunted(SRV.id)?'☠️':'');if(s)ctx.fillText(s,x,y)}}
+/* ---------- laço ---------- */
+{const _up=update;update=function(dt){const r=_up.apply(this,arguments);try{SOC._t=(SOC._t||0)-dt;if(SOC._t<=0){SOC._t=0.25;socProxySync();socHud();chatDraw()}socProxyMove()}catch(e){console.log('social',e)}return r}}
+/* ---------- HUD: botões 💬 chat, ⚔️ PvP, 👥 social ---------- */
+(function(){const bar=document.createElement('div');bar.id='socbar';bar.className='hud';
+  bar.innerHTML=`<button class="sk" id="socchat" title="Chat (Enter)">💬<i hidden></i></button><button class="sk" id="socpvp" title="PvP">⚔️</button><button class="sk" id="socfr" title="Social: amigos e grupo">👥</button>`;
+  document.body.appendChild(bar);const log=document.createElement('div');log.id='chatlog';log.className='hud';document.body.appendChild(log);
+  const pill=document.createElement('div');pill.id='socpill';pill.className='hud';pill.hidden=true;document.body.appendChild(pill);
+  bar.addEventListener('pointerdown',e=>e.stopPropagation());
+  $('socchat').onclick=e=>{e.stopPropagation();if(SOC.open)chatClose();else chatOpen()};$('socpvp').onclick=e=>{e.stopPropagation();socPvpToggle()};$('socfr').onclick=e=>{e.stopPropagation();socPanel()};
+  addEventListener('keydown',e=>{if(mode!=='play'||e.repeat)return;const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'))return;if(e.key==='Enter'){e.preventDefault();chatOpen()}});
+  const st=document.createElement('style');st.textContent=`
+#socbar{left:calc(max(12px, env(safe-area-inset-left,0px)) + 66px);bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;pointer-events:auto}
+#socbar .sk{width:46px;height:46px;font-size:21px;position:relative;display:grid;place-items:center}
+#socbar .sk i{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#e8463a;color:#fff;font:800 10.5px system-ui;display:grid;place-items:center;font-style:normal;padding:0 3px}
+#socpvp.on{background:radial-gradient(circle,#ff5a3a 0%,#8a1a12 75%)!important;border-color:#ffb0a0!important;box-shadow:0 0 12px #ff4a3a,inset 0 0 0 2px #ffb0a0!important;animation:pvpPulse 1.4s infinite}
+@keyframes pvpPulse{50%{box-shadow:0 0 22px #ff4a3a,inset 0 0 0 2px #ffd0c0}}
+#chatlog{left:calc(max(12px, env(safe-area-inset-left,0px)) + 66px);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(360px,46vw);pointer-events:none;font:700 13px Nunito,system-ui,sans-serif;text-shadow:0 1px 2px #000,0 0 3px #000;display:flex;flex-direction:column;gap:2px}
+#chatlog div{background:rgba(8,10,24,.45);padding:2px 7px;border-radius:6px;width:fit-content;max-width:100%;overflow-wrap:anywhere}
+#chatp{left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(560px,94vw);background:rgba(14,16,38,.94);border:1px solid rgba(242,193,78,.55);border-radius:14px;padding:8px;pointer-events:auto;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#chatp .chd{display:flex;gap:5px;align-items:center;margin-bottom:6px;flex-wrap:wrap}#chatp .chd b{color:#f2c14e;margin-right:4px}
+#chatp .ct{background:#1c2450;border:1px solid rgba(110,140,255,.4);color:#d8e0ff;border-radius:8px;padding:4px 9px;font:700 12.5px system-ui;cursor:pointer}#chatp .ct.on{background:#f2c14e;color:#241a05;border-color:#f2c14e}
+#chatp .cx{margin-left:auto;background:none;border:0;color:#fff;font-size:18px;cursor:pointer}
+#chatp-log{height:min(190px,28vh);overflow:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:5px 8px;font:600 13.5px Nunito,system-ui,sans-serif}
+#chatp-log .cl{padding:2px 0;overflow-wrap:anywhere}#chatp-log small{color:#7a76a0;font-size:10.5px}#chatp-log .cn{cursor:pointer;text-decoration:underline dotted}
+#chatp .cin{display:flex;gap:6px;margin-top:6px}#chatp .cin input,#chatp .cto input{flex:1;min-width:0;background:#0a0d22;border:1px solid rgba(110,140,255,.45);border-radius:8px;color:#fff;padding:8px 10px;font-size:16px}
+#chatp .cto{display:flex;gap:6px;align-items:center;margin-top:6px;color:#ff9ae8;font-weight:700;font-size:13px}
+#socreq{left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;pointer-events:auto;z-index:70}
+#socreq .sreq{background:rgba(14,16,38,.96);border:1px solid #f2c14e;border-radius:12px;padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.5);color:#fff;font-size:14px}#socreq .sreq p{margin:0 0 6px}#socreq .sreq div{display:flex;gap:6px;justify-content:flex-end}
+#socpill{left:50%;transform:translateX(-50%);top:calc(110px + env(safe-area-inset-top,0px));display:flex;gap:6px;pointer-events:none}
+#socpill span{padding:4px 10px;border-radius:20px;font:800 13px system-ui;color:#fff;text-shadow:0 1px 2px #000}#socpill .hp{background:rgba(160,20,20,.85);border:1px solid #ff6a5a}#socpill .az{background:rgba(40,70,30,.85);border:1px solid #8bd86a}
+.socl{max-height:46vh;overflow:auto;margin-top:10px}.socr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.08)}.socr span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.socr small{color:#a8a3bd;font-size:11.5px}
+.soff{width:9px;height:9px;border-radius:50%;background:#555;display:inline-block}
+@media (max-height:440px){#socbar .sk{width:38px;height:38px;font-size:17px}#socbar{left:calc(max(8px, env(safe-area-inset-left,0px)) + 54px);bottom:calc(8px + env(safe-area-inset-bottom,0px))}#chatlog{bottom:calc(52px + env(safe-area-inset-bottom,0px));font-size:11.5px}#chatp{bottom:6px}#chatp-log{height:22vh}}`;
+  document.head.appendChild(st)})();
+
+{const _ne=nearestEnemy;nearestEnemy=function(range,wd){let b=null,bd=range;for(const e of(wd?foes():enemies)){if(e.pvpP&&P.target!==e)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd){bd=d;b=e}}return b}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
@@ -4563,7 +4724,7 @@ mbox.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)r
   case'travel':doTravel(+id);break;
   case'fuse':fuseItems(+id);openForge();restore();break;
   case'gamble':gamble();restore();break;
-  case'sjoin':srvAuto(true);break;
+  case'sjoin':srvAuto(true);break;case'soc':socCmd(id);break;
   case'sleave':srvGoLocal();openOnline();break;
   case'schat':srvChat();break;
   case'pickeq':pickEquip(id);break;
