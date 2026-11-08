@@ -2533,7 +2533,7 @@ function srvOpen(){if(!SRV.want)return;clearTimeout(SRV.rt);if(SRV.ws){const o=S
   ws.onmessage=ev=>{if(ws!==SRV.ws)return;let m;try{m=JSON.parse(ev.data)}catch(_){return}srvData(m)};
   ws.onclose=()=>{if(ws!==SRV.ws)return;const was=SRV.on;srvDrop();if(SRV.want){SRV.retry++;if(was)toast('A conexão com o servidor caiu. Tentando voltar...','#a597bd');clearTimeout(SRV.rt);SRV.rt=setTimeout(srvOpen,Math.min(15000,1500*SRV.retry))}};
   ws.onerror=()=>{if(!SRV.on)netStat('Não consegui falar com o servidor. Confira o endereço e a internet. Tentando de novo...')}}
-function srvExitBtn(on){let b=$('srvExit');const h=$('p2hud');if(!h)return;if(!b){b=document.createElement('button');b.id='srvExit';b.className='btn';b.textContent='Sair do servidor';b.style.cssText='display:block;width:100%;margin-top:6px;padding:5px 8px;font-size:12px;pointer-events:auto';b.addEventListener('click',e=>{e.stopPropagation();srvLeave()});h.appendChild(b)}b.hidden=!on}
+function srvExitBtn(on){let b=$('srvExit');const h=$('p2hud');if(!h)return;if(!b){b=document.createElement('button');b.id='srvExit';b.className='btn';b.textContent='Sair do servidor';b.style.cssText='display:block;width:100%;margin-top:6px;padding:5px 8px;font-size:12px;pointer-events:auto';b.addEventListener('click',e=>{e.stopPropagation();srvGoLocal()});h.appendChild(b)}b.hidden=!on}
 function srvDrop(){SRV.on=false;srvExitBtn(false);SRV.players.clear();for(const e of enemies.filter(e=>e.srv))enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;$('p2hud').hidden=true}
 function srvLeave(){SRV.want=false;try{SRV.ws&&SRV.ws.close()}catch(_){}srvDrop();SRV.ws=null;toast('Você saiu do servidor. Voltando para o seu mundo.','#a597bd')}
 function srvHero(){const m=heroMsg();m.z=curZone;return m}
@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v60 · 07/11/2026';
+const ELD_VER='v61 · 07/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4079,6 +4079,13 @@ const msMate=id=>{if(id==null||id===SRV.id)return false;const g=msMyG();const p=
 const msNear=(x,y)=>hyp(P.x-x,P.y-y)<20*T;
 {const _hm=heroMsg;heroMsg=function(){const m=_hm();try{m.gid=msMyG()}catch(_){}return m}}
 {const _sd=srvData;srvData=function(m){if(m&&m.t==='gmsg'){MS.gid=0;setTimeout(msGidLoad,1500)}return _sd(m)}}
+/* v61: entra no servidor online sozinho ao começar o jogo; "Jogar local" nas Opções sai do servidor */
+function srvAuto(manual){if(NET.role){if(manual)toast('Saia da sala com código antes de entrar no servidor.','#a597bd');return}if(SRV.want||SRV.on)return;lsSet('eldmor-mode','online');
+  let nm=(typeof accName==='function'&&accName()&&accTok())?accName():(lsGet('eldmor-name')||'');if(String(nm).trim().length<2){nm='Viajante '+(1000+Math.floor(Math.random()*9000));lsSet('eldmor-name',nm)}
+  if(!document.getElementById('nstat'))toast('Entrando no servidor online...','#8ad8ff');srvConnect(nm,srvDefaultUrl())}
+function srvGoLocal(){lsSet('eldmor-mode','local');if(SRV.want||SRV.on)srvLeave();toast('Modo local: você está jogando no seu próprio mundo. Para voltar, vá em Opções → Jogar online.','#a597bd')}
+{const _sg=startGame;startGame=function(s){const r=_sg.apply(this,arguments);try{if(lsGet('eldmor-mode')!=='local')setTimeout(()=>{if(mode!=='title')srvAuto(false)},900)}catch(_){}return r}}
+{const _oo=openOnline;openOnline=function(){_oo();try{mbox.querySelectorAll('#sname,#surl').forEach(el=>{const r=el.closest('.row');if(r)r.style.display='none'})}catch(_){}}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
@@ -4390,7 +4397,7 @@ function renderMenu(){$('tabs').innerHTML=TABS().map(([k,n,ic])=>`<button class=
   const st=stats();let h='';
   if(menuTab==='stats')h=statsHTML(st);else if(menuTab==='inv')h=invHTML(st);else if(menuTab==='look')h=lookHTML();else if(menuTab==='skills')h=skillsHTML();else if(menuTab==='mobs')h=mobsHTML();else if(menuTab==='quests')h=questsHTML();
   else if(menuTab==='map')h=`<div class="pnl"><h4>Mapa de Eldmor</h4><canvas id="bigmap" width="1024" height="560"></canvas><div class="legend"><span><i style="background:#fff"></i>Você</span><span><i style="background:#8bd86a"></i>Ancião Bram (vila)</span><span><i style="background:#ffd23a"></i>Baú</span><span><i style="background:#ff9a3a"></i>Baú trancado</span><span><i style="background:#c36bff"></i>Baú de chefe</span><span><i style="background:#ff3a2a"></i>Chefe</span><span><i style="background:#5aa8ff"></i>Monstro raro</span><span><i style="background:#ffb43c"></i>Lendário ou campeão</span><span><i style="background:#c36bff"></i>Fenda Sombria</span><span><i style="background:#0a0810;outline:1px solid #e8d8b0"></i>Caverna</span><span><i style="background:#6ad8ff"></i>Jogador 2</span></div><p class="muted" style="text-align:center;font-size:13px">Toque num lugar do mapa para escolher um destino.</p></div>`;
-  else h=`<div class="pnl" style="max-width:760px"><h4>Opções</h4><div class="row"><button class="btn pri" data-act="mclose">Voltar ao jogo</button><button class="btn" data-act="save">Salvar agora</button><button class="btn" data-act="sound">Som: ${soundOn?'ligado':'desligado'}</button><button class="btn" data-act="cine">Ver a abertura</button><button class="btn pri" data-act="online">Jogar online</button><button class="btn" data-act="p2">${P2.on?'Jogador 2: sair':'Jogador 2: entrar'}</button><button class="btn" data-act="askreset">Novo jogo</button></div><p class="muted" style="font-size:13px">Multijogador local: dois jogadores no mesmo PC. O Jogador 2 usa as setas para andar, Enter para atacar, Shift direito para dash, / . , para as habilidades e \\ para trocar de classe. Com um controle (joystick) conectado, basta apertar Start. Os chefes mais fortes precisam de 2 ou mais jogadores.</p>${resetAsk?`<p>Isso apaga todo o progresso salvo, inclusive o banco e as aparências.</p><button class="btn pri" data-act="reset">Confirmar novo jogo</button>`:''}<h3>Como jogar</h3>${CONTROLS}</div>`;
+  else h=`<div class="pnl" style="max-width:760px"><h4>Opções</h4><div class="row"><button class="btn pri" data-act="mclose">Voltar ao jogo</button><button class="btn" data-act="save">Salvar agora</button><button class="btn" data-act="sound">Som: ${soundOn?'ligado':'desligado'}</button><button class="btn" data-act="cine">Ver a abertura</button>${(SRV.on||SRV.want)?`<button class="btn" data-act="online">🌐 Servidor online</button><button class="btn" data-act="golocal">🏠 Jogar local</button>`:`<button class="btn pri" data-act="goonline">🌐 Jogar online</button><button class="btn" data-act="online">Sala com código</button>`}<button class="btn" data-act="p2">${P2.on?'Jogador 2: sair':'Jogador 2: entrar'}</button><button class="btn" data-act="askreset">Novo jogo</button></div><p class="muted" style="font-size:13px">Multijogador local: dois jogadores no mesmo PC. O Jogador 2 usa as setas para andar, Enter para atacar, Shift direito para dash, / . , para as habilidades e \\ para trocar de classe. Com um controle (joystick) conectado, basta apertar Start. Os chefes mais fortes precisam de 2 ou mais jogadores.</p>${resetAsk?`<p>Isso apaga todo o progresso salvo, inclusive o banco e as aparências.</p><button class="btn pri" data-act="reset">Confirmar novo jogo</button>`:''}<h3>Como jogar</h3>${CONTROLS}</div>`;
   if(menuTab==='map'&&MAPSEL){const tx=clamp(Math.floor(MAPSEL.x/T),0,MW-1),ty=clamp(Math.floor(MAPSEL.y/T),0,MH-1),z=zmap[I(tx,ty)],far=Math.round(hyp(MAPSEL.x-P.x,MAPSEL.y-P.y)/T);const cav=ty>=SURF&&P.y<SURF*T?' Fica numa caverna: o herói vai até onde der; entre pela boca de caverna.':'';h=h.replace('<div class="legend">',`<div class="mapgo"><span>${ZN[z]} · ${far} passos daqui.${cav}</span><button class="btn pri" data-act="mapgo">Ir até aqui</button><button class="btn" data-act="mapno">Cancelar</button></div><div class="legend">`)}
   mbody.innerHTML=h;if(menuTab==='map')drawBigMap()}
 function barRow(label,val,bonus,frac,col,cap){return`<div class="msr"><div class="mst"><b>${label}</b><span>${val}${bonus?` <em class="up">+ ${bonus}</em>`:''}</span></div><div class="bar"><i style="width:${(clamp(frac,0,1)*100).toFixed(1)}%;background:${col}"></i></div>${cap?`<small>${cap}</small>`:''}</div>`}
@@ -4521,7 +4528,7 @@ menuEl.addEventListener('click',e=>{unlockAudio();const t=e.target.closest('[dat
   case'offer':closeMenu();openOffer(id);return;
   case'mapgo':{const t2=MAPSEL;MAPSEL=null;closeMenu();if(t2){P.target=null;walkTo(t2.x,t2.y)}return}
   case'mapno':MAPSEL=null;break;
-  case'online':closeMenu();openOnline();return;
+  case'online':closeMenu();openOnline();return;case'golocal':srvGoLocal();renderMenu();return;case'goonline':closeMenu();srvAuto(true);return;
   case'p2':if(P2.remote){toast('Você está numa sala online. Saia dela em Jogar online.','#a597bd');break}if(P2.on)p2Leave();else{closeMenu();p2Join();return}break;
   case'cine':closeMenu();startCine(null);return;
   }
@@ -4556,8 +4563,8 @@ mbox.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)r
   case'travel':doTravel(+id);break;
   case'fuse':fuseItems(+id);openForge();restore();break;
   case'gamble':gamble();restore();break;
-  case'sjoin':srvConnect(($('sname')||{}).value,window.ELD_SAME?srvDefaultUrl():($('surl')||{}).value);break;
-  case'sleave':srvLeave();openOnline();break;
+  case'sjoin':srvAuto(true);break;
+  case'sleave':srvGoLocal();openOnline();break;
   case'schat':srvChat();break;
   case'pickeq':pickEquip(id);break;
   case'god':godCmd(id);break;
