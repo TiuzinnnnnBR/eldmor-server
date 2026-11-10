@@ -20,19 +20,25 @@ const MIN = 60e3;
 const API = require('./api');
 
 /* ---------- arquivos do jogo (pasta public) ---------- */
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.css': 'text/css', '.txt': 'text/plain; charset=utf-8' };
+const TYPES = { '.mp4': 'video/mp4', '.webp': 'image/webp', '.ico': 'image/x-icon', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.css': 'text/css', '.txt': 'text/plain; charset=utf-8' };
 const server = http.createServer((req, res) => {
   let u = decodeURIComponent((req.url || '/').split('?')[0]);
   if (u.startsWith('/api/')) return API.handle(req, res, u);
   if (u === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end('ok ' + clients.size); }
-  if (u === '/') u = '/index.html';
+  if (u === '/wds') { res.writeHead(301, { location: '/wds/' }); return res.end(); }
+  if (u.endsWith('/')) u += 'index.html';
   const f = path.normalize(path.join(PUB, u));
   if (!f.startsWith(PUB)) { res.writeHead(403); return res.end(); }
   fs.readFile(f, (err, data) => {
     if (err) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Servidor Eldmor ligado. ' + clients.size + ' jogador(es) online.'); }
     const ext = path.extname(f).toLowerCase();
     if (ext === '.html') data = Buffer.from(data.toString('utf8').replace('<head>', '<head><script>window.ELD_SAME=1</script>'));
-    res.writeHead(200, { 'content-type': TYPES[ext] || 'application/octet-stream', 'cache-control': ext === '.html' || u === '/sw.js' ? 'no-cache' : 'public, max-age=3600' });
+    const hd = { 'content-type': TYPES[ext] || 'application/octet-stream', 'cache-control': ext === '.html' || u === '/sw.js' ? 'no-cache' : 'public, max-age=3600', 'accept-ranges': 'bytes' };
+    const rg = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (rg && (rg[1] || rg[2])) { let a = rg[1] ? +rg[1] : data.length - +rg[2], b = rg[1] && rg[2] ? Math.min(+rg[2], data.length - 1) : data.length - 1; if (a < 0) a = 0;
+      if (a > b || a >= data.length) { res.writeHead(416, { 'content-range': 'bytes */' + data.length }); return res.end(); }
+      res.writeHead(206, Object.assign(hd, { 'content-range': `bytes ${a}-${b}/${data.length}`, 'content-length': b - a + 1 })); return res.end(data.subarray(a, b + 1)); }
+    res.writeHead(200, hd);
     res.end(data);
   });
 });
