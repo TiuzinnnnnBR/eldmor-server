@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="WDS Game Dev: criador do Reinos de Eldmor, RPG em pixel art com multiplayer ao vivo."><meta property="og:title" content="WDS Game Dev"><meta property="og:image" content="a/wds.png"><link rel="icon" href="a/wds.png"><style>html,body{margin:0}[hidden]{display:none!important}</style>
+<title>WDS Game Dev</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Nunito:wght@400;600;800&family=Silkscreen&display=swap">
+<style>
+/* Layout: brasão no topo, ficha de personagem do criador, diário de aventura (linha do tempo real) e galeria como grade de inventário.
+   Tema único escuro de propósito: segue as cores do brasão WDS (azul real, ouro e ciano). */
+:root{
+  --night:#060a1c; --deep:#0c1433; --panel:#111b45; --royal:#2148c4; --gold:#f2c14e; --gold2:#ffe39a;
+  --ice:#62e0ff; --text:#e8ecff; --muted:#a3acd6; --line:rgba(242,193,78,.35);
+  --display:"Pixelify Sans","Trebuchet MS",system-ui,sans-serif; --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif; --label:"Silkscreen","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--night);color:var(--text);font:400 16px/1.6 var(--body);margin:0;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
+a{color:var(--ice)}
+img{display:block;max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.lbl{font:400 12px/1 var(--label);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.08;text-wrap:balance;margin:0}
+h2{font-size:clamp(28px,4.4vw,44px);color:var(--gold2)}
+h3{font-size:22px}
+p{margin:0}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font:800 15px var(--body);text-decoration:none;border:2px solid var(--gold);color:var(--gold2);background:rgba(242,193,78,.08);transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-2px);background:rgba(242,193,78,.18)}
+.btn.pri{background:linear-gradient(180deg,#ffd76a,#e5a020);color:#2a1700;border-color:#ffe39a;box-shadow:0 6px 20px rgba(242,193,78,.25)}
+.btn:focus-visible,button:focus-visible{outline:3px solid var(--ice);outline-offset:3px}
+
+/* topo */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(6,10,28,.82);backdrop-filter:blur(10px);border-bottom:1px solid rgba(98,224,255,.15)}
+.nav .wrap{display:flex;align-items:center;gap:16px;padding-block:10px}
+.nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font:700 18px var(--display)}
+.nav .brand img{width:34px;height:34px}
+.nav ul{display:flex;gap:18px;list-style:none;margin:0 0 0 auto;padding:0}
+.nav ul a{color:var(--muted);text-decoration:none;font-weight:800;font-size:14px}
+.nav ul a:hover{color:var(--gold2)}
+
+/* abertura */
+.hero{position:relative;overflow:hidden;border-bottom:2px solid var(--line)}
+.hero video,.hero .poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.28;filter:saturate(1.2)}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(33,72,196,.35),transparent 60%),linear-gradient(180deg,rgba(6,10,28,.4),var(--night))}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:32px;align-items:center;padding-block:56px 64px}
+.hero h1{font-size:clamp(46px,8vw,92px);color:var(--text);letter-spacing:.01em;text-shadow:0 4px 0 #0d1d5c,0 0 30px rgba(98,224,255,.35)}
+.hero h1 span{color:var(--gold)}
+.hero .tag{font-size:clamp(17px,2vw,20px);color:var(--muted);max-width:52ch;margin-top:16px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.crest{justify-self:center;width:min(420px,100%);filter:drop-shadow(0 0 40px rgba(98,224,255,.35));animation:float 6s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-10px)}}
+
+/* ficha do criador */
+section{padding-block:72px}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start}
+.card{background:linear-gradient(180deg,var(--panel),var(--deep));border:2px solid var(--line);border-radius:16px;padding:22px}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin-top:14px;font-size:15px}
+.stats dt{font:400 12px var(--label);letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding-top:3px}
+.stats dd{margin:0;font-weight:800}
+.bars{display:grid;gap:12px;margin-top:18px}
+.bar{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;font-weight:800;font-size:14px}
+.bar i{display:block;height:12px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--ice) 0 10px,transparent 10px 12px);box-shadow:0 0 10px rgba(98,224,255,.35)}
+.bar i.g{background:repeating-linear-gradient(90deg,var(--gold) 0 10px,transparent 10px 12px);box-shadow:0 0 10px rgba(242,193,78,.35)}
+.story{display:grid;gap:14px;font-size:17px;color:#d6dbf5}
+.story .first::first-letter{font:700 46px/0.9 var(--display);color:var(--gold);float:left;margin:6px 8px 0 0}
+
+/* destaque do jogo */
+.game{background:linear-gradient(180deg,var(--night),#0a1440 50%,var(--night))}
+.gh{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:32px;align-items:center}
+.gh .logo{width:min(420px,100%)}
+.gh .lead{font-size:18px;color:#d6dbf5;margin-top:14px;max-width:60ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font:400 11px var(--label);letter-spacing:.08em;padding:6px 10px;border:1px solid rgba(98,224,255,.4);border-radius:6px;color:var(--ice);background:rgba(98,224,255,.06)}
+.trailer{position:relative;border-radius:16px;overflow:hidden;border:2px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.5);background:#000}
+.trailer video{width:100%;aspect-ratio:16/9;display:block;max-width:100%}
+.classes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:40px}
+.cls{text-align:center;padding:18px 14px}
+.cls img{height:150px;width:auto;margin:0 auto 8px;image-rendering:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6))}
+.cls p{color:var(--muted);font-size:14px;margin-top:6px}
+.feat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:40px}
+.feat .card{padding:18px}
+.feat b{display:block;font:700 18px var(--display);color:var(--gold2);margin-bottom:6px}
+.feat p{color:var(--muted);font-size:14.5px}
+
+/* galeria (inventário) */
+.inv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:28px}
+.slot{position:relative;border-radius:10px;overflow:hidden;border:2px solid #24317a;background:#0a1030;cursor:zoom-in;padding:0;aspect-ratio:16/10;max-width:100%}
+.slot:hover{border-color:var(--gold)}
+.slot img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.slot:hover img{transform:scale(1.05)}
+.slot span{position:absolute;left:8px;bottom:8px;font:400 10px var(--label);letter-spacing:.08em;background:rgba(6,10,28,.82);padding:4px 7px;border-radius:5px;color:var(--gold2)}
+.slot.w2{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}
+.lb{position:fixed;inset:0;z-index:50;background:rgba(3,5,15,.92);display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lb[hidden]{display:none}
+.lb img{max-height:82vh;border-radius:10px;border:2px solid var(--gold)}
+.lb p{margin-top:10px;text-align:center;color:var(--gold2);font-weight:800}
+.lb button{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:calc(16px + env(safe-area-inset-right,0px));background:none;border:2px solid var(--gold);color:var(--gold2);border-radius:8px;font:800 16px var(--body);padding:6px 12px;cursor:pointer}
+
+/* diário */
+.log{position:relative;display:grid;gap:22px;margin-top:34px;padding-left:34px}
+.log::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:3px;background:repeating-linear-gradient(180deg,var(--gold) 0 8px,transparent 8px 14px)}
+.ch{position:relative}
+.ch::before{content:"";position:absolute;left:-30px;top:6px;width:16px;height:16px;transform:rotate(45deg);background:var(--night);border:3px solid var(--gold)}
+.ch.now::before{background:var(--ice);border-color:var(--ice);box-shadow:0 0 14px var(--ice)}
+.ch .lbl{color:var(--ice)}
+.ch h3{margin:6px 0 6px;color:var(--text)}
+.ch p{color:var(--muted);max-width:68ch}
+.ch.paulo h3{color:var(--gold2)}
+
+/* outras criações */
+.other{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}
+.other .card{display:flex;flex-direction:column;gap:8px}
+.other .st{align-self:flex-start;font:400 10px var(--label);letter-spacing:.08em;padding:4px 8px;border-radius:5px;background:rgba(242,193,78,.12);color:var(--gold2);border:1px solid var(--line)}
+.other p{color:var(--muted);font-size:14.5px}
+
+/* ferramentas e contato */
+.forge{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:24px}
+.forge div{border:1px dashed rgba(98,224,255,.4);border-radius:12px;padding:14px;background:rgba(98,224,255,.04)}
+.forge b{display:block;font:700 16px var(--display);color:var(--ice)}
+.forge span{font-size:13.5px;color:var(--muted)}
+.contact{text-align:center;border-top:2px solid var(--line);background:radial-gradient(ellipse at 50% 0%,rgba(33,72,196,.3),transparent 70%)}
+.contact .mail{display:inline-flex;gap:10px;align-items:center;margin-top:18px;padding:10px 12px 10px 16px;border-radius:12px;border:2px solid var(--line);background:var(--deep);font-weight:800;flex-wrap:wrap;justify-content:center}
+.contact .mail code{font:800 16px var(--body);color:var(--gold2);user-select:all;overflow-wrap:anywhere}
+.contact button{border:0;border-radius:8px;padding:8px 12px;background:var(--gold);color:#2a1700;font:800 14px var(--body);cursor:pointer}
+footer{padding-block:26px;text-align:center;color:var(--muted);font-size:13px}
+
+@media (max-width:880px){
+  .hero .wrap,.sheet,.gh{grid-template-columns:1fr}
+  .crest{width:min(300px,80%);order:-1}
+  .feat,.other{grid-template-columns:1fr 1fr}
+  .forge{grid-template-columns:1fr 1fr}
+  .inv{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nav ul{display:none}
+}
+@media (max-width:520px){
+  .feat,.other,.classes{grid-template-columns:1fr}
+  .bar{grid-template-columns:96px 1fr}
+  section{padding-block:52px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<nav class="nav"><div class="wrap">
+  <a class="brand" href="#topo"><img src="a/wds.png" alt="">WDS Game Dev</a>
+  <ul><li><a href="#criador">Criador</a></li><li><a href="#eldmor">Reinos de Eldmor</a></li><li><a href="#galeria">Galeria</a></li><li><a href="#historia">História</a></li><li><a href="#forja">Forja</a></li><li><a href="#contato">Contato</a></li></ul>
+</div></nav>
+
+<header class="hero" id="topo">
+  <img class="poster" src="a/bg.jpg" alt="">
+  <video autoplay muted loop playsinline poster="a/bg.jpg"><source src="a/bg.mp4" type="video/mp4"></video>
+  <div class="wrap">
+    <div>
+      <p class="lbl">Estúdio independente · Brasil</p>
+      <h1>WDS <span>Game Dev</span></h1>
+      <p class="tag">Sou o Wendrew, e crio jogos sozinho, do primeiro pixel ao servidor online. Meu principal projeto é <b>Reinos de Eldmor</b>, um RPG em pixel art onde todo mundo joga junto, ao vivo.</p>
+      <div class="cta">
+        <a class="btn pri" href="https://eldmor-server.onrender.com" target="_blank" rel="noopener">▶ Jogar Reinos de Eldmor</a>
+        <a class="btn" href="#eldmor">Ver o jogo</a>
+      </div>
+    </div>
+    <img class="crest" src="a/wds.png" alt="Brasão da WDS Game Dev: escudo azul com coroa dourada, as letras WDS e um controle de videogame">
+  </div>
+</header>
+
+<section id="criador"><div class="wrap sheet">
+  <div class="card">
+    <p class="lbl">Ficha do criador</p>
+    <h3 style="margin-top:8px;font-size:28px">Wendrew · WDS</h3>
+    <dl class="stats">
+      <dt>Classe</dt><dd>Game dev solo</dd>
+      <dt>Base</dt><dd>Brasil 🇧🇷</dd>
+      <dt>Missão</dt><dd>Fazer jogos que juntam amigos</dd>
+      <dt>Jogo ativo</dt><dd>Reinos de Eldmor · versão 63</dd>
+      <dt>Plataformas</dt><dd>Navegador, Android e Windows</dd>
+      <dt>Inspirações</dt><dd>Rucoy Online, Minecraft Dungeons, Pokémon</dd>
+    </dl>
+    <div class="bars" aria-label="Habilidades">
+      <div class="bar">Criatividade<i style="width:96%"></i></div>
+      <div class="bar">Design de jogo<i style="width:90%"></i></div>
+      <div class="bar">Pixel art<i class="g" style="width:84%"></i></div>
+      <div class="bar">Persistência<i class="g" style="width:100%"></i></div>
+    </div>
+  </div>
+  <div class="story">
+    <p class="lbl">Minha história</p>
+    <h2>De quem joga para quem cria</h2>
+    <p class="first">Sou apaixonado por Pokémon, Minecraft, Roblox e RPGs online no celular. Tenho minha rotina de trabalho fora dos jogos, e nas horas livres faço o que mais gosto: construir mundos.</p>
+    <p>Sempre quis criar o meu próprio jogo. A ideia era clara: um RPG em pixel art, visto de cima, simples de jogar no celular e com aquela sensação de aventura com os amigos que eu sentia no Rucoy.</p>
+    <p>Assim nasceu Reinos de Eldmor. Eu crio a arte, decido cada detalhe do jogo e testo tudo até ficar do jeito que imaginei. Cada versão nova sai de uma ideia anotada ou de uma conversa com os jogadores.</p>
+  </div>
+</div></section>
+
+<section class="game" id="eldmor"><div class="wrap">
+  <div class="gh">
+    <div>
+      <img class="logo" src="a/logo.png" alt="Logotipo de Reinos de Eldmor">
+      <p class="lead">Um RPG de ação em pixel art com mundo aberto, chefes muito difíceis e servidor online. Você escolhe entre Guerreiro, Mago e Arqueiro, explora florestas, desertos e terras geladas e enfrenta tudo isso junto com outros jogadores, em tempo real.</p>
+      <div class="chips"><span class="chip">Multiplayer ao vivo</span><span class="chip">3 classes</span><span class="chip">PvP com caçada</span><span class="chip">Guildas</span><span class="chip">Montarias</span><span class="chip">Passe de temporada</span></div>
+      <div class="cta" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:22px">
+        <a class="btn pri" href="https://eldmor-server.onrender.com" target="_blank" rel="noopener">▶ Jogar no navegador</a>
+        <a class="btn" href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest" target="_blank" rel="noopener">Baixar para Android e Windows</a>
+        <a class="btn" href="https://mediumblue-llama-752104.hostingersite.com" target="_blank" rel="noopener">Site oficial</a>
+      </div>
+    </div>
+    <div class="trailer"><video controls preload="metadata" poster="a/trailer.jpg" playsinline><source src="a/trailer.mp4" type="video/mp4"></video></div>
+  </div>
+
+  <div class="classes">
+    <div class="card cls"><img src="a/guerreiro.png" alt="Guerreiro de Eldmor"><h3>Guerreiro</h3><p>Chega perto, aguenta pancada e protege o grupo.</p></div>
+    <div class="card cls"><img src="a/mago.png" alt="Mago de Eldmor"><h3>Mago</h3><p>Fogo, gelo e cura de longe. Frágil, mas devastador.</p></div>
+    <div class="card cls"><img src="a/arqueiro.png" alt="Arqueiro de Eldmor"><h3>Arqueiro</h3><p>Rápido e preciso, com chuva de flechas para limpar o caminho.</p></div>
+  </div>
+
+  <div class="feat">
+    <div class="card"><b>Todo mundo no mesmo mundo</b><p>Os monstros são os mesmos para todos no servidor, no mesmo lugar e com a mesma vida. Dá para ver os ataques e as habilidades dos outros jogadores.</p></div>
+    <div class="card"><b>PvP com consequência</b><p>Ligue a espada para lutar. Quem ataca alguém sem PvP vira alvo de uma caçada e fica com azar, sem dropar itens por um tempo.</p></div>
+    <div class="card"><b>Guildas e grupos</b><p>Monte sua guilda, dispute a guerra de guildas e faça missões em grupo, dividindo experiência e progresso.</p></div>
+    <div class="card"><b>Chefes de verdade</b><p>Chefes raros que aparecem no mapa por tempo e são quase impossíveis sozinho. Precisa de preparo e de amigos.</p></div>
+    <div class="card"><b>Visual do seu jeito</b><p>Chapéus, asas, auras, rastros, mascotes, molduras e montarias. Tudo só visual, sem vantagem em combate.</p></div>
+    <div class="card"><b>Feito com carinho</b><p>Ferreiro, banco, easter eggs escondidos e um memorial em homenagem a um amigo que ajudou a criar o jogo.</p></div>
+  </div>
+</div></section>
+
+<section id="galeria"><div class="wrap">
+  <p class="lbl">Inventário de imagens</p>
+  <h2 style="margin-top:8px">Galeria</h2>
+  <div class="inv" id="inv"></div>
+</div></section>
+
+<section id="historia" style="background:linear-gradient(180deg,var(--night),var(--deep))"><div class="wrap">
+  <p class="lbl">Diário de aventura</p>
+  <h2 style="margin-top:8px">Como Reinos de Eldmor chegou até aqui</h2>
+  <div class="log">
+    <div class="ch"><span class="lbl">Capítulo 1</span><h3>Nasce Reinos de Eldmor</h3><p>A ideia de um RPG em pixel art visto de cima, com movimento por toque, no estilo Rucoy. Arte própria, ajustada peça por peça.</p></div>
+    <div class="ch"><span class="lbl">Capítulo 2</span><h3>O mundo cresce</h3><p>Mapa maior e mais bonito, três classes com troca a qualquer hora, chefes que exigem preparo, ferreiro para melhorar equipamentos, banco para guardar ouro e segredos escondidos pelo mapa.</p></div>
+    <div class="ch paulo"><span class="lbl">Capítulo 3</span><h3>O Arqueiro Eterno</h3><p>Uma homenagem ao meu amigo Paulo, que ajudou a dar vida ao jogo. O memorial dentro de Eldmor guarda a lembrança dele para todos os jogadores.</p></div>
+    <div class="ch"><span class="lbl">Capítulo 4</span><h3>Eldmor fica online</h3><p>Servidor próprio, contas, loja, guildas, ranking, site oficial e versões para Android e Windows.</p></div>
+    <div class="ch"><span class="lbl">Capítulo 5</span><h3>Todos juntos, ao vivo</h3><p>Monstros sincronizados entre todos os jogadores, chat, amizades, grupos com missões em conjunto, PvP com caçada, montarias e o primeiro Passe de Temporada.</p></div>
+    <div class="ch now"><span class="lbl">Próximo capítulo</span><h3>Rumo à Play Store</h3><p>A versão para a Google Play Store já está sendo preparada, jogando no mesmo servidor de todo mundo.</p></div>
+  </div>
+</div></section>
+
+<section id="forja"><div class="wrap">
+  <p class="lbl">Minha forja</p>
+  <h2 style="margin-top:8px">Como Eldmor é feito</h2>
+
+  <div class="forge">
+    <div><b>Arte própria</b><span>Personagens, monstros, cenários e itens desenhados para o mundo de Eldmor.</span></div>
+    <div><b>HTML5 e JavaScript</b><span>O jogo roda no navegador, no celular e no computador com o mesmo código.</span></div>
+    <div><b>Servidor online</b><span>Contas, multiplayer, loja e guildas num servidor próprio.</span></div>
+    <div><b>Vídeo e trailer</b><span>Cenas e anúncios produzidos e editados para as redes.</span></div>
+  </div>
+</div></section>
+
+<section class="contact" id="contato"><div class="wrap">
+  <p class="lbl">Contato</p>
+  <h2 style="margin-top:8px">Vamos conversar</h2>
+  <p style="color:var(--muted);margin-top:12px;max-width:56ch;margin-inline:auto">Para parcerias, ideias, divulgação ou suporte do Reinos de Eldmor, mande um e-mail.</p>
+  <div class="mail"><code id="mail">reinosdeeldmor@gmail.com</code><button type="button" id="copy">Copiar</button></div>
+</div></section>
+
+<footer><div class="wrap">© 2026 WDS Game Dev · Reinos de Eldmor</div></footer>
+
+<div class="lb" id="lb" hidden><button type="button" id="lbx" aria-label="Fechar">✕ Fechar</button><div><img id="lbi" alt=""><p id="lbt"></p></div></div>
+
+<script>
+const G=[['floresta','Floresta Verdejante',1],['chefe','Batalha contra um chefe'],['gelo','Terras Geladas'],['deserto','Deserto'],['sombras','Terras Sombrias'],['vila','Vila de Eldmor'],['s_rem1','Montaria, aura e mascote vistos por outro jogador'],['s_soc_hunt_a','PvP: caçada aberta'],['s_qm2','Montaria no mapa'],['z3','Explorando o mapa'],['z5','Novas regiões'],['cine2','Cena do trailer'],['cine3','Cena do trailer']];
+const inv=document.getElementById('inv');
+inv.innerHTML=G.map(([f,t,big])=>`<button class="slot${big?' w2':''}" type="button" data-f="${f}" data-t="${t}"><img src="a/${f}.jpg" alt="${t}" loading="lazy"><span>${t}</span></button>`).join('');
+const lb=document.getElementById('lb'),lbi=document.getElementById('lbi'),lbt=document.getElementById('lbt');
+inv.addEventListener('click',e=>{const b=e.target.closest('.slot');if(!b)return;lbi.src='a/'+b.dataset.f+'.jpg';lbi.alt=b.dataset.t;lbt.textContent=b.dataset.t;lb.hidden=false;document.getElementById('lbx').focus()});
+const close=()=>{lb.hidden=true};document.getElementById('lbx').onclick=close;lb.addEventListener('click',e=>{if(e.target===lb)close()});addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+document.getElementById('copy').onclick=async function(){const t=document.getElementById('mail').textContent;try{await navigator.clipboard.writeText(t);this.textContent='Copiado!'}catch(_){const r=document.createRange();r.selectNodeContents(document.getElementById('mail'));const s=getSelection();s.removeAllRanges();s.addRange(r);this.textContent='Selecionado'}setTimeout(()=>this.textContent='Copiar',2000)};
+</script>
+
+</html>
