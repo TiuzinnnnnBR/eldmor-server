@@ -1828,7 +1828,7 @@ const bagCap=()=>18+(S.eq.backpack?S.eq.backpack.cap:0)+(S.bagX||0);
 const bagUsed=()=>S.inv.length+consStacks().length;
 const bagFull=()=>bagUsed()>=bagCap();
 const skinOwned=(cls,cat,i)=>{const r=COS[cls][cat].o[i][1];if(r==='free')return true;if(S.owned&&S.owned[cls+'.'+cat+'.'+i])return true;const[a,b]=r.split(':');if(a==='lvl')return S.lvl>=+b;if(a==='boss')return!!S.bosses[+b];if(a==='egg')return!!(S.eggs&&S.eggs[b]);return!!S.owned[cls+'.'+cat+'.'+i]};
-const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('pass:'))return'Passe de Temporada';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
+const reqText=r=>{if(r==='free')return'Grátis';if(r.startsWith('bosses:'))return'Derrote '+r.split(':')[1]+' chefes';if(r.startsWith('pray:'))return'Reze '+r.split(':')[1]+'x no Memorial';if(r.startsWith('egg:'))return'Segredo';if(r.startsWith('pass:'))return'Passe de Temporada';if(r.startsWith('site:'))return'Exclusivo de Apoiador';if(r.startsWith('ev:'))return r==='ev:war'?'Vença a Guerra de Guildas':'Código de evento';const[a,b]=r.split(':');return a==='lvl'?`Nível ${b}`:a==='boss'?'Derrote '+BD[+b].name:`${b} diamantes`};
 
 const KEY='eldmor-save-v4',OLDKEYS=['eldmor-save-v3','eldmor-save-v2','eldmor-save-v1'];
 function save(){try{S.x=P.x;S.y=P.y;S.ground=ground.map(g=>({it:g.it,x:g.x,y:g.y}));localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v62 · 08/11/2026';
+const ELD_VER='v63 · 10/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -3706,7 +3706,7 @@ async function monPlayer(id){let r;try{r=await api('op/player?id='+id)}catch(e){
 /* ================= Loja v3: layout novo, Experimentar, presentes, pacotes, coleções, eventos, histórico e Passe de Temporada ================= */
 {const A=window.ARTC||{};const EV=window.__EV||{ACC_DEF:[],WS_DEF:{},PETEV:{},EVM:{},RING:{}};
 /* ---- cosméticos da temporada 1 (Estrelas de Eldmor) ---- */
-AURAS[9]={n:'Estelar',c:['#8a7aff','#bff2ff','#ff9af0','#ffffff']};for(const c of CLS_ORDER){COS[c].aura.o[9]=['Estelar','pass:1']}
+AURAS[9]={n:'Estelar',c:['#8a7aff','#bff2ff','#ff9af0','#ffffff']};for(const c of CLS_ORDER){COS[c].aura.o[9]=['Estelar','pass:1']}AURAS[10]={n:'Apoiador',c:['#5affb0','#ffe066','#ffffff','#7ad8ff']};for(const c of CLS_ORDER){COS[c].aura.o[10]=['Apoiador','site:1']}
 TRAILS[7]={n:'Estelar',c:['#8a7aff','#bff2ff','#ff9af0','#ffffff'],s:1.5};for(const c of CLS_ORDER){COS[c].trail.o[7]=['Estelar','pass:1']}
 {const tint=(fr)=>{try{const o=artTint(fr,[200,235,255],0.55);o._bk=fr._bk;return o}catch(_){return fr}};while(PETDEF.length<25)PETDEF.push(null);
  PETDEF[25]={n:'Lobo Celestial',r:4,q:'pass:1'};const base=PETSPR[18]||PETSPR[1];PETSPR[25]=base?[tint(base[0]),tint(base[1])]:PETSPR[1];for(const c of CLS_ORDER){while(COS[c].pet.o.length<25)COS[c].pet.o.push(['—','ev:x']);COS[c].pet.o[25]=['Lobo Celestial','pass:1']}}
@@ -3741,7 +3741,7 @@ const ownsK=k=>!!(ACC&&(ACC.op||(ACC.owned&&ACC.owned[k])));
 setInterval(()=>{try{const c=$('portrait');if(!c)return;let im=$('pframe');const f=S&&S.frame|0;const ok=f&&ownsK('frame:'+f)&&A['fr_'+f];
   if(!ok){if(im)im.remove();c.style.borderColor='';return}if(!im){im=document.createElement('img');im.id='pframe';im.style.cssText='position:absolute;pointer-events:none;z-index:2;image-rendering:auto';c.parentNode.appendChild(im)}
   const u=A['fr_'+f]._u||(A['fr_'+f]._u=A['fr_'+f].toDataURL());if(im.src!==u)im.src=u;const pad=c.offsetWidth*0.22;im.style.left=(c.offsetLeft-pad)+'px';im.style.top=(c.offsetTop-pad)+'px';im.style.width=im.style.height=(c.offsetWidth+pad*2)+'px';c.style.borderColor='transparent'}catch(_){}},800);
-const TITLES={'title:natal':'Espírito Natalino','title:halloween':'Senhor das Abóboras','title:pascoa':'Caçador de Ovos','title:estelar':'Viajante Estelar','title:fundador':'Fundador de Eldmor','title:armeiro':'Mestre Armeiro','title:estrela':'Estrela de Eldmor','title:lenda':'Lenda Estelar'};
+const TITLES={'title:apoiador':'Apoiador de Eldmor','title:natal':'Espírito Natalino','title:halloween':'Senhor das Abóboras','title:pascoa':'Caçador de Ovos','title:estelar':'Viajante Estelar','title:fundador':'Fundador de Eldmor','title:armeiro':'Mestre Armeiro','title:estrela':'Estrela de Eldmor','title:lenda':'Lenda Estelar'};
 window.__TITLES=TITLES;
 const TB=k=>{const c=A['tb_'+String(k||'').replace('title:','')];return c?(c._u||(c._u=c.toDataURL())):''};const tbImg=(k,sz)=>{const u=TB(k);return u?`<img src="${u}" alt="" style="width:${sz||20}px;height:${sz||20}px;vertical-align:middle">`:''};
 /* ---- catálogo (os preços valem os do servidor; aqui é só para mostrar) ---- */
@@ -3804,9 +3804,16 @@ function card(k,opt){opt=opt||{};const p=price(k),own=owns(k),ex=EXCL[k],lk=look
   const nm=nameOf(k)+(lk&&lk.cls&&lk.cat!=='hat'?'':lk&&lk.cls?' ('+CLASSES[lk.cls].n+')':'');
   const btn=own?`<button class="btn s3own" disabled>✔ Já é seu</button>`:ex&&!p?`<button class="btn s3ex" disabled>${ex}</button>`:p!=null?`<button class="btn pri s3b" data-s3buy="${k}">💎 ${fmt(p)}</button>`:`<button class="btn" disabled>Indisponível</button>`;
   return`<div class="s3c r${r}${S3.sel===k?' sel':''}" data-s3sel="${k}">${opt.badge?`<span class="s3bad">${opt.badge}</span>`:''}<div class="s3ic">${ic?`<img src="${ic}" alt="">`:k==='pal:neon'?`<div class="neon">${NEON.slice(0,8).map(c=>`<i style="background:${c}"></i>`).join('')}</div>`:'✨'}</div><b>${escA(nm)}</b>${btn}${p!=null&&!own?`<button class="btn s s3g" data-s3gift="${k}" title="Presentear">🎁</button>`:''}</div>`}
-function packsHTML(){const I=SHOPINFO||{packs:{}};const best={p3:'Mais vendido',p5:'Melhor valor'};const pk=Object.entries(I.packs||{});
-  return`<div class="s3grid">${pk.map(([k,p],i)=>{const bon=(p.n.match(/\+\d+%/)||[''])[0];return`<div class="s3c dia r${Math.min(4,i)}">${best[k]?`<span class="s3bad">${best[k]}</span>`:''}<div class="s3ic"><div class="dgem" style="--n:${Math.min(5,i+1)}">${'💎'.repeat(Math.min(5,i+1))}</div></div><b>${fmt(p.dia)} diamantes</b><span class="s3d">${bon?'Já inclui bônus de '+bon:'Sem bônus'}<br>Dá para: ${p.dia>=2000?'1 mascote mítico':p.dia>=900?'1 mascote lendário':p.dia>=400?'1 visual de arma':p.dia>=150?'1 chapéu ou rastro':'boosts e itens'}</span><button class="btn pri s3b" data-s3pack="${k}" ${logged()&&I.pay?'':'disabled'}>${brl(p.price)}</button></div>`}).join('')||'<p class="muted">Carregando...</p>'}</div>
-  <p class="muted s3note">${I.pay?'Pagamento pelo Mercado Pago (Pix ou cartão). Os diamantes só entram depois que o Mercado Pago confirma o pagamento.':'As compras com dinheiro estão desligadas no momento.'}</p>`}
+function packsHTML(){const I=SHOPINFO||{packs:{}};const best={p3:'Mais vendido',p5:'Melhor valor'};const PLAY=window.ELD_PLAY;
+  const SI=window.__SITEI;if(!PLAY&&!SI&&!packsHTML._q){packsHTML._q=1;api('siteinfo').then(r=>{window.__SITEI=r;try{renderMenu()}catch(_){}}).catch(()=>{packsHTML._q=0})}
+  const own=(typeof ACC!=='undefined'&&ACC&&ACC.owned)||{};const mesK='mes@'+(SI?SI.month:'');const bonus=SI?SI.bonus:0.2;const first=!own['title:apoiador'];
+  const pk=Object.entries(I.packs||{}).filter(([k,p])=>!(PLAY&&p.site)&&k!=='mes');const mes=!PLAY&&I.packs&&I.packs.mes;
+  const can=logged()&&(PLAY?!!window.EldPlay:I.pay);const btn=(k,p)=>PLAY?`<button class="btn pri s3b" data-s3pack="${k}" ${can?'':'disabled'}>${(window.__gpP&&window.__gpP[k])||'Google Play'}</button>`:`<button class="btn pri s3b" data-s3pack="${k}" ${can?'':'disabled'}>${brl(p.price)}</button>`;
+  const perk=PLAY?'':`<div class="s3site"><b>🌟 Vantagens de comprar aqui direto</b><span>💎 <b>+${Math.round(bonus*100)}% de diamantes</b> em todo pacote</span><span>✨ ${first?'<b>1ª compra em DOBRO</b>':'1ª compra em dobro <em>(já usada)</em>'}</span><span>🏅 <b>Selo Apoiador</b> e <b>Aura do Apoiador</b> exclusivos</span><span>🎟️ <b>${SI?SI.ptsPerReal:10} pontos</b> a cada R$ 1 para trocar por itens raros</span></div>`;
+  return perk+`<div class="s3grid">${mes?`<div class="s3c dia r4 s3mes"><span class="s3bad">Só este mês</span><div class="s3ic"><div class="dgem" style="--n:5">📅💎</div></div><b>Pacote do Mês</b><span class="s3d">${fmt(mes.dia)} diamantes por um preço especial.<br>1 por conta a cada mês.</span>${own[mesK]?'<button class="btn s3b" disabled>✔ Já comprado</button>':btn('mes',mes)}</div>`:''}
+  ${pk.map(([k,p],i)=>{const bon=(p.n.match(/\+\d+%/)||[''])[0];const extra=PLAY?0:Math.round(p.dia*bonus);return`<div class="s3c dia r${Math.min(4,i)}">${best[k]?`<span class="s3bad">${best[k]}</span>`:''}<div class="s3ic"><div class="dgem" style="--n:${Math.min(5,i+1)}">${'💎'.repeat(Math.min(5,i+1))}</div></div><b>${fmt(p.dia)} diamantes</b><span class="s3d">${extra?`<span class="s3bon">+${fmt(extra)} de bônus${first?` · +${fmt(p.dia)} na 1ª compra`:''}</span><br>`:''}${bon?'Já inclui bônus de '+bon:'Sem bônus'}<br>Dá para: ${p.dia>=2000?'1 mascote mítico':p.dia>=900?'1 mascote lendário':p.dia>=400?'1 visual de arma':p.dia>=150?'1 chapéu ou rastro':'boosts e itens'}</span>${btn(k,p)}</div>`}).join('')||'<p class="muted">Carregando...</p>'}</div>
+  <p class="muted s3note">${PLAY?'Pagamento pela Google Play. Os diamantes entram na sua conta assim que a compra é confirmada.':I.pay?'Pagamento pelo Mercado Pago (Pix ou cartão). Os diamantes só entram depois que o Mercado Pago confirma o pagamento.':'As compras com dinheiro estão desligadas no momento.'}</p>
+  ${!PLAY&&SI?`<h3 class="s3h" style="margin-top:14px">🎟️ Loja de Pontos <small style="font-weight:600;color:#c8c0dc">· você tem <b style="color:#ffd04a">${fmt(own.pts||0)} pontos</b></small></h3><div class="s3grid">${Object.entries(SI.ptshop).map(([k,it])=>{const has=!it.dia&&own[k];return`<div class="s3c"><div class="s3ic" style="font-size:30px">${it.dia?'💎':k.startsWith('mount:')?'🐴':k.startsWith('frame:')?'🖼️':k.includes('pet')?'🐾':k.includes('trail')?'✨':'🎁'}</div><b>${esc(it.n||nameOf(k))}</b><span class="s3d">${fmt(it.pts)} pontos</span><button class="btn ${has?'':'pri '}s3b" data-ptsbuy="${k}" ${has||!logged()||(own.pts||0)<it.pts?'disabled':''}>${has?'✔ Já tem':'Trocar'}</button></div>`}).join('')}</div>`:''}`}
 function bundlesHTML(){const B=S3.info&&S3.info.bundles;if(!B)return'<p class="muted">Carregando...</p>';
   return`<div class="s3grid wide">${Object.entries(B).map(([id,b])=>{const miss=b.items.filter(k=>!owns(k));const full=miss.reduce((s,k)=>s+(price(k)||0),0);const pr=Math.round(full*(1-b.off));
     return`<div class="s3c bund r3"><span class="s3bad">-${Math.round(b.off*100)}%</span><div class="s3bic">${b.items.map(k=>`<div class="${owns(k)?'ok':''}" data-s3sel="${k}" title="${escA(nameOf(k))}">${iconOf(k)?`<img src="${iconOf(k)}" alt="">`:'✨'}${owns(k)?'<i>✔</i>':''}</div>`).join('')}</div><b>${escA(b.n)}</b><span class="s3d">${b.items.map(k=>escA(nameOf(k))).join(' · ')}</span>
@@ -3891,7 +3898,8 @@ shopBind=function(){const q=s=>mbody.querySelectorAll(s);cancelAnimationFrame(PV
   q('[data-s3use]').forEach(b=>b.onclick=e=>{e.stopPropagation();const k=b.dataset.s3use;S3.modal={t:'use',key:k,price:price(k),label:'Comprar '+b.dataset.n+'?',rid:rid()};renderMenu()});
   q('[data-s3bund]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.s3bund;S3.modal={t:'bund',key:id,price:+b.dataset.pr,label:'Comprar o '+S3.info.bundles[id].n+'?',rid:rid()};renderMenu()});
   q('[data-s3gift]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!logged()){openLogin('Entre na sua conta para presentear.');return}const k=b.dataset.s3gift;S3.modal={t:'gift',key:k,price:price(k),rid:rid()};renderMenu();setTimeout(()=>{const i=$('s3gto');if(i)i.focus()},30)});
-  q('[data-s3pack]').forEach(b=>b.onclick=async e=>{e.stopPropagation();b.disabled=true;b.textContent='Abrindo...';try{const r=await api('buy',{pack:b.dataset.s3pack});window.open(r.url,'_blank');toast('Termine o pagamento na página do Mercado Pago. Os diamantes chegam sozinhos quando o pagamento for aprovado.','#6ad8ff');accPoll()}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-ptsbuy]').forEach(b=>b.onclick=async e=>{e.stopPropagation();b.disabled=true;try{const r=await api('pts/buy',{item:b.dataset.ptsbuy,rid:(crypto.randomUUID?crypto.randomUUID():String(Date.now()))});accApply(Object.assign({},ACC,{dia:r.dia,owned:r.owned}));toast('🎟️ Troca feita! '+nameOf(b.dataset.ptsbuy)+' é seu.','#8bd86a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
+  q('[data-s3pack]').forEach(b=>b.onclick=async e=>{e.stopPropagation();if(window.ELD_PLAY){gpBuy(b.dataset.s3pack);return}b.disabled=true;b.textContent='Abrindo...';try{const r=await api('buy',{pack:b.dataset.s3pack});window.open(r.url,'_blank');toast('Termine o pagamento na página do Mercado Pago. Os diamantes chegam sozinhos quando o pagamento for aprovado.','#6ad8ff');accPoll()}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
   q('[data-s3coll]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('collection/claim',{id:b.dataset.s3coll});afterAcc(r);sfx('lvl');toast('Título desbloqueado!','#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
   q('[data-s3title]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('title',{title:b.dataset.s3title});afterAcc(r);toast(b.dataset.s3title?'Título: '+TITLES[b.dataset.s3title]:'Título removido','#8bd86a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
   q('[data-s3evt]').forEach(b=>b.onclick=async e=>{e.stopPropagation();try{const r=await api('event/claim',{id:b.dataset.s3evt});afterAcc(r);giftsTake();sfx('lvl');toast('Presente do evento recebido!','#ffd04a')}catch(er){toast(er.message,'#ff7a6e')}renderMenu()});
@@ -4247,6 +4255,38 @@ function socHud(){const b=$('socpvp');if(b){b.classList.toggle('on',SOC.pv);b.ti
   document.head.appendChild(st)})();
 
 {const _ne=nearestEnemy;nearestEnemy=function(range,wd){let b=null,bd=range;for(const e of(wd?foes():enemies)){if(e.pvpP&&P.target!==e)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd){bd=d;b=e}}return b}}
+
+/* ================= v63: versão Google Play + vantagens de quem compra pelo site ================= */
+window.ELD_PLAY=!!window.EldPlay||/EldmorPlay/.test(navigator.userAgent);
+const GPB={pend:[],busy:false};
+window.__gpP={};
+window.__gpReady=ok=>{if(ok&&window.EldPlay)try{EldPlay.prices('p1,p2,p3,p4,p5')}catch(_){}};
+window.__gpPrices=o=>{window.__gpP=o||{};try{if(mode==='menu')renderMenu()}catch(_){}};
+window.__gpCancel=()=>{GPB.busy=false;toast('Compra cancelada.','#a597bd');try{renderMenu()}catch(_){}};
+window.__gpError=m=>{GPB.busy=false;toast(m,'#ff7a6e');try{renderMenu()}catch(_){}};
+function gpBuy(k){if(!window.EldPlay){toast('A loja da Google Play não está disponível.','#ff7a6e');return}if(!(typeof accTok==='function'&&accTok())){toast('Entre na sua conta para comprar diamantes.','#a597bd');return}
+  if(!window.__gpP[k]){try{EldPlay.prices('p1,p2,p3,p4,p5')}catch(_){}toast('Carregando os preços da Google Play, tente de novo em instantes.','#a597bd');return}
+  GPB.busy=true;try{EldPlay.buy(k,String(ACC.id))}catch(e){GPB.busy=false;toast('Não consegui abrir a Google Play.','#ff7a6e')}}
+async function gpVerify(o){if(!(typeof accTok==='function'&&accTok())){if(!GPB.pend.some(x=>x.token===o.token))GPB.pend.push(o);return}
+  try{const r=await api('gplay/verify',{product:o.product,token:o.token});try{const m=await api('me');accApply(m.acc)}catch(_){}if(r.add){banner('Compra confirmada!','+'+r.add+' diamantes na sua conta');sfx('lvl')}}
+  catch(e){toast(e.message,'#ff7a6e')}GPB.busy=false;try{renderMenu()}catch(_){}}
+window.__gpPurchase=o=>{if(!o||!o.token)return;if(o.state!=='ok'){toast('Pagamento pendente na Google Play. Os diamantes entram quando ele for aprovado.','#ffd04a');return}gpVerify(o)};
+if(window.ELD_PLAY){
+  /* compras antigas que ficaram sem entregar (ex.: internet caiu) são entregues ao entrar no jogo */
+  const _sg=startGame;startGame=function(){const r=_sg.apply(this,arguments);setTimeout(()=>{const L=GPB.pend.splice(0);for(const o of L)gpVerify(o);try{EldPlay.restore()}catch(_){}},2500);return r};
+  /* loja antiga do jogo: também vai pela Google Play */
+  document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-shbuy]');if(!b)return;e.stopImmediatePropagation();e.preventDefault();gpBuy(b.dataset.shbuy)},true);
+  /* nenhum texto sobre outra forma de pagamento dentro do app da Play Store */
+  const fix=root=>{const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const t=n.nodeValue;if(t&&t.includes('Mercado Pago'))n.nodeValue=t.replace(/Pix ou cartão pelo Mercado Pago/g,'Google Play').replace(/do Mercado Pago/g,'da Google Play').replace(/pelo Mercado Pago/g,'pela Google Play').replace(/Mercado Pago/g,'Google Play')}};
+  new MutationObserver(ms=>{for(const m of ms)for(const nd of m.addedNodes)if(nd.nodeType===1)fix(nd);else if(nd.nodeType===3&&nd.parentNode)fix(nd.parentNode)}).observe(document.body,{childList:true,subtree:true});
+  try{if(window.EldPlay.ready())__gpReady(true)}catch(_){}
+}
+/* selo Apoiador: cor própria a partir do selo Estrela */
+(function mkBadge(){try{const src=A.tb_estrela;if(!src||!src.width){setTimeout(mkBadge,800);return}const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.filter='hue-rotate(95deg) saturate(1.3)';g.drawImage(src,0,0);A.tb_apoiador=c}catch(_){}})();
+(function(){const st=document.createElement('style');st.textContent=`
+.s3site{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 12px;margin:0 0 10px;border-radius:12px;background:linear-gradient(90deg,rgba(60,170,110,.28),rgba(242,193,78,.22));border:1px solid rgba(140,230,160,.55);font-size:13px;color:#eafff0}
+.s3site>b{flex-basis:100%;color:#ffe49a;font-size:14px}.s3site em{color:#a8c8b0;font-style:normal}
+.s3bon{color:#7dffb0;font-weight:800}.s3mes{outline:2px solid #ffd04a;box-shadow:0 0 18px rgba(255,208,74,.35)}`;document.head.appendChild(st)})();
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}

@@ -17,7 +17,28 @@ const PACKS = {            // pacotes de diamantes (R$)
   p3: { dia: 600, price: 24.90, n: '600 diamantes (+20%)' },
   p4: { dia: 1300, price: 49.90, n: '1.300 diamantes (+30%)' },
   p5: { dia: 2800, price: 99.90, n: '2.800 diamantes (+40%)' },
+  mes: { dia: 1000, price: 19.90, n: 'Pacote do Mês: 1.000 diamantes', site: true },   // só no site, 1 vez por mês
 };
+/* bônus de quem compra pelo site (Mercado Pago): não vale para compras feitas pela Google Play */
+const SITE = { bonus: 0.20, ptsPerReal: 10, perks: ['title:apoiador', 'cos:any.aura.10'] };
+const PTSHOP = { 'pts:dia100': { pts: 600, n: '100 diamantes', dia: 100 }, 'cos:any.trail.6': { pts: 400 }, 'frame:5': { pts: 400 }, 'ev:capa_estelar': { pts: 500 },
+  'mount:cavalo': { pts: 900 }, 'mount:unic': { pts: 1800 }, 'cos:any.pet.19': { pts: 2500 } };
+const brtMonth = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 7);
+/* Google Play: o servidor confirma cada compra direto com o Google antes de entregar */
+const GPLAY_PKG = (process.env.GPLAY_PKG || 'com.wendrew.reinosdeeldmor').trim();
+let GPLAY_SA = null; try { if (process.env.GPLAY_SA) GPLAY_SA = JSON.parse(process.env.GPLAY_SA.trim().startsWith('{') ? process.env.GPLAY_SA : Buffer.from(process.env.GPLAY_SA, 'base64').toString()); } catch (e) { console.log('GPLAY_SA inválido'); }
+let GTOK = { t: '', exp: 0 };
+async function gToken() {
+  if (GTOK.t && Date.now() < GTOK.exp) return GTOK.t;
+  const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url'); const now = Math.floor(Date.now() / 1000);
+  const data = b64({ alg: 'RS256', typ: 'JWT' }) + '.' + b64({ iss: GPLAY_SA.client_email, scope: 'https://www.googleapis.com/auth/androidpublisher', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 });
+  const sig = crypto.sign('RSA-SHA256', Buffer.from(data), GPLAY_SA.private_key).toString('base64url');
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'grant_type=' + encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer') + '&assertion=' + data + '.' + sig });
+  const j = await r.json(); if (!j.access_token) throw new Error('Google recusou a conta de serviço: ' + (j.error_description || j.error || r.status));
+  GTOK = { t: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 }; return GTOK.t;
+}
+async function gplay(path, method) { const t = await gToken(); const r = await fetch('https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + GPLAY_PKG + path, { method: method || 'GET', headers: { authorization: 'Bearer ' + t } });
+  const tx = await r.text(); let j = {}; try { j = tx ? JSON.parse(tx) : {}; } catch (e) { } if (!r.ok) throw new Error('Google Play ' + r.status + ': ' + ((j.error && j.error.message) || tx).slice(0, 160)); return j; }
 // itens vendidos por diamantes: preço e se é permanente (fica na conta) ou consumível
 const SHOP = {
   'boost:xp': { p: 80, kind: 'use' }, 'boost:gold': { p: 60, kind: 'use' },
@@ -72,6 +93,7 @@ const db = {
   async tokAcc(t) { if (!t || typeof t !== 'string') return null; if (pool) { const r = (await pool.query('select acc from tokens where tok=$1', [t])).rows[0]; return r ? db.byId(r.acc) : null; } const id = MEM.toks[t]; return id ? db.byId(id) : null; },
   async dropToks(id) { if (pool) await pool.query('delete from tokens where acc=$1', [id]); else { for (const k in MEM.toks) if (MEM.toks[k] === id) delete MEM.toks[k]; db.saveMem(); } },
   async rank(n) { if (pool) return (await pool.query('select name,lvl,txp,cls,owned->>\'title\' as title from accounts where op=false and lvl>1 order by lvl desc, txp desc, id asc limit $1', [n])).rows; return MEM.accs.filter(a => !a.op && a.lvl > 1).sort((a, b) => b.lvl - a.lvl || b.txp - a.txp || a.id - b.id).slice(0, n).map(a => ({ name: a.name, lvl: a.lvl, txp: a.txp, cls: a.cls, title: (a.owned || {}).title || null })); },
+  async hasSitePay(acc) { if (pool) return (await pool.query("select 1 from payments where acc=$1 and id not like 'gp:%' limit 1", [acc])).rowCount > 0; return Object.entries(MEM.pays || {}).some(([k, v]) => v.acc === acc && !k.startsWith('gp:')); },
   async payNew(pid, acc, dia, status) { if (pool) { const r = await pool.query('insert into payments(id,acc,dia,status) values($1,$2,$3,$4) on conflict (id) do nothing returning id', [pid, acc, dia, status]); return r.rowCount > 0; } if (MEM.pays[pid]) return false; MEM.pays[pid] = { acc, dia, status, at: Date.now() }; db.saveMem(); return true; },
   async supAdd(o) { if (pool) { await pool.query('insert into support(acc,name,contact,msg) values($1,$2,$3,$4)', [o.acc, o.name, o.contact, o.msg]); return; } MEM.sup = MEM.sup || []; MEM.sup.push(Object.assign({ id: Date.now(), done: false, at: new Date().toISOString() }, o)); db.saveMem(); },
   async supList() { if (pool) return (await pool.query('select id,acc,name,contact,msg,done,at from support order by done asc, at desc limit 100')).rows; return (MEM.sup || []).slice().reverse().slice(0, 100); },
@@ -106,9 +128,17 @@ async function mpCheck(pid) {
   const [accS, pack] = String(p.external_reference || '').split(':'); const acc = +accS, pk = PACKS[pack];
   if (!acc || !pk) return;
   if (Math.abs((p.transaction_amount || 0) - pk.price) > 0.01) { console.log('valor diferente no pagamento', pid); return; }
-  if (!(await db.payNew(String(pid), acc, pk.dia, p.status))) return;
-  const dia = await db.addDia(acc, pk.dia); console.log('pagamento aprovado', pid, 'conta', acc, '+' + pk.dia);
-  notify(acc, { t: 'dia', dia, add: pk.dia, why: 'Compra aprovada: +' + pk.dia + ' diamantes' });
+  return withLock(acc, async () => {
+    const first = !(await db.hasSitePay(acc));
+    const bonus = pk.site ? 0 : Math.round(pk.dia * SITE.bonus), dbl = first && !pk.site ? pk.dia : 0, add = pk.dia + bonus + dbl;
+    if (!(await db.payNew(String(pid), acc, add, p.status))) return;
+    const dia = await db.addDia(acc, add);
+    const f = await db.byId(acc); const owned = f.owned || {}; const pts = Math.round(pk.price * SITE.ptsPerReal); owned.pts = (owned.pts || 0) + pts; const newPerks = SITE.perks.filter(k => !owned[k]); for (const k of SITE.perks) owned[k] = 1;
+    if (pk.site) owned['mes@' + brtMonth()] = 1; if (!owned.title) owned.title = 'title:apoiador';
+    await db.set(acc, { owned }); await S3.txAdd(acc, 'site', pk.n + (bonus ? ' +' + bonus + ' bônus' : '') + (dbl ? ' +' + dbl + ' 1ª compra' : ''), 0, null, 'mp-' + pid);
+    console.log('pagamento aprovado', pid, 'conta', acc, '+' + add);
+    notify(acc, { t: 'dia', dia, add, owned, why: 'Compra aprovada: +' + add + ' diamantes' + (bonus ? ' (com +' + bonus + ' de bônus do site' + (dbl ? ' e +' + dbl + ' da 1ª compra em dobro' : '') + ')' : '') + ' e +' + pts + ' pontos' + (newPerks.length ? '. Você ganhou o selo e a Aura do Apoiador!' : '') });
+  });
 }
 
 
@@ -193,7 +223,7 @@ function rewardText(r) {
   const t = []; if (r.dia) t.push(r.dia + ' diamantes'); if (r.gold) t.push(r.gold + ' de ouro'); if (r.hp) t.push(r.hp + ' poções de vida'); if (r.mp) t.push(r.mp + ' poções de mana'); if (r.scroll) t.push(r.scroll + ' pergaminhos');
   for (const k of r.items || []) t.push(ITEMNAME[k] || k); return t.join(', ');
 }
-const ITEMNAME = { 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro Cometa Arco-Íris', 'pal:neon': 'Paleta Neon',
+const ITEMNAME = { 'title:apoiador': 'Selo Apoiador', 'cos:any.aura.10': 'Aura do Apoiador', 'pts:dia100': '100 diamantes', 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro Cometa Arco-Íris', 'pal:neon': 'Paleta Neon',
   'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda',
   'ev:coelho_pascoa': 'Coelho da Páscoa', 'ev:abobora': 'Abóbora Assombrada', 'ev:rena': 'Rena de Natal', 'ev:gorro_natal': 'Gorro de Natal', 'ev:chapeu_bruxa': 'Chapéu de Bruxa', 'ev:espada_alada': 'Espada Alada de Fogo', 'ev:arco_gelo': 'Arco do Relâmpago Gelado', 'ev:cajado_galaxia': 'Cajado da Galáxia' };
 for (let i = 1; i <= 20; i++) ITEMNAME['cos:any.pet.' + i] = 'Mascote nº ' + i;
@@ -374,7 +404,33 @@ async function handleShop3(req, res, u, a) {
     return send(res, 200, { bundles: Object.fromEntries(Object.entries(BUNDLES).map(([k, b]) => [k, { n: b.n, items: b.items, full: b.items.reduce((s, i) => s + SHOP[i].p, 0), off: BUNDLE_OFF }])),
       coll: COLL, events: EVENTS.map(e => ({ id: e.id, n: e.n, from: e.from, to: e.to, gift: e.gift, coll: e.coll })), pass: Object.assign({}, PASS, { miss: MISS, rewards: { f: Array.from({ length: PASS.tiers }, (_, i) => passReward('f', i + 1)), p: Array.from({ length: PASS.tiers }, (_, i) => passReward('p', i + 1)) } }), now: new Date().toISOString() });
   }
+  if (u === '/api/siteinfo') return send(res, 200, { bonus: SITE.bonus, ptsPerReal: SITE.ptsPerReal, perks: SITE.perks, ptshop: PTSHOP, packs: PACKS, month: brtMonth(), gplay: !!GPLAY_SA });
   if (!a) return null;
+  if (u === '/api/pts/buy' && req.method === 'POST') {
+    const b = await body(req); const key = String(b.item || ''); const it = PTSHOP[key]; if (!it) return send(res, 400, { err: 'Item desconhecido.' });
+    return withLock(a.id, async () => {
+      const f = await db.byId(a.id); const owned = f.owned || {}; if (!it.dia && owned[key]) return send(res, 400, { err: 'Você já tem este item.' });
+      if ((owned.pts || 0) < it.pts) return send(res, 400, { err: 'Pontos insuficientes. Faltam ' + (it.pts - (owned.pts || 0)) + '.' });
+      owned.pts -= it.pts; let dia = f.dia; if (it.dia) dia = await db.addDia(a.id, it.dia); else owned[key] = 1;
+      await db.set(a.id, { owned }); await S3.txAdd(a.id, 'pontos', key, 0, it.pts + ' pontos', validRid(b.rid)); return send(res, 200, { ok: true, dia, owned });
+    });
+  }
+  if (u === '/api/gplay/verify' && req.method === 'POST') {
+    const b = await body(req); const pid = String(b.product || ''), tok = String(b.token || ''); const pk = PACKS[pid];
+    if (!pk || pk.site || !/^[\w.\-:]{20,600}$/.test(tok)) return send(res, 400, { err: 'Compra inválida.' });
+    if (!GPLAY_SA) return send(res, 503, { err: 'Compras pela Google Play ainda não foram ativadas no servidor.' });
+    return withLock(a.id, async () => {
+      let g; try { g = await gplay('/purchases/products/' + encodeURIComponent(pid) + '/tokens/' + encodeURIComponent(tok)); } catch (e) { console.log('gplay verify', e.message); return send(res, 502, { err: 'Não consegui confirmar a compra com o Google. Tente de novo em instantes.' }); }
+      if (g.purchaseState !== 0) return send(res, 400, { err: g.purchaseState === 2 ? 'Pagamento pendente. Os diamantes chegam quando o Google aprovar.' : 'Essa compra foi cancelada.', pending: g.purchaseState === 2 });
+      if (g.obfuscatedExternalAccountId && g.obfuscatedExternalAccountId !== String(a.id)) return send(res, 403, { err: 'Essa compra pertence a outra conta.' });
+      const id = 'gp:' + crypto.createHash('sha256').update(tok).digest('hex').slice(0, 40);
+      const fresh = await db.payNew(id, a.id, pk.dia, 'approved'); let dia;
+      if (fresh) { dia = await db.addDia(a.id, pk.dia); await S3.txAdd(a.id, 'google', pk.n, 0, g.orderId || null, id); console.log('google play aprovado', g.orderId, 'conta', a.id, '+' + pk.dia); }
+      else dia = (await db.byId(a.id)).dia;
+      if (g.consumptionState === 0) try { await gplay('/purchases/products/' + encodeURIComponent(pid) + '/tokens/' + encodeURIComponent(tok) + ':consume', 'POST'); } catch (e) { console.log('gplay consume', e.message); }
+      return send(res, 200, { ok: true, dia, add: fresh ? pk.dia : 0, dup: !fresh });
+    });
+  }
   if (u === '/api/history') return send(res, 200, await S3.txList(a.id));
   if (u === '/api/spend' && req.method === 'POST') {
     const b = await body(req); const rid = validRid(b.rid); const key = String(b.item || ''); const it = SHOP[key]; if (!it) return send(res, 400, { err: 'Item desconhecido.' });
@@ -500,7 +556,7 @@ async function handle(req, res, u) {
       try { const n = await db.supOpen(); for (const id of await db.opIds()) notify(id, { t: 'sup', n, from: who ? who.name : (cleanName(b.name) || 'Visitante') }); } catch (_) {}
       return send(res, 200, { ok: true });
     }
-    if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war' || u === '/api/shop3') return handleExtra(req, res, u, null);
+    if (u === '/api/guild/rank' || u === '/api/guild/list' || u === '/api/war' || u === '/api/shop3' || u === '/api/siteinfo') return handleExtra(req, res, u, null);
     const a = await auth(req); if (!a) return send(res, 401, { err: 'Entre na sua conta de novo.' });
     if (u === '/api/me') return send(res, 200, { acc: pubAcc(a), save: a.save || null });
     if (u === '/api/save' && req.method === 'POST') {
@@ -538,6 +594,7 @@ async function handle(req, res, u) {
     }
     if (u === '/api/buy' && req.method === 'POST') {
       const b = await body(req); const pk = PACKS[b.pack]; if (!pk) return send(res, 400, { err: 'Pacote inválido.' });
+      if (pk.site && (a.owned || {})['mes@' + brtMonth()]) return send(res, 400, { err: 'Você já comprou o Pacote do Mês. Ele volta no mês que vem!' });
       if (!MP_TOKEN) return send(res, 503, { err: 'As compras ainda não foram ativadas neste servidor.' });
       const pref = await mpFetch('/checkout/preferences', { method: 'POST', body: JSON.stringify({
         items: [{ id: b.pack, title: 'Reinos de Eldmor - ' + pk.n, quantity: 1, currency_id: 'BRL', unit_price: pk.price }],
