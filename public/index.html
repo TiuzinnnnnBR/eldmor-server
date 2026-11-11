@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v64 · 10/11/2026';
+const ELD_VER='v65 · 11/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4295,6 +4295,14 @@ if(window.ELD_PLAY){
 .s3site{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 12px;margin:0 0 10px;border-radius:12px;background:linear-gradient(90deg,rgba(60,170,110,.28),rgba(242,193,78,.22));border:1px solid rgba(140,230,160,.55);font-size:13px;color:#eafff0}
 .s3site>b{flex-basis:100%;color:#ffe49a;font-size:14px}.s3site em{color:#a8c8b0;font-style:normal}
 .s3bon{color:#7dffb0;font-weight:800}.s3mes{outline:2px solid #ffd04a;box-shadow:0 0 18px rgba(255,208,74,.35)}`;document.head.appendChild(st)})();
+/* v65: no servidor, o painel de baixo vira só um selo pequeno "Online · N" (tocar abre a lista de jogadores e o chat).
+   Sair do servidor fica em Opções → Jogar local. As barras só aparecem com o Jogador 2 no mesmo aparelho. */
+(function(){const st=document.createElement('style');st.textContent=`
+#p2hud.srvmini{width:auto;padding:4px 12px;border-radius:20px;cursor:pointer;pointer-events:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:12.5px;white-space:nowrap}
+#p2hud.srvmini .bar,#p2hud.srvmini #srvExit,#p2hud.srvmini #p2cls{display:none!important}
+#p2hud.srvmini b{color:#7dff9a}#p2hud.srvmini b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ad84a;box-shadow:0 0 6px #4ad84a;margin-right:6px;vertical-align:1px}`;document.head.appendChild(st);
+  const h=$('p2hud');if(h)h.addEventListener('click',e=>{if(!h.classList.contains('srvmini'))return;e.stopPropagation();if(mode==='play')try{socPanel('online')}catch(_){}});
+  setInterval(()=>{const h=$('p2hud');if(!h)return;const mini=typeof SRV!=='undefined'&&SRV.on&&!(typeof P2!=='undefined'&&P2.on);h.classList.toggle('srvmini',mini);if(mini){const n=SRV.players.size+1;const b=h.querySelector('b');const t='Online · '+n+(n===1?' jogador':' jogadores');if(b&&b.textContent!==t)b.textContent=t;const sib=b&&b.nextSibling;if(sib&&sib.nodeType===3&&sib.nodeValue.trim())sib.nodeValue=' '}},500)})();
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
