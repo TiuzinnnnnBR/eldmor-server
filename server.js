@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 8080;
 const PUB = path.resolve(process.env.PUB || path.join(__dirname, 'public'));
 const BOSSES = 24;                       // quantidade de chefes no jogo
-const BOSS_MIN = 8, BOSS_MAX = 16;       // minutos entre um chefe e outro (só um por vez)
+const BOSS_MIN = +process.env.BOSS_MIN || 45, BOSS_MAX = +process.env.BOSS_MAX || 90;   // minutos entre um chefe e outro (só um por vez) — chefes online são raros
 const BOSS_LIFE = 12;                    // minutos até o chefe ir embora se ninguém matar
 const EVENTS = ['blood', 'gold', 'xp', 'horde'];
 const EV_MIN = 14, EV_MAX = 22, EV_LEN = 3; // minutos
@@ -96,7 +96,7 @@ const online = () => [...clients.values()].filter(c => c.joined).length;
 const clean = s => String(s || '').replace(/[<>]/g, '').trim().slice(0, 16);
 
 /* ---------- mundo ---------- */
-const W = { tiles: new Map(), boss: null, nextBoss: Date.now() + (process.env.BOSS_FIRST ? +process.env.BOSS_FIRST * 1000 : rand(3, 6) * MIN), ev: null, nextEv: Date.now() + (process.env.EV_FIRST ? +process.env.EV_FIRST * 1000 : rand(6, 10) * MIN) };
+const W = { tiles: new Map(), boss: null, nextBoss: Date.now() + (process.env.BOSS_FIRST ? +process.env.BOSS_FIRST * 1000 : rand(20, 40) * MIN), ev: null, nextEv: Date.now() + (process.env.EV_FIRST ? +process.env.EV_FIRST * 1000 : rand(6, 10) * MIN) };
 function pub(c) { if (!c.h) return c.h; return c.op ? Object.assign({}, c.h, { lv: 0, op: 1 }) : c.h; }
 function bossMsg() { const b = W.boss; return b ? { t: 'boss', bi: b.bi, hp: Math.ceil(b.hp), max: b.max } : null; }
 
