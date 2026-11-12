@@ -223,7 +223,7 @@ function rewardText(r) {
   const t = []; if (r.dia) t.push(r.dia + ' diamantes'); if (r.gold) t.push(r.gold + ' de ouro'); if (r.hp) t.push(r.hp + ' poções de vida'); if (r.mp) t.push(r.mp + ' poções de mana'); if (r.scroll) t.push(r.scroll + ' pergaminhos');
   for (const k of r.items || []) t.push(ITEMNAME[k] || k); return t.join(', ');
 }
-const ITEMNAME = { 'title:apoiador': 'Selo Apoiador', 'cos:any.aura.10': 'Aura do Apoiador', 'pts:dia100': '100 diamantes', 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro Cometa Arco-Íris', 'pal:neon': 'Paleta Neon',
+const ITEMNAME = { 'skin:1': 'Visual Cavaleiro Azul', 'skin:2': 'Visual Demônio Rubro', 'skin:3': 'Visual Paladino Dourado', 'skin:4': 'Visual Mago Arcano', 'skin:5': 'Visual Assassino Sombrio', 'skin:6': 'Visual Príncipe do Gelo', 'skin:7': 'Visual Guerreiro Solar', 'skin:8': 'Visual Senhor do Vazio', 'skin:9': 'Visual Anjo Celestial', 'skin:10': 'Visual Cavaleiro de Cristal', 'title:apoiador': 'Selo Apoiador', 'cos:any.aura.10': 'Aura do Apoiador', 'pts:dia100': '100 diamantes', 'cos:any.aura.7': 'Aura de Campeão', 'cos:any.aura.8': 'Aura do Fundador', 'cos:any.trail.6': 'Rastro Cometa Arco-Íris', 'pal:neon': 'Paleta Neon',
   'ev:asas_fundador': 'Asas de Luz do Fundador', 'ev:coroa_torneio': 'Coroa do Primeiro Torneio', 'ev:capa_estelar': 'Capa Estelar', 'ev:dragao_cristal': 'Dragãozinho de Cristal', 'ev:estandarte': 'Estandarte de Guilda',
   'ev:coelho_pascoa': 'Coelho da Páscoa', 'ev:abobora': 'Abóbora Assombrada', 'ev:rena': 'Rena de Natal', 'ev:gorro_natal': 'Gorro de Natal', 'ev:chapeu_bruxa': 'Chapéu de Bruxa', 'ev:espada_alada': 'Espada Alada de Fogo', 'ev:arco_gelo': 'Arco do Relâmpago Gelado', 'ev:cajado_galaxia': 'Cajado da Galáxia' };
 for (let i = 1; i <= 20; i++) ITEMNAME['cos:any.pet.' + i] = 'Mascote nº ' + i;
@@ -305,7 +305,7 @@ async function handleExtra(req, res, u, a) {
   if (u === '/api/gifts/take' && req.method === 'POST') { const fresh = await db.byId(a.id); const owned = fresh.owned || {}; const gifts = owned.gifts || []; if (!gifts.length) return send(res, 200, { gifts: [], owned }); delete owned.gifts; await db.set(a.id, { owned }); return send(res, 200, { gifts, owned }); }
   if (u === '/api/code/create' && req.method === 'POST') {
     if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const n = Math.max(1, Math.min(200, b.count | 0 || 1)); const r = b.reward || {};
-    const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)).slice(0, 10) };
+    const rw = { dia: Math.max(0, Math.min(5000, r.dia | 0)), gold: Math.max(0, Math.min(1e7, r.gold | 0)), hp: Math.max(0, Math.min(500, r.hp | 0)), mp: Math.max(0, Math.min(500, r.mp | 0)), scroll: Math.max(0, Math.min(200, r.scroll | 0)), items: (r.items || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:|skin:)[\w.:]+$/.test(k)).slice(0, 10) };
     if (!rw.dia && !rw.gold && !rw.hp && !rw.mp && !rw.scroll && !rw.items.length) return send(res, 400, { err: 'Escolha pelo menos um prêmio.' });
     const max = Math.max(1, Math.min(100000, b.max | 0 || 1)); const until = b.days ? new Date(Date.now() + Math.min(3650, +b.days) * 864e5).toISOString() : null; const note = cleanG(b.note).slice(0, 60) || 'Código especial';
     const AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const rnd = k => Array.from(crypto.randomBytes(k), x => AL[x % 32]).join(''); const out = [];
@@ -316,7 +316,7 @@ async function handleExtra(req, res, u, a) {
   if (u === '/api/op/gift' && req.method === 'POST') {
     if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req);
     const t = await db.byName(cleanName(b.name || '').toLowerCase()); if (!t) return send(res, 404, { err: 'Não achei nenhum jogador com esse nome.' });
-    const owned = t.owned || {}; const keys = (b.keys || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)).slice(0, 200); for (const k of keys) owned[k] = 1;
+    const owned = t.owned || {}; const keys = (b.keys || []).filter(k => typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:|skin:)[\w.:]+$/.test(k)).slice(0, 200); for (const k of keys) owned[k] = 1;
     const g = { gold: Math.max(0, Math.min(1e8, b.gold | 0)), hp: Math.max(0, Math.min(5000, b.hp | 0)), mp: Math.max(0, Math.min(5000, b.mp | 0)), scroll: 0, from: 'Presente do Operador' };
     if (g.gold || g.hp || g.mp) owned.gifts = (owned.gifts || []).concat([g]).slice(-20);
     await db.set(t.id, { owned }); let dia = t.dia; const nd = Math.max(0, Math.min(100000, b.dia | 0)); if (nd) dia = await db.addDia(t.id, nd);
@@ -325,7 +325,7 @@ async function handleExtra(req, res, u, a) {
     const txt = parts.join(', '); notify(t.id, { t: 'gmsg', msg: '🎁 O Operador te deu um presente: ' + txt + '!' }); notify(t.id, { t: 'gift' }); if (nd) notify(t.id, { t: 'dia', dia, add: nd, why: 'Presente do Operador' });
     console.log('presente do operador para', t.name, txt); return send(res, 200, { ok: true, name: t.name, text: txt });
   }
-  if (u === '/api/op/grant' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const fresh = await db.byId(a.id); const owned = fresh.owned || {}; for (const k of (b.keys || []).slice(0, 500)) if (typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:)[\w.:]+$/.test(k)) owned[k] = 1; await db.set(a.id, { owned }); return send(res, 200, { owned }); }
+  if (u === '/api/op/grant' && req.method === 'POST') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); const b = await body(req); const fresh = await db.byId(a.id); const owned = fresh.owned || {}; for (const k of (b.keys || []).slice(0, 500)) if (typeof k === 'string' && /^(cos:|ev:|pal:|mount:|frame:|skin:)[\w.:]+$/.test(k)) owned[k] = 1; await db.set(a.id, { owned }); return send(res, 200, { owned }); }
   if (u === '/api/code/list') { if (!a.op) return send(res, 403, { err: 'Só o Operador.' }); return send(res, 200, { list: (await G.codeList()).map(c => ({ code: c.plain || '(código pronto)', text: rewardText(typeof c.reward === 'string' ? JSON.parse(c.reward) : c.reward), max: c.max, uses: c.uses, until: c.until, note: c.note })) }); }
   /* ---------- loja pelo site (só itens que ficam na conta) ---------- */
   return null;
@@ -339,6 +339,8 @@ const EVSALE = { 'ev:gorro_natal': 150, 'ev:chapeu_bruxa': 150, 'ev:capa_estelar
   'cos:any.pet.16': 900, 'cos:any.pet.19': 2000, 'cos:any.pet.20': 2000 };
 for (const k in EVSALE) SHOP[k] = { p: EVSALE[k], kind: 'perm' };
 // montarias e molduras (só visuais). O Lobo Celestial e a Moldura Celestial são do Passe.
+const SKINP = { 1: 600, 2: 900, 3: 900, 4: 800, 5: 800, 6: 1000, 7: 1200, 8: 1200, 9: 1500, 10: 1200 };   // visuais completos (só aparência)
+for (const i in SKINP) EVSALE['skin:' + i] = SKINP[i];
 Object.assign(EVSALE, { 'mount:cavalo': 600, 'mount:unic': 1200, 'mount:dragao': 2000, 'frame:1': 50, 'frame:2': 100, 'frame:3': 200, 'frame:4': 250, 'frame:5': 250 });
 for (const k in EVSALE) SHOP[k] = { p: EVSALE[k], kind: 'perm' };
 Object.assign(ITEMNAME, { 'mount:lobo': 'Montaria Lobo Celestial', 'mount:cavalo': 'Montaria Cavalo de Guerra', 'mount:unic': 'Montaria Unicórnio Arco-Íris', 'mount:dragao': 'Montaria Dragão de Fogo', 'frame:1': 'Moldura de Bronze', 'frame:2': 'Moldura de Prata', 'frame:3': 'Moldura Real', 'frame:4': 'Moldura de Gelo', 'frame:5': 'Moldura de Fogo', 'frame:6': 'Moldura Celestial' });
