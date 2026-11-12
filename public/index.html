@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v67 · 12/11/2026';
+const ELD_VER='v68 · 12/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4224,7 +4224,7 @@ function socHud(){const b=$('socpvp');if(b){b.classList.toggle('on',SOC.pv);b.ti
 /* ---------- desenho: espada (PvP) e caveira (caçado) sobre os nomes ---------- */
 {const _rn=render;render=function(){_rn();if(!socOn()||mode==='title')return;ctx.setTransform(DPR,0,0,DPR,0,0);ctx.textAlign='center';ctx.font='14px system-ui, sans-serif';
   const mark=(x,y,id,pv,me)=>{const h=socHunted(id);let s='';if(pv)s+='⚔️';if(h)s+='☠️';if(!s&&!(me&&SOC.party.id))return;if(socInParty(id))s='👥'+s;ctx.fillText(s,x,y)};
-  for(const p of SRV.players.values()){const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2-14;if(x<-80||y<-40||x>W+80||y>H+40)continue;mark(x,y,p.id,p.pv,false);
+  for(const p of SRV.players.values()){const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2-27;if(x<-80||y<-40||x>W+80||y>H+40)continue;mark(x,y,p.id,p.pv,false);
     if(socHunted(p.id)){ctx.save();ctx.strokeStyle='rgba(255,60,50,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,(p.y+4-cam.y)*SCALE+H/2,9*SCALE/2,4*SCALE/2,0,0,7);ctx.stroke();ctx.restore()}}
   const x=(P.x-cam.x)*SCALE+W/2,y=(P.y-30-cam.y)*SCALE+H/2-6;const s=(SOC.pv?'⚔️':'')+(socHunted(SRV.id)?'☠️':'');if(s)ctx.fillText(s,x,y)}}
 /* ---------- laço ---------- */
@@ -4320,6 +4320,13 @@ function mapHeroOf(cls,lk){cls=cls||'warrior';lk=lk||{};const k=cls+JSON.stringi
     if(hi){g.save();g.clip();g.imageSmoothingEnabled=true;g.drawImage(hi,px-r,py-r,r*2,r*2);g.restore()}
     if(big&&p.name){g.font='800 11px Nunito, system-ui, sans-serif';g.textAlign='center';g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(p.name,px,py-r-5);g.fillStyle=party?'#9affb4':hunted?'#ff8a7a':'#d8f4ff';g.fillText(p.name,px,py-r-5)}g.restore()}}catch(_){}
   return _mm(g,s,big)}}
+/* v68: barra de vida em cima do nome dos outros jogadores (vem do servidor junto com a posição, várias vezes por segundo) */
+{const _rn=render;render=function(){_rn();try{if(typeof SRV==='undefined'||!SRV.on||mode==='title')return;ctx.setTransform(DPR,0,0,DPR,0,0);
+  for(const p of SRV.players.values()){if(p.op&&p.hide)continue;const x=(p.x-cam.x)*SCALE+W/2,y=(p.y-30-cam.y)*SCALE+H/2-17;if(x<-80||y<-40||x>W+80||y>H+40)continue;
+    const mx=Math.max(1,p.mhp||1),hp=p.dead?0:Math.max(0,Math.min(mx,p.hp==null?mx:p.hp));const f=hp/mx;if(p._hpd==null)p._hpd=f;if(f<p._hpd-0.001)p._hpd=Math.max(f,p._hpd-0.012);else p._hpd=f;if(f<(p._hpl==null?f:p._hpl))p._hit=time;p._hpl=f;
+    const w=44,h=6,bx=Math.round(x-w/2),by=Math.round(y);ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(bx-1,by-1,w+2,h+2);ctx.fillStyle='#3a1414';ctx.fillRect(bx,by,w,h);
+    ctx.fillStyle='rgba(255,240,200,.85)';ctx.fillRect(bx,by,w*p._hpd,h);ctx.fillStyle=f>0.5?'#4ad84a':f>0.25?'#f2c14e':'#ff4a3a';ctx.fillRect(bx,by,w*f,h);
+    ctx.fillStyle='rgba(255,255,255,.28)';ctx.fillRect(bx,by,w*f,2);if(p._hit&&time-p._hit<0.25){ctx.strokeStyle='rgba(255,90,70,.9)';ctx.lineWidth=1.5;ctx.strokeRect(bx-1.5,by-1.5,w+3,h+3)}}}catch(_){}}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
