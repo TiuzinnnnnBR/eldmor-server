@@ -2665,7 +2665,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v70 · 12/11/2026';
+const ELD_VER='v71 · 12/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4328,6 +4328,18 @@ function socHud(){const b=$('socpvp');if(b){b.classList.toggle('on',SOC.pv);b.ti
 
 {const _ne=nearestEnemy;nearestEnemy=function(range,wd){let b=null,bd=range;for(const e of(wd?foes():enemies)){if(e.pvpP&&P.target!==e)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd){bd=d;b=e}}return b}}
 
+/* visuais completos: mesmo tamanho dos heróis normais (margens iguais às da arte base) e capa ajustada ao corpo */
+window.__SKPAD=function(im){if(!im)return im;if(im._pd)return im._pd;const ch=im.height,cw=im.width,H=Math.round(ch/0.80),top=Math.round(H*0.165),W=Math.round(cw/0.86),l=Math.round((W-cw)/2);
+  const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.drawImage(im,l,top);
+  let sp=null;try{const d=g.getImageData(0,0,W,H).data;const row=y=>{let a=-1,b=-1;for(let x=0;x<W;x++)if(d[(y*W+x)*4+3]>60){if(a<0)a=x;b=x}return a<0?null:[a,b]};
+    const ys=[0.42,0.48,0.54].map(f=>Math.round(top+ch*f));let L=0,R=0,n=0;for(const y of ys){const r=row(y);if(r){L+=r[0];R+=r[1];n++}}if(n){L/=n;R/=n;sp={l:L/W,r:R/W,top:(top+ch*0.30)/H,bot:(top+ch*0.93)/H}}}catch(_){}
+  c._sp=sp;im._pd=c;return c};
+{const wrapAcc=()=>{const _ad=window.__ACCDRAW;if(!_ad||_ad._sk)return;const f=function(g,ox,oy,w,H,dir,fr,n,anim,layer){const SN=window.__SKNOW;const a=window.__ACCNOW|0;const d=window.__EV&&window.__EV.ACC_DEF[a];
+    if(SN&&d&&d.im){const sp=SN[dir]||SN.down;if(d.k==='cape'&&sp){const back=dir==='up';if((layer===0)!==back)return;const bob=anim==='walk'?-Math.abs(Math.sin(fr/n*Math.PI*2))*H*0.022:0;
+        const bw=(sp.r-sp.l)*w,cx=ox+(sp.l+sp.r)/2*w;const cw=dir==='side'?bw*0.8:back?bw*0.92:bw*0.86;const top=oy+sp.top*H+bob,hh=Math.min(d.im.height*cw/d.im.width,(sp.bot-sp.top)*H);
+        g.save();g.imageSmoothingEnabled=true;g.drawImage(d.im,cx-cw/2+(dir==='side'?-bw*0.12:0),top,cw,hh);g.restore();return}
+      if(d.k==='crown'||d.k==='hat'||d.k==='witch')return}
+    return _ad.apply(this,arguments)};f._sk=1;window.__ACCDRAW=f};wrapAcc();setTimeout(wrapAcc,0);setTimeout(wrapAcc,500)}
 /* ================= v63: versão Google Play + vantagens de quem compra pelo site ================= */
 window.ELD_PLAY=!!window.EldPlay||/EldmorPlay/.test(navigator.userAgent);
 const GPB={pend:[],busy:false};
@@ -4415,10 +4427,10 @@ function mapHeroOf(cls,lk){cls=cls||'warrior';lk=lk||{};const k=cls+JSON.stringi
    Vale para você e para os outros jogadores (o visual vai junto com a aparência sincronizada). */
 {const _hs=heroSheet;heroSheet=function(cls,lk){const sk=lk&&lk.skin|0;const A=window.ARTC||{};if(!sk||!A['sk'+sk+'_front'])return _hs(cls,lk);
   const p={warrior:'w',mage:'m',archer:'a'}[cls];const keys=['h2_'+p+'_front','h2_'+p+'_back','h2_'+p+'_side','h2_a_front_nohood'];const keep=keys.map(k=>A[k]);
-  const sF=A['sk'+sk+'_front'],sB=A['sk'+sk+'_back']||sF,sS=A['sk'+sk+'_side']||sF;A[keys[0]]=sF;A[keys[1]]=sB;A[keys[2]]=sS;A[keys[3]]=sF;
+  const PD=window.__SKPAD;const sF=PD(A['sk'+sk+'_front']),sB=PD(A['sk'+sk+'_back']||A['sk'+sk+'_front']),sS=PD(A['sk'+sk+'_side']||A['sk'+sk+'_front']);window.__SKNOW={down:sF._sp,up:sB._sp,side:sS._sp};A[keys[0]]=sF;A[keys[1]]=sB;A[keys[2]]=sS;A[keys[3]]=sF;
   const local=S&&S.look&&lk===S.look[cls];const keepEq=HERO_EQ;if(local){try{HERO_EQ={wv:wvKey(S.weapons[cls]),ov:cls==='warrior'?wvKey(S.eq.shield):cls==='archer'?wvKey(S.eq.quiver):''}}catch(_){}}
   const def=(LOOK_DEF[cls]&&LOOK_DEF[cls].c)||[];const lk2=Object.assign({},lk,{c:def.concat(['sk'+sk]),hat:0});
-  try{return _hs(cls,lk2)}finally{keys.forEach((k,i)=>{A[k]=keep[i]});if(local)HERO_EQ=keepEq}}}
+  try{return _hs(cls,lk2)}finally{window.__SKNOW=null;keys.forEach((k,i)=>{A[k]=keep[i]});if(local)HERO_EQ=keepEq}}}
 {const _dp=drawPortrait;drawPortrait=function(){const lk=S&&S.look&&S.look[S.cls];const sk=lk&&lk.skin|0;const im=sk&&(window.ARTC||{})['sk'+sk+'_front'];if(!im)return _dp();const c=$('portrait');if(!c)return;const k='sk|'+S.cls+JSON.stringify(lk);if(k===PORT_K)return;PORT_K=k;const g=c.getContext('2d');g.clearRect(0,0,52,52);g.imageSmoothingEnabled=true;const sz=im.width*0.92;g.drawImage(im,(im.width-sz)/2,0,sz,sz,0,0,52,52)}}
 {const _mh=mapHero;mapHero=function(){const lk=S&&S.look&&S.look[S.cls];if(lk&&lk.skin)return mapHeroOf(S.cls,lk);return _mh()}}
 {const _mo=mapHeroOf;mapHeroOf=function(cls,lk){const sk=lk&&lk.skin|0;const im=sk&&(window.ARTC||{})['sk'+sk+'_front'];if(!im)return _mo(cls,lk);const k='sk'+sk;if(MAPRH[k])return MAPRH[k];const c=cnv(48,48),g=c.getContext('2d'),sz=im.width*0.82;g.imageSmoothingEnabled=true;g.drawImage(im,(im.width-sz)/2,im.height*0.01,sz,sz,0,0,48,48);MAPRH[k]=c;return c}}
