@@ -2605,7 +2605,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v66 · 11/11/2026';
+const ELD_VER='v67 · 12/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4300,13 +4300,26 @@ if(window.ELD_PLAY){
 (function(){const st=document.createElement('style');st.textContent=`
 #p2hud.srvmini{width:auto;padding:4px 12px;border-radius:20px;cursor:pointer;pointer-events:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:12.5px;white-space:nowrap}
 #p2hud.srvmini .bar,#p2hud.srvmini #srvExit,#p2hud.srvmini #p2cls{display:none!important}
-#p2hud.srvmini b{color:#7dff9a}#p2hud.srvmini b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ad84a;box-shadow:0 0 6px #4ad84a;margin-right:6px;vertical-align:1px}`;document.head.appendChild(st);
+#p2hud.srvmini b{color:transparent;font-size:0}#p2hud.srvmini b::after{content:attr(data-t);color:#7dff9a;font-size:12.5px}#p2hud.srvmini b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ad84a;box-shadow:0 0 6px #4ad84a;margin-right:6px;vertical-align:1px}`;document.head.appendChild(st);
   const h=$('p2hud');if(h)h.addEventListener('click',e=>{if(!h.classList.contains('srvmini'))return;e.stopPropagation();if(mode==='play')try{socPanel('online')}catch(_){}});
-  setInterval(()=>{const h=$('p2hud');if(!h)return;const mini=typeof SRV!=='undefined'&&SRV.on&&!(typeof P2!=='undefined'&&P2.on);h.classList.toggle('srvmini',mini);if(mini){const n=SRV.players.size+1;const b=h.querySelector('b');const t='Online · '+n+(n===1?' jogador':' jogadores');if(b&&b.textContent!==t)b.textContent=t;const sib=b&&b.nextSibling;if(sib&&sib.nodeType===3&&sib.nodeValue.trim())sib.nodeValue=' '}},500)})();
+  setInterval(()=>{const h=$('p2hud');if(!h)return;const mini=typeof SRV!=='undefined'&&SRV.on&&!(typeof P2!=='undefined'&&P2.on);h.classList.toggle('srvmini',mini);if(mini){const n=SRV.players.size+1;const b=h.querySelector('b');const t='Online · '+n+(n===1?' jogador':' jogadores');if(b&&b.dataset.t!==t)b.dataset.t=t}},500)})();
 /* v66: chefes das Terras Distantes (e qualquer outro) sem tamanho definido ficavam invisíveis e sem levar dano de tiros.
    Garante um tamanho para todo chefe, inclusive os que já estão no mapa. */
 (function fixBossR(){try{for(const d of BD){if(!(d.r>0))d.r=/wyrm|kraken|mamute|tit|imperador|hidra/i.test(String(d.name||''))?16:15}}catch(_){}
   setInterval(()=>{try{for(const e of enemies)if(e.boss&&!(e.r>0))e.r=(e.def&&e.def.r)||15}catch(_){}},1000)})();
+/* v67: os outros jogadores aparecem no minimapa e no mapa grande com o desenho do herói deles.
+   Borda azul = jogador, verde = do seu grupo, vermelha piscando = caçado. No mapa grande aparece o nome. */
+const MAPRH={};
+function mapHeroOf(cls,lk){cls=cls||'warrior';lk=lk||{};const k=cls+JSON.stringify(lk.c)+(lk.hat|0);if(MAPRH[k])return MAPRH[k];const A=window.ARTC||{},p={warrior:'w',mage:'m',archer:'a'}[cls]||'w';
+  const base=A[cls==='archer'&&![0,3,5].includes(lk.hat|0)&&A.h2_a_front_nohood?'h2_a_front_nohood':'h2_'+p+'_front'];if(!base)return null;
+  let im=base;try{im=typeof recolor==='function'?recolor(typeof heroDecor==='function'?heroDecor(base,cls,lk):base,cls,lk):base}catch(_){}
+  const c=cnv(48,48),g=c.getContext('2d'),sz=im.width*0.82;g.imageSmoothingEnabled=true;g.drawImage(im,(im.width-sz)/2,im.height*0.01,sz,sz,0,0,48,48);const n=Object.keys(MAPRH);if(n.length>60)delete MAPRH[n[0]];MAPRH[k]=c;return c}
+{const _mm=drawMapMarkers;drawMapMarkers=function(g,s,big){try{if(typeof SRV!=='undefined'&&SRV.on)for(const p of SRV.players.values()){if(p.op||p.x==null)continue;const hi=mapHeroOf(p.cls,p.look&&p.look[p.cls]?p.look[p.cls]:p.look);const px=p.x/T*s,py=p.y/T*s,r=big?11:7;
+    const party=typeof socInParty==='function'&&socInParty(p.id),hunted=typeof socHunted==='function'&&socHunted(p.id);
+    g.save();g.beginPath();g.arc(px,py,r+2,0,7);g.fillStyle=hunted?(Math.floor(time*4)%2?'#ff3a2a':'#7a0a06'):party?'#5aff8a':'#6fd8ff';g.fill();g.beginPath();g.arc(px,py,r,0,7);g.fillStyle='#16203a';g.fill();
+    if(hi){g.save();g.clip();g.imageSmoothingEnabled=true;g.drawImage(hi,px-r,py-r,r*2,r*2);g.restore()}
+    if(big&&p.name){g.font='800 11px Nunito, system-ui, sans-serif';g.textAlign='center';g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.85)';g.strokeText(p.name,px,py-r-5);g.fillStyle=party?'#9affb4':hunted?'#ff8a7a':'#d8f4ff';g.fillText(p.name,px,py-r-5)}g.restore()}}catch(_){}
+  return _mm(g,s,big)}}
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
