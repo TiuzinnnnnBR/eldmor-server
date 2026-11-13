@@ -9,8 +9,18 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="eld.css">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
 <style>
+.hero2{padding:0!important;position:relative;background:#120c34;border-bottom:2px solid var(--edge)}
+.hero2 .bg{display:block;width:100%;height:auto;max-height:640px;object-fit:cover;object-position:50% 30%}
+.hero2 .cta2{position:relative;margin-top:-70px;z-index:2;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 16px 22px}
+.hero2 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.hero2 .row .btn{font-size:16px;padding:11px 18px}
+.stats2{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:22px 0 0}
+.stats2>div{text-align:center;padding:12px 6px;border-radius:14px;border:2px solid var(--line);background:linear-gradient(180deg,#2a1a66,#120c34);box-shadow:0 0 0 1px #3a2208,0 8px 20px rgba(0,0,0,.4)}
+.stats2 .e{font-size:26px;display:block}.stats2 b{display:block;font-family:Cinzel,serif;font-size:24px;color:var(--gold2);line-height:1.15}.stats2 .l{display:block;font-weight:800;font-size:13px}.stats2 small{display:block;color:#bdb6dc;font-size:11.5px;margin-top:2px}
+@media(max-width:900px){.stats2{grid-template-columns:repeat(4,1fr)}.hero2 .cta2{margin-top:-30px}}
+@media(max-width:520px){.stats2{grid-template-columns:repeat(2,1fr)}.hero2 .row .btn{font-size:14px;padding:9px 12px}}
+
 .hero{position:relative;padding:40px 0 30px;overflow:hidden;min-height:min(78vh,720px);display:flex;align-items:center}
 .hero .bgv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;transform:scale(1.04)}
 .hero::before{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 45%,rgba(8,10,30,.35),rgba(8,10,30,.85) 75%),linear-gradient(180deg,rgba(10,12,34,.55),rgba(10,12,34,.2) 40%,var(--bg) 100%)}
@@ -50,16 +60,12 @@
 @media(max-width:980px){.nvg{grid-template-columns:1fr 1fr}.skg{grid-template-columns:repeat(3,1fr)}}@media(max-width:640px){.nvg{grid-template-columns:1fr}.skg{grid-template-columns:1fr 1fr}}</style></head>
 <body>
 <i class="pillar l"></i><i class="pillar r"></i><i class="torch l"></i><i class="torch r"></i><i class="pennant l">⚜</i><i class="pennant r">⚜</i>
-<header class="top"><div class="wrap"><a class="logo" href="site.html"><span class="cr">👑</span><b>Reinos de</b><b>Eldmor</b></a>
-<nav class="nav"><a class="on" href="#topo">🏠 Início</a><a href="#jogo">🗡️ O jogo</a><a href="#novidades">✨ Novidades</a><a href="#galeria">🎬 Galeria</a><a href="#baixar">⬇️ Baixar</a><a href="#ranking">🏆 Ranking</a><a href="loja.html">🏪 Loja</a></nav>
-<a class="btn gold s" href="https://eldmor-server.onrender.com/" id="play0">▶ Jogar</a></div></header>
+<header class="top" data-page="inicio"></header>
 
-<section class="hero" id="topo"><video class="bgv" autoplay muted loop playsinline preload="auto" poster="vid/fundo.jpg"><source src="vid/fundo.mp4" type="video/mp4"></video>
-<div class="wrap in"><img class="hz" src="img/h2_w_front.png" alt="Guerreiro"><div class="mid"><img class="cover" src="img/capa.jpg" alt="Reinos de Eldmor"><h1>Reinos de Eldmor</h1>
-<p>Um RPG de ação em pixel art onde você explora um reino enorme, enfrenta chefes gigantes e evolui seu herói com amigos. Grátis no navegador, no Android, no PC e no iPhone.</p>
-<div class="cta"><a class="btn gold" href="https://eldmor-server.onrender.com/" id="play">▶ Jogar agora</a><a class="btn" href="#baixar">⬇ Baixar</a><a class="btn" href="loja.html">💎 Loja</a></div></div><img class="hz r" src="img/h2_m_front.png" alt="Mago"></div></section>
+<section class="hero2" id="topo"><img class="bg" src="img/v2/hero.jpg" alt="Reinos de Eldmor: Guerreiro, Mago e Arqueiro diante do castelo" width="1672" height="567">
+<div class="cta2"><a class="btn big pur" href="https://eldmor-server.onrender.com/" id="play">⚔️ JOGAR AGORA</a><div class="row"><a class="btn blu" href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest/download/ReinosDeEldmor-Windows.zip">🪟 Baixar para Windows</a><a class="btn grn" href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest/download/ReinosDeEldmor.apk">🤖 Android</a><a class="btn pur" href="https://eldmor-server.onrender.com/">🌐 Navegador</a><a class="btn" href="#baixar">🍎 iPhone</a></div></div></section>
 
-<div class="wrap"><div class="stats rv"><div><b>3</b><span>classes para trocar a qualquer hora</span></div><div><b>30</b><span>chefes com arena própria</span></div><div><b>18</b><span>regiões e cavernas</span></div><div><b>24</b><span>mascotes para colecionar</span></div><div><b>Online</b><span>guildas, chat e ranking</span></div></div><div class="feat rv" style="margin-top:12px">
+<div class="wrap"><div class="stats2 rv"><div><span class="e">⚔️</span><b>3</b><span class="l">Classes</span><small>Guerreiro, Mago e Arqueiro</small></div><div><span class="e">💀</span><b>30</b><span class="l">Chefes</span><small>com arena própria</small></div><div><span class="e">🗺️</span><b>18</b><span class="l">Regiões</span><small>e cavernas</small></div><div><span class="e">🐾</span><b>24</b><span class="l">Mascotes</span><small>para colecionar</small></div><div><span class="e">🛡️</span><b>Guildas</b><span class="l">& alianças</span><small>Guerra de Guildas</small></div><div><span class="e">🏆</span><b>Ranking</b><span class="l">competitivo</span><small>jogadores e guildas</small></div><div><span class="e">📅</span><b>Eventos</b><span class="l">especiais</span><small>Natal, Halloween e mais</small></div></div><div class="feat rv" style="margin-top:12px">
 <div class="card"><span class="ic"><img src="img/l/f_dragao.png" alt=""></span><div><h3>Chefes gigantes</h3><p>30 chefes espalhados pelo mundo, com arenas e itens raros.</p></div></div>
 <div class="card"><span class="ic"><img src="img/l/f_guilda.png" alt=""></span><div><h3>Guildas</h3><p>Crie sua guilda, chame os amigos e dispute a Guerra de Guildas.</p></div></div>
 <div class="card"><span class="ic"><img src="img/l/f_raposa.png" alt=""></span><div><h3>Mascotes</h3><p>De comuns a míticos, cada um com um bônus leve de ouro e experiência.</p></div></div>
@@ -140,5 +146,6 @@ document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{R=b.dataset.r;do
 rank();war();setInterval(()=>{rank();war()},60000);
 if(window.ELD_SAME)document.querySelectorAll('a[href^="https://eldmor-server.onrender.com/"]').forEach(a=>a.href='/');
 </script>
+<script src="eld2.js"></script>
 </body>
 </html>

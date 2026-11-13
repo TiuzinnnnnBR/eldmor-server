@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eventos, Ranking e Códigos · Reinos de Eldmor</title>
+<meta name="description" content="Eventos especiais, Guerra de Guildas, ranking de jogadores e guildas e resgate de códigos de Reinos de Eldmor.">
+<meta property="og:title" content="Eventos, Ranking e Códigos · Reinos de Eldmor"><meta property="og:description" content="Eventos especiais, Guerra de Guildas, ranking de jogadores e guildas e resgate de códigos de Reinos de Eldmor."><meta property="og:image" content="https://eldmor-server.onrender.com/img/capa.jpg">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
+<style>
+
+.pban.dim img.bg{height:280px;max-height:none;object-position:50% 25%;filter:brightness(.6)}
+.evg{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-top:26px}@media(max-width:900px){.evg{grid-template-columns:1fr}}
+.ev{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;border:2px solid rgba(160,140,255,.3);background:rgba(20,12,52,.6);margin-bottom:10px}
+.ev.on{border-color:#6ad83a;box-shadow:0 0 14px rgba(106,216,58,.35)}.ev .d{flex:none;width:64px;text-align:center;font:900 13px Cinzel,serif;color:var(--gold2)}.ev .d b{display:block;font-size:24px}
+.ev .tag{display:inline-block;font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:#2a8a18;margin-left:6px}.ev .tag.s{background:#4a2aa8}
+.ev .it{display:flex;gap:4px;margin-top:4px}.ev .it img{height:34px}
+.warb{border-radius:12px;overflow:hidden;border:2px solid var(--edge);margin-bottom:10px}.warb img{display:block;width:100%}
+.rtabs2{display:flex;gap:8px;justify-content:center;margin-bottom:10px}.rtabs2 button{font:800 15px Inter,sans-serif;color:#fff;padding:8px 22px;border-radius:10px;border:2px solid var(--purple2);background:#1c1450;cursor:pointer}.rtabs2 button.on{background:linear-gradient(180deg,#f2c14e,#c88a1a);color:#2a1406;border-color:#ffe49a}
+.rk{width:100%;border-collapse:collapse}.rk td,.rk th{padding:8px 10px;border-bottom:1px solid rgba(242,193,78,.18);text-align:left}.rk th{color:var(--gold2);font-family:Cinzel,serif}.rk tr:nth-child(-n+4) td{font-weight:800}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:900px){.cg{grid-template-columns:1fr}}
+.cf{display:flex;gap:8px}.cf input{flex:1;min-width:0;font:600 16px Inter,sans-serif;padding:12px 14px;border-radius:10px;border:2px solid var(--purple2);background:#0e0a2a;color:#fff;text-transform:uppercase}
+.plat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.plat a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;border-radius:12px;text-decoration:none;color:#fff;font-weight:800;font-size:14px;border:2px solid}
+.plat .e{font-size:30px}.plat small{font-weight:600;font-size:11.5px;opacity:.85}
+@media(max-width:520px){.plat{grid-template-columns:1fr 1fr}}
+
+</style>
+</head>
+<body>
+<header class="top" data-page="eventos"></header>
+<section class="pban dim"><img class="bg" src="img/v2/b_eventos.jpg" alt=""><div class="t"><h1>Eventos</h1><p>Participe dos eventos especiais, ganhe recompensas exclusivas e mostre sua força em Eldmor.</p></div></section>
+<div class="wrap">
+<div class="evg"><div class="box hb"><span class="bh">📅 Eventos</span><div id="evs"><p class="muted">Carregando...</p></div><p class="muted" style="margin:6px 0 0;font-size:14px">Durante cada evento, entre no jogo para pegar o presente do dia e completar a coleção do evento.</p></div>
+<div class="box hb"><span class="bh">⚔️ Guerra de Guildas</span><div class="warb"><img src="img/v2/torneio.jpg" alt=""></div><div id="war"><p class="muted">Carregando...</p></div><p class="muted" style="font-size:14px;margin:8px 0 0">As guildas somam pontos derrotando monstros e chefes durante a guerra. Prêmios: 1º lugar 150 💎 para cada membro e a Aura de Campeão, 2º lugar 80 💎, 3º lugar 40 💎.</p></div></div>
+<div class="sec2" id="ranking"><h2>🏆 Ranking</h2></div>
+<div class="box"><div class="rtabs2"><button class="on" data-r="p">Jogadores</button><button data-r="g">Guildas</button></div><div id="rank"><p class="muted">Carregando...</p></div><p class="muted center" style="font-size:13px;margin:8px 0 0">Atualiza sozinho a cada minuto.</p></div>
+<div class="sec2" id="codigos"><h2>🎁 Códigos</h2></div>
+<div class="cg"><div class="box hb"><span class="bh">Código promocional</span><p style="margin-top:0">Resgate um código e receba recompensas especiais direto na sua conta do jogo. Os códigos são divulgados no TikTok da <b>WDS Game Dev</b>, nas lives e nos eventos.</p>
+<form class="cf" id="cf"><input id="cod" maxlength="40" placeholder="Digite o código aqui..." autocomplete="off"><button class="btn gold" type="submit">Resgatar</button></form><p class="muted" style="font-size:13px;margin:8px 0 0">Dentro do jogo também dá: menu Loja → Resgatar Código.</p></div>
+<div class="box hb"><span class="bh">⬇️ Baixar o jogo</span><div class="plat">
+<a href="https://eldmor-server.onrender.com/" style="border-color:#c36bff;background:linear-gradient(180deg,#6a2ab8,#2a1060)"><span class="e">🎮</span>Navegador<small>Jogar online</small></a>
+<a href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest/download/ReinosDeEldmor.apk" style="border-color:#8aff6a;background:linear-gradient(180deg,#3aa82a,#1a5a10)"><span class="e">🤖</span>Android<small>APK</small></a>
+<a href="https://github.com/TiuzinnnnnBR/eldmorrpg/releases/latest/download/ReinosDeEldmor-Windows.zip" style="border-color:#7ac8ff;background:linear-gradient(180deg,#2a7ae0,#103a8a)"><span class="e">🪟</span>Windows<small>PC</small></a>
+<a href="site.html#baixar" style="border-color:#ddd;background:linear-gradient(180deg,#5a5a6a,#2a2a36)"><span class="e">🍎</span>iPhone<small>pelo Safari</small></a></div></div></div>
+<div style="height:30px"></div></div>
+<footer><div class="wrap"><p><a href="site.html">Início</a>·<a href="termos.html">Termos de Uso</a>·<a href="privacidade.html">Política de Privacidade</a>·<a href="mailto:reinosdeeldmor@gmail.com">reinosdeeldmor@gmail.com</a></p><p>© 2026 Reinos de Eldmor. Feito no Brasil.</p></div></footer>
+<script src="eld2.js"></script>
+<script>
+
+const E=ELD,esc=E.esc;
+const IC={'ev:gorro_natal':'c/ev_gorro_natal','ev:rena':'c/ev_rena','ev:chapeu_bruxa':'c/ev_chapeu_bruxa','ev:abobora':'c/ev_abobora','ev:coelho_pascoa':'c/ev_coelho_pascoa','cos:any.pet.4':'c/cos_any_pet_4'};
+const dt=s=>new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'America/Sao_Paulo'});const dy=s=>new Date(s).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'America/Sao_Paulo'});
+(async()=>{try{const d=await E.api('shop3');const now=Date.now();const C={};(d.coll||[]).forEach(c=>C[c.id]=c);
+ const L=d.events.filter(e=>new Date(e.to)>now).sort((a,b)=>new Date(a.from)-new Date(b.from));
+ document.getElementById('evs').innerHTML=L.length?L.map(e=>{const on=new Date(e.from)<=now;const c=e.coll&&C[e.coll];const g=e.gift;
+  return `<div class="ev${on?' on':''}"><div class="d"><b>${dt(e.from).slice(0,2)}</b>${dt(e.from).slice(3)}</div><div><b>${esc(e.n)}</b><span class="tag${on?'':' s'}">${on?'Acontecendo agora':'Em breve'}</span><br><span class="muted" style="font-size:14px">${dt(e.from)} a ${dy(e.to)} · presente: ${g.dia} 💎 e ${E.fmt(g.gold)} ouro${c?' · coleção '+esc(c.n):''}</span>${c?`<div class="it">${c.items.map(k=>IC[k]?`<img src="img/${IC[k]}.png" alt="">`:'').join('')}</div>`:''}</div></div>`}).join(''):'<p>Nenhum evento marcado agora. Fique de olho no TikTok da WDS Game Dev!</p>';
+}catch(_){document.getElementById('evs').innerHTML='<p class="muted">O servidor está acordando. Recarregue em alguns segundos.</p>'}})();
+async function war(){const el=document.getElementById('war');try{const r=await E.api('war');const w=r.war;
+ if(!w){el.innerHTML='<p>Nenhuma guerra agora. A próxima é anunciada no jogo.</p>';return}
+ if(w.on){const s=Math.max(0,(w.ends-r.now)/1000);el.innerHTML=`<p><b>${esc(w.name)}</b> acontecendo agora · termina em ${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}min</p>${r.board.slice(0,5).map((g,i)=>`<div>${E.MED[i]||(i+1)+'º'} [${esc(g.tag)}] ${esc(g.name)} · ${E.fmt(g.pts)} pts</div>`).join('')}`}
+ else el.innerHTML=w.result&&w.result.length?`<p>Última guerra: <b>${esc(w.name)}</b></p>${w.result.map(g=>`<div>${E.MED[g.pos-1]} [${esc(g.tag)}] ${esc(g.name)} · ${E.fmt(g.pts)} pts</div>`).join('')}`:'<p>Nenhuma guerra agora. A próxima é anunciada no jogo.</p>'}catch(_){el.innerHTML='<p class="muted">Não consegui carregar agora.</p>'}}
+let R='p';async function rank(){const box=document.getElementById('rank');try{
+ if(R==='p'){const r=await E.api('rank');box.innerHTML=r.list.length?`<table class="rk"><tr><th>#</th><th>Jogador</th><th>Classe</th><th>Nível</th></tr>${r.list.slice(0,20).map(x=>`<tr><td>${E.MED[x.pos-1]||x.pos}</td><td>${esc(x.name)}</td><td>${E.CLS[x.cls]||'—'}</td><td>${x.lvl}</td></tr>`).join('')}</table>`:'<p>Ainda ninguém no ranking. Seja o primeiro!</p>'}
+ else{const r=await E.api('guild/rank');box.innerHTML=r.list.length?`<table class="rk"><tr><th>#</th><th>Guilda</th><th>Membros</th><th>Nível médio</th></tr>${r.list.slice(0,20).map(x=>`<tr><td>${E.MED[x.pos-1]||x.pos}</td><td>[${esc(x.tag)}] ${esc(x.name)}${x.wins?' 🏆'+x.wins:''}</td><td>${x.n}</td><td>${x.avg}</td></tr>`).join('')}</table>`:`<p>Nenhuma guilda com ${r.min} membros ainda. <a href="guildas.html">Crie a sua!</a></p>`}
+}catch(_){box.innerHTML='<p class="muted">O servidor está acordando. Tente de novo em alguns segundos.</p>'}}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{R=b.dataset.r;document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x===b));rank()});
+rank();war();setInterval(()=>{rank();war()},60000);
+document.getElementById('cf').onsubmit=e=>{e.preventDefault();const c=document.getElementById('cod').value.trim();if(!c)return;location.href='loja.html?codigo='+encodeURIComponent(c)+'#resgatar'};
+
+</script>
+</body>
+</html>

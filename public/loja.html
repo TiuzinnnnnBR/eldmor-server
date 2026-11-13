@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="eld.css">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
 <style>
 .nav a .i{width:20px;height:20px;display:inline-grid;place-items:center;font-size:16px}
 .banner{position:relative;text-align:center;margin:8px auto 0;max-width:780px}
@@ -42,16 +42,21 @@
 .x{position:absolute;z-index:5;top:10px;right:12px;background:none;border:0;color:#fff;font-size:22px;cursor:pointer}
 .card.exc{opacity:.8}.card.bund{grid-column:span 2;position:relative}.bic{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;min-height:76px;align-items:center;margin-bottom:4px}.bic img{height:52px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6))}.bic img.ok{opacity:.35}
 @media(max-width:640px){.tabs{display:grid!important;grid-template-columns:1fr 1fr;gap:6px}.tabs button{padding:9px 6px!important;font-size:13px!important;justify-content:center;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}.card.bund{grid-column:span 2}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.lojab img.bg{max-height:300px;object-fit:cover}
+.subnav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0 4px}.subnav a{padding:8px 14px;border-radius:10px;border:2px solid var(--purple2);background:#1c1450;color:#fff;text-decoration:none;font-weight:700;font-size:14px}.subnav a.on,.subnav a:hover{background:linear-gradient(180deg,#7b3fe4,#3c188c)}
+.stage{display:block!important;margin:0!important}.stage .hero{display:none!important}
+@media(min-width:1000px){#pacotes>div{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}#pacotes .tabs{grid-row:1/span 3;flex-direction:column;flex-wrap:nowrap;margin:0;position:sticky;top:76px;padding:10px;border:2px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(40,26,96,.92),rgba(18,12,52,.95))}#pacotes .tabs button{justify-content:flex-start;padding:10px 14px;width:100%}#s-dia,#s-cat{grid-column:2;grid-row:1}}
+.tabs button{border-color:rgba(164,107,255,.5)!important}.tabs button.on{border-color:var(--gold)!important;background:linear-gradient(180deg,#f2c14e33,#7b3fe455)!important;box-shadow:0 0 14px rgba(242,193,78,.4)!important}
 </style>
 </head>
 <body>
 <i class="pillar l"></i><i class="pillar r"></i><i class="torch l"></i><i class="torch r"></i><i class="pennant l">⚜</i><i class="pennant r">⚜</i>
-<header class="top"><div class="wrap"><a class="logo" href="site.html"><span class="cr">👑</span><b>Reinos de</b><b>Eldmor</b></a>
-<nav class="nav"><a href="site.html"><span class="i">🏠</span>Início</a><a href="#loja" class="on" id="n-loja"><span class="i">🏪</span>Loja</a><a href="#inventario" id="n-inv"><span class="i">🎒</span>Inventário</a><a href="#pacotes" id="n-pac"><span class="i">🎁</span>Pacotes</a><a href="#diamantes" id="n-dia"><span class="i">💎</span>Diamantes</a></nav>
-<span class="diac"><span>💎 <span id="dia">—</span></span><button class="p" id="plus" title="Comprar diamantes">+</button></span></div></header>
+<header class="top" data-page="loja"><span class="diac"><span>💎 <span id="dia">—</span></span><button class="p" id="plus" title="Comprar diamantes">+</button></span></header>
+<section class="pban lojab"><img class="bg" src="img/v2/loja.jpg" alt="Loja: visuais exclusivos, montarias, asas, mascotes e muito mais" width="1110" height="203"></section>
 
 <div class="wrap" id="loja">
-<div class="banner"><h1>Loja de Diamantes</h1><img src="img/l/banner.png" alt="Loja de Diamantes" width="744" height="159"><span class="sub">Adquira diamantes e desbloqueie mascotes, visuais e itens exclusivos!</span></div>
+<h1 class="sr">Loja de Diamantes</h1><div class="subnav"><a href="#loja" id="n-loja" class="on">🏪 Loja</a><a href="#inventario" id="n-inv">🎒 Meu Inventário</a><a href="#pacotes" id="n-pac">🎁 Pacotes de Diamantes</a><a href="#diamantes" id="n-dia">💎 Diamantes</a><a href="loja.html#resgatar">🎟️ Resgatar código</a></div>
 <div class="acct" id="acct"></div>
 
 <div class="stage" id="pacotes"><img class="hero" src="img/l/heroi_l.png" alt="" width="170" height="320">
@@ -148,7 +153,7 @@ function openInv(){if(!ACC)return openLogin(openInv);const o=ACC.owned||{};const
 function openDia(){if(!ACC)return openLogin(openDia);$('diab').innerHTML=`<p style="font-size:34px;font-weight:900;margin:6px 0;text-align:center">💎 ${(ACC.dia|0).toLocaleString('pt-BR')}</p><p class="muted center">Conta <b style="color:var(--gold2)">${esc(ACC.name)}</b></p><div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px"><button class="btn gold" id="dbuy">Comprar mais</button><button class="btn" id="dout">Sair da conta</button></div>`;
   show('mdia');$('dbuy').onclick=()=>{hide('mdia');goPacks()};$('dout').onclick=logout}
 const HASH={dia:'pacotes',pet:'mascotes',vis:'visual'};
-function tab(t){CUR=t;document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('s-dia').hidden=t!=='dia';$('s-cat').hidden=t==='dia';if(t!=='dia')renderCat();history.replaceState(null,'','#'+(t==='dia'?'pacotes':t))}
+function tab(t){CUR=t;document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('s-dia').hidden=t!=='dia';$('s-cat').hidden=t==='dia';if(t!=='dia')renderCat();history.replaceState(null,'',t==='dia'?location.pathname+location.search:'#'+t)}
 function goPacks(){tab('dia');$('pacotes').scrollIntoView({behavior:'smooth',block:'center'})}
 document.querySelectorAll('.tabs [data-t]').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 $('n-loja').onclick=e=>{e.preventDefault();scrollTo({top:0,behavior:'smooth'})};$('n-pac').onclick=e=>{e.preventDefault();goPacks()};$('n-inv').onclick=e=>{e.preventDefault();openInv()};$('n-dia').onclick=e=>{e.preventDefault();openDia()};
@@ -161,5 +166,6 @@ const q=new URLSearchParams(location.search);if(h==='resgatar'||q.get('codigo'))
   if(h==='inventario'&&ACC)openInv();
   const pk=q.get('pack');if(pk&&INFO&&INFO.packs[pk]&&INFO.pay)buyPack(pk)})();
 </script>
+<script src="eld2.js"></script>
 </body>
 </html>

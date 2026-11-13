@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Passe de Temporada · Reinos de Eldmor</title>
+<meta name="description" content="Passe de Temporada de Reinos de Eldmor: recompensas grátis e premium, missões diárias e semanais.">
+<meta property="og:title" content="Passe de Temporada · Reinos de Eldmor"><meta property="og:description" content="Passe de Temporada de Reinos de Eldmor: recompensas grátis e premium, missões diárias e semanais."><meta property="og:image" content="https://eldmor-server.onrender.com/img/capa.jpg">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
+<style>
+
+.pb{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;background:#120c34;border-bottom:2px solid var(--edge);overflow:hidden}
+.pb .l,.pb .r{background-size:cover;background-position:center;min-height:260px}.pb .l{background-image:url(img/v2/passe_l.jpg)}.pb .r{background-image:url(img/v2/passe_r.jpg)}
+.pb .m{padding:26px 22px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(ellipse,rgba(60,24,140,.6),transparent 70%)}
+.pb h1{margin:0;font-size:clamp(28px,5vw,54px);line-height:1;background:linear-gradient(180deg,#fff3c0,#f2b13a 60%,#b8701a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #3a1a00)}
+.pb .sn{margin:10px 0 6px;padding:6px 18px;border:2px solid var(--edge);border-radius:10px;background:linear-gradient(180deg,#5a2aa8,#2a1060);font:900 18px Cinzel,serif;color:#fff}
+.pb .end{margin-top:8px;padding:6px 14px;border:2px solid var(--edge);border-radius:10px;background:rgba(10,6,30,.7);font-weight:800}
+@media(max-width:900px){.pb{grid-template-columns:1fr}.pb .r{display:none}.pb .l{min-height:180px}}
+.buy{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.buy b.p{font:900 28px Cinzel,serif;color:var(--gold2)}
+.track{overflow-x:auto;padding:6px 2px 10px}.track table{border-collapse:separate;border-spacing:6px}
+.track th{font:900 14px Cinzel,serif;color:var(--gold2);padding:2px}.track td{vertical-align:top}
+.track .lab{position:sticky;left:0;z-index:2;width:96px;min-width:96px;text-align:center;font:900 14px Cinzel,serif;padding:10px 4px;border-radius:12px;border:2px solid var(--edge)}
+.track .lab.f{background:linear-gradient(180deg,#2a3a7a,#141c44)}.track .lab.p{background:linear-gradient(180deg,#6a2ab8,#2a1060);color:var(--gold2)}
+.rw{width:92px;min-width:92px;height:92px;border-radius:12px;border:2px solid rgba(160,140,255,.35);background:linear-gradient(180deg,#22185a,#120c34);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;padding:4px}
+.rw.p{border-color:rgba(242,193,78,.6);background:linear-gradient(180deg,#3a1d7a,#1a0e44)}
+.rw img{max-height:46px;max-width:70px}.rw .e{font-size:30px;line-height:1}.rw span{font-size:11.5px;font-weight:700;line-height:1.15}
+.ms{display:grid;grid-template-columns:1fr 1fr;gap:16px}.ms ul{margin:0;padding:0;list-style:none}.ms li{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(242,193,78,.2)}.ms li b{color:var(--gold2);white-space:nowrap}
+@media(max-width:700px){.ms{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<header class="top" data-page="passe"></header>
+<section class="pb"><div class="l"></div><div class="m"><h1>Passe de<br>Temporada</h1><div class="sn" id="sn">Carregando...</div><p style="margin:4px 0 0;max-width:460px">Complete missões, ganhe EXP do Passe e desbloqueie recompensas exclusivas.</p><div class="end" id="end">⏳ —</div></div><div class="r"></div></section>
+<div class="wrap">
+<div class="box buy" style="margin-top:22px"><div><b style="font-size:18px">👑 Passe Premium</b><br><span class="muted">Libera a trilha Premium inteira desta temporada, inclusive as recompensas que você já alcançou.</span></div><div style="text-align:right"><b class="p" id="price">—</b><br><a class="btn gold" href="https://eldmor-server.onrender.com/">Comprar no jogo</a></div></div>
+<div class="sec2"><h2>🎁 Recompensas</h2></div>
+<p class="center muted" style="margin-top:-4px" id="per"></p>
+<div class="box"><div class="track" id="track"><p class="muted">Carregando...</p></div></div>
+<div class="sec2"><h2>📜 Missões</h2></div>
+<div class="ms"><div class="box hb"><span class="bh">Diárias</span><ul id="md"></ul></div><div class="box hb"><span class="bh">Semanais</span><ul id="mw"></ul></div></div>
+<p class="center muted" style="margin:18px 0 30px">O passe é comprado, acompanhado e resgatado dentro do jogo, no menu Loja → Passe de Temporada. Recompensas visuais não dão força em combate.</p>
+</div>
+<footer><div class="wrap"><p><a href="site.html">Início</a>·<a href="termos.html">Termos de Uso</a>·<a href="privacidade.html">Política de Privacidade</a>·<a href="mailto:reinosdeeldmor@gmail.com">reinosdeeldmor@gmail.com</a></p><p>© 2026 Reinos de Eldmor. Feito no Brasil.</p></div></footer>
+<script src="eld2.js"></script>
+<script>
+
+const E=ELD,esc=E.esc;
+const NM={'cos:any.aura.9':['Aura Estelar','c/cos_any_aura_9'],'cos:any.trail.7':['Rastro Estelar','c/cos_any_trail_7'],'frame:6':['Moldura Celestial','c/frame_6'],'cos:any.pet.25':['Mascote Lobo Celestial','c/cos_any_pet_25'],'mount:lobo':['Montaria Lobo Celestial','c/mount_lobo']};
+function cell(r,prem){const it=[];if(r.items)for(const k of r.items){if(k.startsWith('title:'))it.push(`<span class="e">🏅</span><span>Título ${esc(k.slice(6).replace(/^./,c=>c.toUpperCase()))}</span>`);else{const n=NM[k]||[k,'s/pk1'];it.push(`<img src="img/${n[1]}.png" alt=""><span>${esc(n[0])}</span>`)}}
+ if(r.dia)it.push(`<img src="img/s/pk1.png" alt=""><span>${r.dia} diamantes</span>`);if(r.gold)it.push(`<span class="e">🪙</span><span>${E.fmt(r.gold)} ouro</span>`);if(r.hp)it.push(`<span class="e">🧪</span><span>${r.hp} poções${r.scroll?' + pergaminho':''}</span>`);
+ return `<td><div class="rw${prem?' p':''}">${it.slice(0,2).join('')}</div></td>`}
+(async()=>{try{const d=await E.api('shop3');const p=d.pass;
+ document.getElementById('sn').textContent='Temporada '+p.s+': '+p.n;document.getElementById('price').textContent=p.price+' 💎';
+ document.getElementById('per').textContent=`${p.tiers} níveis · ${p.per} de EXP do Passe por nível`;
+ const tick=()=>{const s=Math.max(0,(new Date(p.to)-Date.now())/1000);document.getElementById('end').textContent=s?`⏳ Termina em ${Math.floor(s/86400)}d ${Math.floor(s%86400/3600)}h ${Math.floor(s%3600/60)}m`:'Temporada encerrada'};tick();setInterval(tick,30000);
+ const n=p.tiers;let h='<table><tr><th></th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'</tr>';
+ h+='<tr><td><div class="lab f">PASSE<br>GRÁTIS</div></td>'+p.rewards.f.map(r=>cell(r,0)).join('')+'</tr>';
+ h+='<tr><td><div class="lab p">👑<br>PREMIUM</div></td>'+p.rewards.p.map(r=>cell(r,1)).join('')+'</tr></table>';
+ document.getElementById('track').innerHTML=h;
+ const M=Object.values(p.miss);const li=m=>`<li><span>${esc(m.n)}</span><b>+${m.xp} EXP</b></li>`;
+ document.getElementById('md').innerHTML=M.filter(m=>m.per==='d').map(li).join('');document.getElementById('mw').innerHTML=M.filter(m=>m.per==='w').map(li).join('');
+}catch(e){document.getElementById('track').innerHTML='<p class="muted">O servidor está acordando. Recarregue em alguns segundos.</p>'}})();
+
+</script>
+</body>
+</html>

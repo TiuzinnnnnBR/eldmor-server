@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guildas · Reinos de Eldmor</title>
+<meta name="description" content="Guildas de Reinos de Eldmor: crie ou entre numa guilda, veja o ranking e dispute a Guerra de Guildas.">
+<meta property="og:title" content="Guildas · Reinos de Eldmor"><meta property="og:description" content="Guildas de Reinos de Eldmor: crie ou entre numa guilda, veja o ranking e dispute a Guerra de Guildas."><meta property="og:image" content="https://eldmor-server.onrender.com/img/capa.jpg">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
+<style>
+
+.gban{position:relative;background:#120c34;border-bottom:2px solid var(--edge)}.gban img{display:block;width:100%;height:auto;max-height:400px;object-fit:cover}
+.gbtn{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:-34px 0 0;position:relative;z-index:2;padding:0 16px}
+@media(max-width:700px){.gban img{height:170px;object-position:50% 50%}.gbtn{margin-top:12px;gap:10px}.gbtn .btn.big{font-size:17px;padding:11px 18px;width:100%}}
+.g3c{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:18px;margin-top:30px}@media(max-width:1000px){.g3c{grid-template-columns:1fr}}
+.rkl{list-style:none;margin:0;padding:0}.rkl li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px;border:1px solid rgba(160,140,255,.25);background:rgba(20,12,52,.6);margin-bottom:6px}
+.rkl .p{width:30px;text-align:center;font:900 18px Cinzel,serif;color:var(--gold2)}.rkl .n{flex:1;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rkl .s{font-size:13px;color:#cfc8ee;white-space:nowrap}
+.dst{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:600px){.dst{grid-template-columns:1fr}}
+.ban{position:relative;text-align:center;padding:18px 10px 16px;border:2px solid var(--edge);background:linear-gradient(180deg,var(--bc),#140c30);clip-path:polygon(0 0,100% 0,100% 88%,50% 100%,0 88%);min-height:220px}
+.ban .cr{font-size:26px}.ban .tg{font:900 34px Cinzel,serif;color:#fff;text-shadow:0 3px 0 #000;margin:4px 0}.ban b{display:block;font-size:16px}.ban .m{font-size:13px;margin:4px 0 8px}
+.ban .st{display:inline-block;font-size:12.5px;font-weight:800;padding:3px 12px;border-radius:8px;background:#2a8a18}.ban .st.r{background:#c88a1a}
+.sobre{background:linear-gradient(180deg,#f3e2b8,#d8bb80)!important;color:#3a2410}.sobre .bh{color:var(--gold2)}.sobre p,.sobre li{color:#3a2410}
+.lst{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(max-width:700px){.lst{grid-template-columns:1fr}}
+.gi{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;border:1px solid rgba(160,140,255,.3);background:rgba(20,12,52,.6)}
+.gi .tg{flex:none;width:58px;height:58px;display:grid;place-items:center;border-radius:10px;border:2px solid var(--edge);font:900 15px Cinzel,serif;background:linear-gradient(180deg,#5a2aa8,#2a1060)}
+.gi .tx{flex:1;min-width:0}.gi .tx b{display:block}.gi .tx span{font-size:13px;color:#cfc8ee}
+.ben{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}@media(max-width:900px){.ben{grid-template-columns:repeat(2,1fr)}}
+.ben div{text-align:center;padding:12px 6px}.ben .e{font-size:34px;display:block}.ben b{font-size:14px}
+.inp2{width:100%;font:600 15px Inter,sans-serif;padding:11px 12px;border-radius:10px;border:2px solid var(--purple2);background:#0e0a2a;color:#fff;margin-bottom:8px}
+.mod{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.75);display:grid;place-items:center;padding:16px}.mod[hidden]{display:none}.mod .box{width:min(440px,100%)}
+.msg{min-height:20px;font-size:14px;margin-top:6px}.msg.err{color:#ff8a8a}.msg.ok{color:#8aff8a}
+
+</style>
+</head>
+<body>
+<header class="top" data-page="guildas"></header>
+<section class="gban"><img src="img/v2/guildas.jpg" alt="Guildas: una-se a outros aventureiros"></section>
+<div class="gbtn"><button class="btn big pur" id="bcreate">🛡️ CRIAR GUILDA</button><button class="btn big blu" id="bjoin">👥 ENTRAR EM UMA GUILDA</button></div>
+<div class="wrap">
+<div id="me" style="margin-top:18px"></div>
+<div class="g3c">
+<div class="box hb"><span class="bh">🏆 Ranking de Guildas</span><ul class="rkl" id="rk"><li class="muted">Carregando...</li></ul><p class="center" style="margin:10px 0 0"><a class="btn pur s" href="eventos.html#ranking">Ver ranking completo ›</a></p></div>
+<div class="box hb"><span class="bh">⚒️ Guildas em Destaque</span><div class="dst" id="dst"><p class="muted">Carregando...</p></div></div>
+<div class="box hb sobre"><span class="bh">ℹ️ Sobre as Guildas</span><p style="margin-top:0">As guildas são alianças de jogadores que jogam juntos, conquistam desafios, participam de eventos e disputam o ranking.</p><ul style="padding-left:18px;margin:0"><li>Até 30 membros por guilda</li><li>Criar uma guilda custa 250 💎</li><li>Entra no ranking com 3 membros ou mais</li><li>O ranking usa o nível médio dos membros</li><li>A guilda pode ser aberta ou aceitar por pedido</li></ul></div>
+</div>
+<div class="sec2" id="lista"><h2>👥 Encontre uma guilda</h2></div>
+<div class="box"><input class="inp2" id="q" placeholder="Buscar pelo nome ou sigla..."><div class="lst" id="lst"><p class="muted">Carregando...</p></div></div>
+<div class="sec2"><h2>👑 Benefícios da Guilda</h2></div>
+<div class="box ben"><div><span class="e">⚔️</span><b>Guerra de Guildas</b></div><div><span class="e">💎</span><b>Prêmios em diamantes</b></div><div><span class="e">✨</span><b>Aura de Campeão</b></div><div><span class="e">💬</span><b>Chat da guilda</b></div><div><span class="e">🏆</span><b>Disputa de ranking</b></div></div>
+<div style="height:30px"></div></div>
+<div class="mod" id="mlog" hidden><div class="box hb"><span class="bh">Entrar na conta</span><p class="muted" style="margin-top:0">Use o mesmo nome e senha da sua conta do jogo.</p><input class="inp2" id="ln" maxlength="16" placeholder="Nome de usuário" autocomplete="username"><input class="inp2" id="lp" type="password" maxlength="64" placeholder="Senha" autocomplete="current-password"><div style="display:flex;gap:8px"><button class="btn gold" id="lgo">Entrar</button><button class="btn" data-x="mlog">Cancelar</button></div><div class="msg" id="lmsg"></div></div></div>
+<div class="mod" id="mnew" hidden><div class="box hb"><span class="bh">Criar guilda</span><input class="inp2" id="gn" maxlength="20" placeholder="Nome da guilda (3 a 20 letras)"><input class="inp2" id="gt" maxlength="4" placeholder="Sigla (2 a 4 letras)" style="text-transform:uppercase"><input class="inp2" id="gd" maxlength="120" placeholder="Descrição (opcional)"><p class="muted" style="margin:0 0 8px;font-size:14px">Custa 250 💎 da sua conta.</p><div style="display:flex;gap:8px"><button class="btn gold" id="ggo">Criar por 250 💎</button><button class="btn" data-x="mnew">Cancelar</button></div><div class="msg" id="gmsg"></div></div></div>
+<footer><div class="wrap"><p><a href="site.html">Início</a>·<a href="termos.html">Termos de Uso</a>·<a href="privacidade.html">Política de Privacidade</a>·<a href="mailto:reinosdeeldmor@gmail.com">reinosdeeldmor@gmail.com</a></p><p>© 2026 Reinos de Eldmor. Feito no Brasil.</p></div></footer>
+<script src="eld2.js"></script>
+<script>
+
+const E=ELD,esc=E.esc,$=id=>document.getElementById(id);let ME=null,after=null,LIST=[];
+const COL=['#a8241a','#1a4aa8','#6a2ab8','#1a7a3a','#a86a1a'];
+document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{$(b.dataset.x).hidden=true;after=null});
+function login(fn){after=fn;$('mlog').hidden=false;$('lmsg').textContent='';setTimeout(()=>$('ln').focus(),50)}
+$('lgo').onclick=async()=>{const name=$('ln').value.trim(),pass=$('lp').value;if(!name||!pass)return;$('lmsg').className='msg';$('lmsg').textContent='Entrando... (se o servidor estava dormindo, leva uns 30 segundos)';
+ try{const r=await E.api('login',{name,pass});localStorage.setItem('eldsite-acc',JSON.stringify({tok:r.tok}));$('mlog').hidden=true;await loadMe();if(after){const f=after;after=null;f()}}catch(e){$('lmsg').className='msg err';$('lmsg').textContent=e.message}};
+$('lp').onkeydown=e=>{if(e.key==='Enter')$('lgo').click()};
+async function loadMe(){if(!E.tok()){ME=null;$('me').innerHTML='';return}try{const r=await E.api('guild/me');ME=r;const g=r.guild;
+ $('me').innerHTML=`<div class="box" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${g?`<span>🛡️ Você está na guilda <b style="color:var(--gold2)">[${esc(g.tag)}] ${esc(g.name)}</b>. Para conversar e chamar membros, entre no jogo.</span>`:`<span>Você ainda não tem guilda. Crie uma ou peça para entrar em uma da lista.</span>`}<span class="muted" style="margin-left:auto">💎 ${E.fmt(r.dia)}</span><button class="btn s" id="out">Sair</button></div>`;
+ $('out').onclick=()=>{localStorage.removeItem('eldsite-acc');ME=null;loadMe();list()}}catch(e){if(e.status===401){localStorage.removeItem('eldsite-acc');ME=null;$('me').innerHTML=''}}}
+async function rank(){try{const r=await E.api('guild/rank');const L=r.list;
+ $('rk').innerHTML=L.length?L.slice(0,5).map(x=>`<li><span class="p">${E.MED[x.pos-1]||x.pos}</span><span class="n">[${esc(x.tag)}] ${esc(x.name)}</span><span class="s">👥 ${x.n}/30 · Nv. ${x.avg}</span></li>`).join(''):`<li>Nenhuma guilda com ${r.min} membros ainda.</li>`}catch(_){$('rk').innerHTML='<li class="muted">O servidor está acordando...</li>'}}
+async function list(){const q=$('q').value.trim();try{const r=await E.api('guild/list'+(q?'?q='+encodeURIComponent(q):''));LIST=r.list;
+ if(!q){const top=[...LIST].sort((a,b)=>(b.wins-a.wins)||(b.avg-a.avg)).slice(0,3);$('dst').innerHTML=top.length?top.map((g,i)=>`<div class="ban" style="--bc:${COL[i%5]}"><div class="cr">👑</div><div class="tg">${esc(g.tag)}</div><b>${esc(g.name)}</b><div class="m">👥 ${g.n}/30 membros${g.wins?' · 🏆 '+g.wins:''}</div><span class="st${g.open?'':' r'}">${g.full?'Cheia':g.open?'Recrutando':'Por pedido'}</span></div>`).join(''):'<p>Nenhuma guilda ainda. Seja o primeiro a criar!</p>'}
+ const mine=ME&&ME.guild;$('lst').innerHTML=LIST.length?LIST.map(g=>`<div class="gi"><div class="tg">${esc(g.tag)}</div><div class="tx"><b>${esc(g.name)}</b><span>👥 ${g.n}/30 · Nv. médio ${g.avg}${g.wins?' · 🏆 '+g.wins:''}${g.descr?' · '+esc(g.descr):''}</span></div>${g.full?'<button class="btn s" disabled>Cheia</button>':mine?'':`<button class="btn gold s" data-j="${g.id}">${g.open?'Entrar':'Pedir'}</button>`}</div>`).join(''):'<p>Nenhuma guilda encontrada.</p>';
+ document.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>join(+b.dataset.j,b))}catch(_){$('lst').innerHTML='<p class="muted">O servidor está acordando. Recarregue em alguns segundos.</p>'}}
+async function join(id,b){if(!E.tok())return login(()=>join(id,b));b.disabled=true;try{const r=await E.api('guild/join',{id});alert(r.asked?'Pedido enviado! O líder da guilda vai aceitar ou recusar.':'Você entrou na guilda!');await loadMe();list();rank()}catch(e){alert(e.message);b.disabled=false}}
+$('bjoin').onclick=()=>$('lista').scrollIntoView({behavior:'smooth'});
+$('bcreate').onclick=()=>{if(!E.tok())return login(()=>$('bcreate').click());if(ME&&ME.guild){alert('Você já está numa guilda. Saia dela dentro do jogo antes de criar outra.');return}$('mnew').hidden=false;$('gmsg').textContent=''};
+$('ggo').onclick=async()=>{$('gmsg').className='msg';$('gmsg').textContent='Criando...';try{await E.api('guild/create',{name:$('gn').value,tag:$('gt').value,descr:$('gd').value});$('gmsg').className='msg ok';$('gmsg').textContent='Guilda criada!';setTimeout(()=>{$('mnew').hidden=true},900);await loadMe();list();rank()}catch(e){$('gmsg').className='msg err';$('gmsg').textContent=e.message+(e.need?' Compre diamantes na Loja.':'')}};
+let qt;$('q').oninput=()=>{clearTimeout(qt);qt=setTimeout(list,300)};
+(async()=>{await loadMe();rank();list()})();
+
+</script>
+</body>
+</html>
