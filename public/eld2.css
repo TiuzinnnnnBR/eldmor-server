@@ -112,3 +112,14 @@ header.top .play{background:linear-gradient(180deg,#ffd35a,#e89a1a)!important;co
 @media(max-width:520px){.bxg{grid-template-columns:1fr 1fr}}
 .box .bxj .bxt{width:100%}.box .bxg{gap:6px}
 #sitebon .sb-g>div{display:block!important;flex-direction:column}#sitebon .sb-g>div>b{margin:0 auto}
+
+/* botões do modelo: Jogar Agora + 4 plataformas */
+.cta3{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 12px 18px;background:linear-gradient(180deg,#160e3e,#0e0a2a)}
+.btj{display:block;width:min(440px,90%);transition:transform .15s,filter .15s}.btj img{display:block;width:100%;height:auto;clip-path:polygon(5% 0,95% 0,100% 50%,95% 100%,5% 100%,0 50%)}
+.btr{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.btr a{display:block;transition:transform .15s,filter .15s}.btr img{display:block;height:54px;width:auto;clip-path:polygon(4% 0,96% 0,100% 18%,100% 82%,96% 100%,4% 100%,0 82%,0 18%)}
+.btj:hover,.btr a:hover{transform:translateY(-3px);filter:brightness(1.15) drop-shadow(0 0 10px rgba(255,210,100,.6))}
+@media(max-width:520px){.btr{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:380px}.btr img{height:auto;width:100%}}
+.bxj .btr{margin-top:6px}.box .bxj .btr img{height:44px}@media(min-width:901px){.box .bxj .btr{display:grid;grid-template-columns:1fr 1fr}.box .bxj .btr img{width:100%;height:auto}}
+.bxj .bxt{width:min(420px,80%)!important}
+@media(max-width:520px){.btr a{display:flex;justify-content:center}.btr img{height:46px!important;width:auto!important;max-width:100%}}
+@media(min-width:901px){.box .bxj .btr a{display:flex;justify-content:center}.box .bxj .btr img{height:44px!important;width:auto!important;max-width:100%}}
