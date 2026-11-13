@@ -2665,7 +2665,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v71 · 12/11/2026';
+const ELD_VER='v72 · 12/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4334,11 +4334,23 @@ window.__SKPAD=function(im){if(!im)return im;if(im._pd)return im._pd;const ch=im
   let sp=null;try{const d=g.getImageData(0,0,W,H).data;const row=y=>{let a=-1,b=-1;for(let x=0;x<W;x++)if(d[(y*W+x)*4+3]>60){if(a<0)a=x;b=x}return a<0?null:[a,b]};
     const ys=[0.42,0.48,0.54].map(f=>Math.round(top+ch*f));let L=0,R=0,n=0;for(const y of ys){const r=row(y);if(r){L+=r[0];R+=r[1];n++}}if(n){L/=n;R/=n;sp={l:L/W,r:R/W,top:(top+ch*0.30)/H,bot:(top+ch*0.93)/H}}}catch(_){}
   c._sp=sp;im._pd=c;return c};
-{const wrapAcc=()=>{const _ad=window.__ACCDRAW;if(!_ad||_ad._sk)return;const f=function(g,ox,oy,w,H,dir,fr,n,anim,layer){const SN=window.__SKNOW;const a=window.__ACCNOW|0;const d=window.__EV&&window.__EV.ACC_DEF[a];
-    if(SN&&d&&d.im){const sp=SN[dir]||SN.down;if(d.k==='cape'&&sp){const back=dir==='up';if((layer===0)!==back)return;const bob=anim==='walk'?-Math.abs(Math.sin(fr/n*Math.PI*2))*H*0.022:0;
-        const bw=(sp.r-sp.l)*w,cx=ox+(sp.l+sp.r)/2*w;const cw=dir==='side'?bw*0.8:back?bw*0.92:bw*0.86;const top=oy+sp.top*H+bob,hh=Math.min(d.im.height*cw/d.im.width,(sp.bot-sp.top)*H);
-        g.save();g.imageSmoothingEnabled=true;g.drawImage(d.im,cx-cw/2+(dir==='side'?-bw*0.12:0),top,cw,hh);g.restore();return}
-      if(d.k==='crown'||d.k==='hat'||d.k==='witch')return}
+{/* capa vestida: presa nos ombros, fechada nas costas e até perto dos pés */
+  const capeTex=im=>{if(im._ct)return im._ct;const W=im.width,H=im.height,hw=Math.round(W*0.4);const mk=dark=>{const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+      g.drawImage(im,0,0,hw,H,0,0,W/2+1,H);g.save();g.translate(W,0);g.scale(-1,1);g.drawImage(im,0,0,hw,H,0,0,W/2,H);g.restore();
+      if(dark){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(5,8,30,.45)';g.fillRect(0,0,W,H)}return c};
+    im._ct={back:mk(0),inner:mk(1)};return im._ct};
+  const drawCape=(g,d,ox,oy,w,H,dir,fr,n,anim,layer,sp)=>{const back=dir==='up';if((layer===0)===back)return;const T=capeTex(d.im);
+    const walk=anim==='walk',ph=fr/Math.max(1,n)*Math.PI*2,bob=walk?-Math.abs(Math.sin(ph))*H*0.022:0;
+    let top=oy+H*0.37+bob,cx=ox+w/2,bw=w*0.95,bot=oy+H*0.95+bob;
+    if(sp){const b=(sp.r-sp.l)*w;cx=ox+(sp.l+sp.r)/2*w;bw=Math.min(w*1.05,b*1.25);top=oy+sp.top*H+bob;bot=oy+Math.min(0.97,sp.bot+0.02)*H+bob}
+    const hh=bot-top;g.save();g.imageSmoothingEnabled=true;
+    if(dir==='side'){const sw=bw*0.62,sk=walk?0.28+0.08*Math.sin(ph*2):0.12;g.translate(cx-bw*0.08,top);g.transform(1,0,-sk,1,0,0);g.drawImage(T.inner,-sw*0.62,0,sw,hh)}
+    else if(back){const sw=walk?bw*(1+0.03*Math.sin(ph*2)):bw;g.drawImage(T.back,cx-sw/2,top,sw,hh)}
+    else{const sw=walk?bw*(0.9+0.03*Math.sin(ph*2)):bw*0.9;g.drawImage(T.inner,cx-sw/2,top+hh*0.03,sw,hh*0.94)}
+    g.restore()};
+  const wrapAcc=()=>{const _ad=window.__ACCDRAW;if(!_ad||_ad._sk)return;const f=function(g,ox,oy,w,H,dir,fr,n,anim,layer){const SN=window.__SKNOW;const a=window.__ACCNOW|0;const d=window.__EV&&window.__EV.ACC_DEF[a];
+    if(d&&d.im&&d.k==='cape'){drawCape(g,d,ox,oy,w,H,dir,fr,n,anim,layer,SN?(SN[dir]||SN.down):null);return}
+    if(SN&&d&&d.im&&(d.k==='crown'||d.k==='hat'||d.k==='witch'))return;
     return _ad.apply(this,arguments)};f._sk=1;window.__ACCDRAW=f};wrapAcc();setTimeout(wrapAcc,0);setTimeout(wrapAcc,500)}
 /* ================= v63: versão Google Play + vantagens de quem compra pelo site ================= */
 window.ELD_PLAY=!!window.EldPlay||/EldmorPlay/.test(navigator.userAgent);
@@ -4434,6 +4446,7 @@ function mapHeroOf(cls,lk){cls=cls||'warrior';lk=lk||{};const k=cls+JSON.stringi
 {const _dp=drawPortrait;drawPortrait=function(){const lk=S&&S.look&&S.look[S.cls];const sk=lk&&lk.skin|0;const im=sk&&(window.ARTC||{})['sk'+sk+'_front'];if(!im)return _dp();const c=$('portrait');if(!c)return;const k='sk|'+S.cls+JSON.stringify(lk);if(k===PORT_K)return;PORT_K=k;const g=c.getContext('2d');g.clearRect(0,0,52,52);g.imageSmoothingEnabled=true;const sz=im.width*0.92;g.drawImage(im,(im.width-sz)/2,0,sz,sz,0,0,52,52)}}
 {const _mh=mapHero;mapHero=function(){const lk=S&&S.look&&S.look[S.cls];if(lk&&lk.skin)return mapHeroOf(S.cls,lk);return _mh()}}
 {const _mo=mapHeroOf;mapHeroOf=function(cls,lk){const sk=lk&&lk.skin|0;const im=sk&&(window.ARTC||{})['sk'+sk+'_front'];if(!im)return _mo(cls,lk);const k='sk'+sk;if(MAPRH[k])return MAPRH[k];const c=cnv(48,48),g=c.getContext('2d'),sz=im.width*0.82;g.imageSmoothingEnabled=true;g.drawImage(im,(im.width-sz)/2,im.height*0.01,sz,sz,0,0,48,48);MAPRH[k]=c;return c}}
+window.__HS=(c,l)=>heroSheet(c,l);
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
