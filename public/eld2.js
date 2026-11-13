@@ -20,3 +20,4 @@ window.ELD={API:(window.ELD_SAME?location.origin:'https://eldmor-server.onrender
  fmt:n=>(+n||0).toLocaleString('pt-BR'),
  MED:['🥇','🥈','🥉'],CLS:{warrior:'Guerreiro',mage:'Mago',archer:'Arqueiro'}};
 })();
+document.querySelectorAll('.pban .t h1').forEach(h=>{if(h.previousElementSibling&&h.previousElementSibling.classList.contains('crn'))return;const c=document.createElement('div');c.className='crn';c.textContent='👑';h.before(c)});

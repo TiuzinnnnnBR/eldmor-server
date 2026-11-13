@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
 <style>
 
+.passeb img.bg{height:330px;max-height:none;object-fit:cover;filter:brightness(.45)}.passeb .bau{position:absolute;bottom:18px;width:clamp(70px,12vw,150px);border-radius:12px;border:3px solid #e8a93a;box-shadow:0 0 22px rgba(164,107,255,.6)}.passeb .bau.l{left:5%}.passeb .bau.r{right:5%}.passeb .end{padding:6px 14px;border:2px solid #e8a93a;background:rgba(10,6,30,.8);font-weight:800}@media(max-width:700px){.passeb .bau{display:none}}
 .pb{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;background:#120c34;border-bottom:2px solid var(--edge);overflow:hidden}
 .pb .l,.pb .r{background-size:cover;background-position:center;min-height:260px}.pb .l{background-image:url(img/v2/passe_l.jpg)}.pb .r{background-image:url(img/v2/passe_r.jpg)}
 .pb .m{padding:26px 22px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;background:radial-gradient(ellipse,rgba(60,24,140,.6),transparent 70%)}
@@ -34,7 +35,7 @@
 </head>
 <body>
 <header class="top" data-page="passe"></header>
-<section class="pb"><div class="l"></div><div class="m"><h1>Passe de<br>Temporada</h1><div class="sn" id="sn">Carregando...</div><p style="margin:4px 0 0;max-width:460px">Complete missões, ganhe EXP do Passe e desbloqueie recompensas exclusivas.</p><div class="end" id="end">⏳ —</div></div><div class="r"></div></section>
+<section class="pban passeb"><img class="bg" src="img/v2/b_eventos.jpg" alt=""><img class="bau l" src="img/v2/bau1.png" alt=""><img class="bau r" src="img/v2/bau2.png" alt=""><div class="t"><h1>Passe</h1><p id="per0">Temporada atual · carregando...</p><div class="end" id="end">⏳ —</div></div></section>
 <div class="wrap">
 <div class="box buy" style="margin-top:22px"><div><b style="font-size:18px">👑 Passe Premium</b><br><span class="muted">Libera a trilha Premium inteira desta temporada, inclusive as recompensas que você já alcançou.</span></div><div style="text-align:right"><b class="p" id="price">—</b><br><a class="btn gold" href="https://eldmor-server.onrender.com/">Comprar no jogo</a></div></div>
 <div class="sec2"><h2>🎁 Recompensas</h2></div>
@@ -54,7 +55,7 @@ function cell(r,prem){const it=[];if(r.items)for(const k of r.items){if(k.starts
  if(r.dia)it.push(`<img src="img/s/pk1.png" alt=""><span>${r.dia} diamantes</span>`);if(r.gold)it.push(`<span class="e">🪙</span><span>${E.fmt(r.gold)} ouro</span>`);if(r.hp)it.push(`<span class="e">🧪</span><span>${r.hp} poções${r.scroll?' + pergaminho':''}</span>`);
  return `<td><div class="rw${prem?' p':''}">${it.slice(0,2).join('')}</div></td>`}
 (async()=>{try{const d=await E.api('shop3');const p=d.pass;
- document.getElementById('sn').textContent='Temporada '+p.s+': '+p.n;document.getElementById('price').textContent=p.price+' 💎';
+ document.getElementById('per0').textContent='Temporada '+p.s+': '+p.n+' · '+p.tiers+' níveis · '+p.per+' de EXP do Passe por nível';document.getElementById('price').textContent=p.price+' 💎';
  document.getElementById('per').textContent=`${p.tiers} níveis · ${p.per} de EXP do Passe por nível`;
  const tick=()=>{const s=Math.max(0,(new Date(p.to)-Date.now())/1000);document.getElementById('end').textContent=s?`⏳ Termina em ${Math.floor(s/86400)}d ${Math.floor(s%86400/3600)}h ${Math.floor(s%3600/60)}m`:'Temporada encerrada'};tick();setInterval(tick,30000);
  const n=p.tiers;let h='<table><tr><th></th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'</tr>';

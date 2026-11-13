@@ -58,3 +58,57 @@ section.pban,section.pb,section.gban,section.hero2{padding:0!important}
 header.top:has(.diac) .play{display:none}
 @media(max-width:1420px){header.top:has(.diac) .nav a .i{display:none}}
 @media(max-width:520px){header.top .logo b{font-size:16px}header.top .logo .cr{font-size:20px}header.top .wrap{gap:8px;flex-wrap:nowrap!important}header.top .diac{transform:scale(.88);transform-origin:right center}}
+
+/* ================= v3: molduras douradas ornamentadas (modelo do Wendrew) ================= */
+:root{--orn:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDk2IDk2Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmYwYjAiLz48c3RvcCBvZmZzZXQ9Ii40NSIgc3RvcC1jb2xvcj0iI2U4YTkzYSIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjYjg3NDFjIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZmZkODc3Ii8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImgiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmU5YTAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNhODY0MWEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iOTAiIGhlaWdodD0iOTAiIHJ4PSI1IiBmaWxsPSJub25lIiBzdHJva2U9IiMzYTFjMDQiIHN0cm9rZS13aWR0aD0iNiIvPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSI5MCIgaGVpZ2h0PSI5MCIgcng9IjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSI0Ii8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iNzYiIGhlaWdodD0iNzYiIHJ4PSIyIiBmaWxsPSJub25lIiBzdHJva2U9IiMyYTE0MDQiIHN0cm9rZS13aWR0aD0iMi41Ii8+PHJlY3QgeD0iMTEuNSIgeT0iMTEuNSIgd2lkdGg9IjczIiBoZWlnaHQ9IjczIiByeD0iMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYzg4YTJhIiBzdHJva2Utd2lkdGg9IjEuMiIvPjxnIGlkPSJjIj48cGF0aCBkPSJNMiAyMCBMMiAyIEwyMCAyIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjaCkiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTE0IDQgTDI0IDE0IEwxNCAyNCBMNCAxNCBaIiBmaWxsPSJ1cmwoI2gpIiBzdHJva2U9IiMzYTFjMDQiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHBhdGggZD0iTTE0IDkgTDE5IDE0IEwxNCAxOSBMOSAxNCBaIiBmaWxsPSIjYTY0YmZmIiBzdHJva2U9IiNlOGM2ZmYiIHN0cm9rZS13aWR0aD0iLjgiLz48L2c+PHVzZSBocmVmPSIjYyIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOTYsMCkgc2NhbGUoLTEsMSkiLz48dXNlIGhyZWY9IiNjIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDk2KSBzY2FsZSgxLC0xKSIvPjx1c2UgaHJlZj0iI2MiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2LDk2KSBzY2FsZSgtMSwtMSkiLz48L3N2Zz4=)}
+.orn,.box,.frame,.skshow,#sitebon,.track-wrap{border:18px solid transparent!important;border-image:var(--orn) 30 stretch!important;border-radius:0!important;background-clip:padding-box!important;box-shadow:0 0 26px rgba(164,107,255,.28),0 14px 30px rgba(0,0,0,.5)!important}
+.box{background:linear-gradient(180deg,rgba(44,26,104,.96),rgba(20,12,56,.97))!important;padding:10px 12px!important}
+.box.hb{padding-top:22px!important}
+.box>.bh{top:-30px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 22px;font-size:17px;border-radius:0;background:linear-gradient(180deg,#4a2196,#1e0c4a);clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%);border:none;box-shadow:none;filter:drop-shadow(0 0 0 #e8a93a)}
+.box>.bh::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#ffe9a0,#b8741c);clip-path:inherit}
+.box>.bh{outline:2px solid #e8a93a;outline-offset:-2px}
+.sobre{background:linear-gradient(180deg,#f3e2b8,#d8bb80)!important}
+/* cabeçalho emoldurado */
+header.top{border-bottom:none!important;box-shadow:none!important;background:transparent!important;padding:6px 8px 0}
+header.top .wrap{border:12px solid transparent;border-image:var(--orn) 30 stretch;background:linear-gradient(180deg,#22165a,#120c34);background-clip:padding-box;max-width:1360px;height:auto!important;min-height:52px;padding:2px 6px}
+header.top .logo b{text-transform:uppercase;letter-spacing:.5px}
+header.top .nav a{font-size:13.5px;padding:5px 9px}
+header.top .nav a.on{border-radius:8px}
+header.top .play{background:linear-gradient(180deg,#ffd35a,#e89a1a)!important;color:#2a1406!important;border:2px solid #fff0b0!important;font-weight:900}
+@media(max-width:900px){header.top{padding:4px 4px 0}header.top .nav{top:calc(100% - 4px)}}
+/* banners das páginas */
+.pban,.hero2,.gban,.pb{margin:10px auto 0;max-width:1360px;border:18px solid transparent!important;border-image:var(--orn) 30 stretch!important;background-clip:padding-box!important;box-shadow:0 0 30px rgba(164,107,255,.35)}
+@media(max-width:1396px){.pban,.hero2,.gban,.pb{margin:10px 8px 0}}
+.pban .t{gap:14px}
+.pban h1{background:none!important;-webkit-text-fill-color:#ffd877;color:#ffd877!important;text-shadow:0 3px 0 #6a3a0a,0 0 14px rgba(255,200,80,.5);position:relative;isolation:isolate;padding:14px 56px 12px;font-size:clamp(30px,5.5vw,62px)!important;filter:drop-shadow(0 3px 0 #3a1a00)!important}
+.pban h1::before,.pban h1::after{content:"";position:absolute;z-index:-1;clip-path:polygon(28px 0,calc(100% - 28px) 0,100% 50%,calc(100% - 28px) 100%,28px 100%,0 50%)}
+.pban h1::before{inset:0;background:linear-gradient(180deg,#fff0b0,#e8a93a 45%,#a8641a 60%,#ffd877)}
+.pban h1::after{inset:5px;background:linear-gradient(180deg,#3e1c86,#160a3e);clip-path:polygon(25px 0,calc(100% - 25px) 0,100% 50%,calc(100% - 25px) 100%,25px 100%,0 50%)}
+.pban .crn{font-size:clamp(28px,4vw,44px);margin-bottom:-22px;position:relative;z-index:2;filter:drop-shadow(0 0 8px rgba(255,210,90,.8))}
+.pban p{position:relative;margin:0!important;padding:10px 34px!important;border:3px solid #e8a93a!important;border-radius:0!important;background:linear-gradient(180deg,rgba(46,22,104,.95),rgba(22,10,58,.95))!important;font-weight:700;box-shadow:0 0 0 2px #3a1c04,0 0 18px rgba(0,0,0,.6)}
+.pban p::before,.pban p::after{content:"";position:absolute;top:50%;width:16px;height:16px;background:linear-gradient(135deg,#ffe9a0,#a8641a);border:2px solid #3a1c04;transform:translateY(-50%) rotate(45deg)}
+.pban p::before{left:-11px}.pban p::after{right:-11px}
+/* títulos de seção */
+.sec2 h2{color:#ffe49a!important;border:none!important;box-shadow:none!important;background:transparent!important;clip-path:none!important;position:relative;isolation:isolate;padding:10px 40px!important}
+.sec2 h2::before,.sec2 h2::after{content:"";position:absolute;z-index:-1;clip-path:polygon(22px 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,22px 100%,0 50%)}
+.sec2 h2::before{inset:0;background:linear-gradient(180deg,#fff0b0,#e8a93a 45%,#a8641a 60%,#ffd877)}
+.sec2 h2::after{inset:4px;background:linear-gradient(180deg,#3e1c86,#160a3e);clip-path:polygon(19px 0,calc(100% - 19px) 0,100% 50%,calc(100% - 19px) 100%,19px 100%,0 50%)}
+/* vantagens do site */
+#sitebon{background:linear-gradient(180deg,rgba(44,26,104,.96),rgba(20,12,56,.97))!important;padding:6px 10px 12px!important;margin:26px 0 10px}
+#sitebon .sb-t{display:table;margin:-32px auto 14px;padding:8px 32px;font:900 clamp(15px,2.2vw,21px) Cinzel,serif;color:#ffe49a;background:linear-gradient(180deg,#3e1c86,#160a3e);border:3px solid #e8a93a;box-shadow:0 0 0 2px #3a1c04}
+#sitebon .sb-g{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+#sitebon .sb-g>div{text-align:center;padding:14px 8px;border-radius:12px;border:2px solid #a46bff;background:linear-gradient(180deg,#2a1a66,#140c3a);box-shadow:0 0 16px rgba(164,107,255,.45),inset 0 0 14px rgba(164,107,255,.2)}
+#sitebon .sb-g b{display:block;font:900 clamp(26px,3.6vw,40px) Cinzel,serif;color:#6af07a;text-shadow:0 2px 0 #0a3a10}
+#sitebon .sb-g>div:nth-child(2) b{color:#5ae0ff;text-shadow:0 2px 0 #0a2a4a}
+#sitebon .sb-g span{display:block;font-weight:700;font-size:14px;margin-top:4px}
+@media(max-width:700px){#sitebon .sb-g{grid-template-columns:1fr 1fr}}
+/* ranking com medalhas */
+.rk td:first-child{font-size:18px;width:40px}
+
+/* botões ilustrados (Jogar agora / Baixar o jogo) */
+.jogar{position:relative;line-height:0}.jogar img{display:block;width:100%;height:auto}.jogar a{position:absolute;border-radius:14px;transition:background .15s,box-shadow .15s}.jogar a:hover{background:rgba(255,255,255,.12);box-shadow:0 0 24px rgba(255,220,120,.6)}
+.bxj{text-align:center}.bxj .bxt{width:min(620px,92%);height:auto;display:block;margin:0 auto 6px}
+.bxg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:900px;margin:0 auto}.bxg a{display:block;transition:transform .15s,filter .15s}.bxg a:hover{transform:translateY(-4px) scale(1.03);filter:brightness(1.15)}.bxg img{width:100%;height:auto;display:block}
+@media(max-width:520px){.bxg{grid-template-columns:1fr 1fr}}
+.box .bxj .bxt{width:100%}.box .bxg{gap:6px}
+#sitebon .sb-g>div{display:block!important;flex-direction:column}#sitebon .sb-g>div>b{margin:0 auto}
