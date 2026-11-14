@@ -3192,7 +3192,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v75 · 13/11/2026';
+const ELD_VER='v76 · 13/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4311,15 +4311,19 @@ const legCols=img=>{if(img._lc)return img._lc;let p='#4a4a5a',b='#5a3a22';try{co
   b=pick(y1-Math.round(H*0.02))||b;p=pick(y1-Math.round(H*0.09))||p}catch(_){}return img._lc={p,b}};
 /* desenha montaria + cavaleiro; a origem do ctx fica nos pés do herói */
 const SITC=new Map();function sitImg(cls,view,lk){const src=A['sit_'+cls+'_'+view];if(!src)return null;const k=cls+view+JSON.stringify(lk&&lk.c);let o=SITC.get(k);if(o)return o;o=src;try{if(lk&&typeof recolor==='function'){const r=recolor(src,cls,lk);if(r)o=r}}catch(_){}SITC.set(k,o);if(SITC.size>40)SITC.delete(SITC.keys().next().value);return o}
+function mtHead(fr){if(fr._ht!=null)return fr._ht;let ht=0.62;try{const c=fr.getContext?fr:(()=>{const o=document.createElement('canvas');o.width=fr.width;o.height=fr.height;o.getContext('2d').drawImage(fr,0,0);return o})();const W=c.width,H=c.height,d=c.getContext('2d').getImageData(0,0,W,H).data;const x0=Math.floor(W*0.4),x1=Math.ceil(W*0.6);
+  outer:for(let y=0;y<H;y++){let n=0;for(let x=x0;x<x1;x++)if(d[(y*W+x)*4+3]>40)n++;if(n>=(x1-x0)*0.5){ht=1-y/H;break outer}}}catch(_){}return fr._ht=Math.max(0.35,Math.min(0.95,ht))}
 function rideDraw(g,img,w,h,dir,walk,mt,cls,lk){const M=MOUNTS[mt];if(!M)return false;const view=dir==='up'?'back':dir==='down'?'front':'side';const fi=walk>0?Math.floor(walk*0.9)%4:0;const fr=A['mt_'+M.k+'_'+view+'_'+fi];if(!fr)return false;
   const _se=(window.__MSEAT||{})[M.k],mh=(view==='side'?23:25)*(_se&&_se[4]||1),mw=fr.width*mh/fr.height;const bob=walk>0?Math.abs(Math.sin(walk*0.9*Math.PI/2))*0.8:0;
   g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(0,2,mw*0.42,3.2,0,0,7);g.fill();
   const mount=()=>g.drawImage(fr,-mw/2,2-mh,mw,mh);
   const sit=cls?sitImg(cls,view,lk):null;
   const SE=(window.__MSEAT||{})[M.k];
-  if(sit){const sh=view==='side'?19.5:19,sw=sit.width*sh/sit.height;const vi=view==='side'?0:view==='front'?1:2;const fyb=SE?-mh*SE[vi]:view==='side'?-mh*0.22:view==='front'?-mh*0.46:-mh*0.3;const sx=view==='side'?-mw*(SE&&SE[3]!=null?SE[3]:0.08):0;
+  if(sit){const sh=(view==='side'?19.5:19)*1.18,sw=sit.width*sh/sit.height;const vi=view==='side'?0:view==='front'?1:2;const fyb=SE?-mh*SE[vi]:view==='side'?-mh*0.22:view==='front'?-mh*0.46:-mh*0.3;const sx=view==='side'?-mw*(SE&&SE[3]!=null?SE[3]:0.08):0;
+    if(view==='front'){/* de frente: o herói fica atrás da cabeça da montaria; só aparece o que sobra acima e dos lados dela */
+      const hy=-mh*mtHead(fr)+(SE&&SE[5]!=null?SE[5]*mh:0);const yb=hy+sh*0.5;g.drawImage(sit,-sw/2,yb-sh-bob,sw,sh);mount();return true}
     const rider=()=>g.drawImage(sit,-sw/2+sx,fyb-sh-bob,sw,sh);
-    if(view==='front'){rider();mount()}else{mount();rider()}return true}
+    mount();rider();return true}
   const L=view==='side'?9:view==='front'?10:12;const rx=view==='side'?-mw*0.11:0;
   const rider=(clipY)=>{g.save();if(clipY!=null){g.beginPath();g.rect(-40,-80,80,80+clipY);g.clip()}g.drawImage(img,-w/2+rx,1.5-h-L-bob,w,h);g.restore()};
   if(view==='front'){rider(null);mount()}else{mount();rider(view==='back'?-L-4-bob:-L-3-bob)}return true}
