@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css">
+<link rel="stylesheet" href="eld.css"><link rel="stylesheet" href="eld2.css?v=76">
 <style>
 .nav a .i{width:20px;height:20px;display:inline-grid;place-items:center;font-size:16px}
 .banner{position:relative;text-align:center;margin:8px auto 0;max-width:780px}
@@ -166,6 +166,6 @@ const q=new URLSearchParams(location.search);if(h==='resgatar'||q.get('codigo'))
   if(h==='inventario'&&ACC)openInv();
   const pk=q.get('pack');if(pk&&INFO&&INFO.packs[pk]&&INFO.pay)buyPack(pk)})();
 </script>
-<script src="eld2.js"></script>
+<script src="eld2.js?v=76"></script>
 </body>
 </html>
