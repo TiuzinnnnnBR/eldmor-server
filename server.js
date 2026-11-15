@@ -7,7 +7,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const PUB = path.resolve(process.env.PUB || path.join(__dirname, 'public'));
-const BOSSES = 24;                       // quantidade de chefes no jogo
+const BOSSES = 30;                       // quantidade de chefes no jogo
 const BOSS_MIN = +process.env.BOSS_MIN || 45, BOSS_MAX = +process.env.BOSS_MAX || 90;   // minutos entre um chefe e outro (só um por vez) — chefes online são raros
 const BOSS_LIFE = 12;                    // minutos até o chefe ir embora se ninguém matar
 const EVENTS = ['blood', 'gold', 'xp', 'horde'];
@@ -140,7 +140,7 @@ function onMsg(c, m) {
   if (m.t === 'p') { if (m.h && typeof m.h.x === 'number') c.h = m.h; return; }
   if (m.t === 'op' && c.op) {
     if (m.c === 'hide') { c.hide = !!m.v; if (c.hide) all({ t: 'pl', id: c.id }, c); else all({ t: 'pj', p: { id: c.id, name: c.name, h: pub(c) } }, c); }
-    else if (m.c === 'boss' && m.bi >= 0 && m.bi < BOSSES) { if (W.boss) all({ t: 'bgone', bi: W.boss.bi }); W.boss = { bi: m.bi | 0, hp: 0, max: 0, who: new Set(), end: Date.now() + BOSS_LIFE * MIN, dirty: false, t: 0 }; all({ t: 'boss', bi: m.bi | 0 }); }
+    else if (m.c === 'boss' && m.bi >= 0 && m.bi < 64) { if (W.boss) all({ t: 'bgone', bi: W.boss.bi }); W.boss = { bi: m.bi | 0, hp: 0, max: 0, who: new Set(), end: Date.now() + BOSS_LIFE * MIN, dirty: false, t: 0 }; all({ t: 'boss', bi: m.bi | 0 }); }
     else if (m.c === 'ev') { if (m.k && EVENTS.includes(m.k)) { W.ev = { k: m.k, end: Date.now() + EV_LEN * MIN }; all({ t: 'ev', k: m.k, rem: EV_LEN * MIN }); } else { W.ev = null; W.nextEv = Date.now() + rand(EV_MIN, EV_MAX) * MIN; all({ t: 'ev', k: null }); } }
     else if (m.c === 'tile' && Number.isInteger(m.k) && Number.isInteger(m.v) && m.k >= 0 && m.k < 2e6 && m.v >= -2 && m.v < 32) { if (W.tiles.size < 60000 || W.tiles.has(m.k)) { W.tiles.set(m.k, m.v); all({ t: 'tile', k: m.k, v: m.v }); } }
     else if (m.c === 'tilesclear') { W.tiles.clear(); }

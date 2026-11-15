@@ -3136,8 +3136,8 @@ function srvData(m){
   else if(m.t==='pj'){if(m.p.id!==SRV.id){srvAdd(m.p);toast(`${m.p.name} entrou no servidor.`,'#6ad8ff')}}
   else if(m.t==='pl'){const p=SRV.players.get(m.id);if(p){SRV.players.delete(m.id);toast(`${p.name} saiu do servidor.`,'#a597bd')}}
   else if(m.t==='ev'){if(m.k&&EVD[m.k]){EVT={k:m.k,end:Date.now()+m.rem};const d=EVD[m.k];banner(d.n,d.d);toast('Evento no servidor: '+d.n+'. '+d.d+'.',d.c);sfx('boss')}else EVT=null}
-  else if(m.t==='boss')srvBoss(m,true);
-  else if(m.t==='bhp'){const e=enemies.find(x=>x.srv&&x.bi===m.bi);if(e){if(m.hp<e.hp)e.flash=0.12;e.hp=Math.max(1,m.hp);e.max=m.max}}
+  else if(m.t==='boss'){SRV.bhp=m.hp||0;SRV.bmax=m.max||0;srvBoss(m,true)}
+  else if(m.t==='bhp'){SRV.bossBi=m.bi;SRV.bhp=m.hp;SRV.bmax=m.max;const e=enemies.find(x=>x.srv&&x.bi===m.bi);if(e){if(m.hp<e.hp)e.flash=0.12;e.hp=Math.max(1,m.hp);e.max=m.max}else srvBossBack()}
   else if(m.t==='bdead'){const e=enemies.find(x=>x.srv&&x.bi===m.bi);SRV.bossBi=-1;if(e){if(m.who.includes(SRV.id)){SRV.killOK=true;try{killEnemy(e)}finally{SRV.killOK=false}}else{enemies.splice(enemies.indexOf(e),1);burst(e.x,e.y-8,['#ffffff','#ffe04a'],50,120,1,2)}}
     toast(`${BD[m.bi].name} foi derrotado por ${m.names.join(', ')}!`,'#ffe04a')}
   else if(m.t==='bgone'){const e=enemies.find(x=>x.srv&&x.bi===m.bi);if(e)enemies.splice(enemies.indexOf(e),1);SRV.bossBi=-1;toast(`${BD[m.bi].name} voltou para as sombras.`,'#a597bd')}
@@ -3148,6 +3148,11 @@ function srvBoss(m,announce){const bi=m.bi;if(!BD[bi])return;SRV.bossBi=bi;let e
   if(!e){const n=enemies.length;spawnBoss(bi);e=enemies[enemies.length-1];if(enemies.length===n||!e||!e.boss)return}
   e.srv=true;if(m.max){e.max=m.max;e.hp=Math.max(1,m.hp)}else srvSend({t:'bmax',bi,max:e.max});
   if(announce){const d=BD[bi];banner(d.name+' apareceu para todos!',d.where+' · nível '+d.lvl);toast(`Chefe do servidor: ${d.name} apareceu em ${ZN[d.z]}. Todos podem lutar juntos.`,'#ff5a4a')}}
+/* v77: o chefe do servidor sumia para quem trocava de mapa, morria ou entrava numa caverna (a lista de monstros era limpa
+   e o chefe não voltava; a barra e os ataques dos outros continuavam). Agora ele é recolocado sozinho, sem repetir o aviso. */
+function srvBossBack(){if(!SRV.on||!(SRV.bossBi>=0)||!BD[SRV.bossBi])return;if(enemies.some(x=>x.srv&&x.bi===SRV.bossBi))return;
+  const bn=banner,ts=toast,sf=sfx;banner=()=>{};toast=()=>{};sfx=()=>{};try{srvBoss({bi:SRV.bossBi,hp:SRV.bhp,max:SRV.bmax},false)}catch(_){}finally{banner=bn;toast=ts;sfx=sf}}
+setInterval(()=>{try{if(typeof mode==='undefined'||mode!=='title')srvBossBack()}catch(_){}},1500);
 /* integração com o jogo */
 {const _bc=bossCheck;bossCheck=function(){if(!SRV.on)return _bc();const sv=S.bossT;S.bossT=(sv||freshBossT()).map(()=>null);try{_bc()}finally{S.bossT=sv}}}
 {const _de=damageEnemy;damageEnemy=function(e,base,ang,opt){if(SRV.on&&e&&e.srv){const h0=e.hp,B=1e9;e.hp+=B;_de(e,base,ang,opt);const d=Math.max(0,h0+B-e.hp);e.hp=Math.max(1,h0-d);if(d>0){SRV.hits+=d;srvSend({t:'bhit',bi:e.bi,d:Math.round(d)})}return}return _de(e,base,ang,opt)}}
@@ -3192,7 +3197,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v76 · 13/11/2026';
+const ELD_VER='v77 · 15/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
