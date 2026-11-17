@@ -3451,7 +3451,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v80 · 17/11/2026';
+const ELD_VER='v81 · 17/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4864,6 +4864,12 @@ setInterval(()=>{try{if(typeof S!=='undefined'&&S&&mode==='play'&&!document.hidd
     const tr=L.trail|0;if(tr&&!lo&&!p.dead&&mv&&TRAILS[tr]&&Math.random()<dt*22){const T2=TRAILS[tr];parts.push({x:p.x+rand(-3,3),y:p.y+(P.r||4)-1,vx:rand(-4,4),vy:rand(-10,-2),life:0.7,max:0.7,col:pick(T2.c),s:T2.s,g:T2.g||0,nog:T2.nog})}
     const pk=L.pet|0;if(pk&&PETSPR[pk]&&!p.dead){if(!p.pet)p.pet={x:p.x-10,y:p.y+3,h:0};const q=p.pet,tx=p.x-(dir>0?11:-11),ty=p.y+3,dx=tx-q.x,dy=ty-q.y,d=hyp(dx,dy);if(d>60){q.x=tx;q.y=ty}else if(d>3){const s=Math.min(d,(40+d*3)*dt);q.x+=dx/d*s;q.y+=dy/d*s;q.h+=dt*10}else q.h=0;
       const fr=PETSPR[pk][Math.floor(q.h)%2],w=fr.width/2/(fr._bk||1),h=fr.height/2/(fr._bk||1);shadow(q.x,q.y,3.5);ctx.save();ctx.translate(q.x,q.y);ctx.imageSmoothingEnabled=true;if(dir<0)ctx.scale(-1,1);ctx.drawImage(fr,-w/2,-h+1,w,h);ctx.restore()}}catch(_){}}}
+
+/* v81: chão sem linhas entre os pedaços do mapa (cada pedaço cobre uma fração de pixel do vizinho) */
+drawGroundLayer=function(x0,y0,x1,y1){const c0=Math.max(0,Math.floor(x0/CPX)),c1=Math.min(CHW-1,Math.floor((x1-1)/CPX)),r0=Math.max(0,Math.floor(y0/CPX)),r1=Math.min(CHH-1,Math.floor((y1-1)/CPX));
+  let sc=1;try{const t=ctx.getTransform();sc=Math.hypot(t.a,t.b)||1}catch(_){}const e=1.5/sc;ctx.imageSmoothingEnabled=false;
+  for(let j=r0;j<=r1;j++)for(let i=c0;i<=c1;i++){const ci=j*CHW+i,cc=getChunk(ci),X=i*CPX,Y=j*CPX;const sx0=Math.max(x0,X),sy0=Math.max(y0,Y),sx1=Math.min(x1,X+CPX),sy1=Math.min(y1,Y+CPX);if(sx1<=sx0||sy1<=sy0)continue;
+    const ex=(i<c1&&sx1===X+CPX)?e:0,ey=(j<r1&&sy1===Y+CPX)?e:0;ctx.drawImage(cc,(sx0-X)*G,(sy0-Y)*G,(sx1-sx0)*G,(sy1-sy0)*G,sx0,sy0,sx1-sx0+ex,sy1-sy0+ey)}ctx.imageSmoothingEnabled=SMOOTH_SPR};
 
 /* ================= v58: monstros sincronizados entre todos os jogadores do servidor =================
    Cada região (zona) tem um "dono": o jogador de menor id que está nela (ou, se ninguém está, o de menor id do servidor).
