@@ -3271,7 +3271,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v78 · 17/11/2026';
+const ELD_VER='v79 · 17/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -4399,6 +4399,8 @@ function rideDraw(g,img,w,h,dir,walk,mt,cls,lk){const M=MOUNTS[mt];if(!M)return 
   const sit=cls?sitImg(cls,view,lk):null;
   const SE=(window.__MSEAT||{})[M.k];
   if(sit){const sh=(view==='side'?19.5:19)*1.18,sw=sit.width*sh/sit.height;const vi=view==='side'?0:view==='front'?1:2;const fyb=SE?-mh*SE[vi]:view==='side'?-mh*0.22:view==='front'?-mh*0.46:-mh*0.3;const sx=view==='side'?-mw*(SE&&SE[3]!=null?SE[3]:0.08):0;
+    if(SE&&SE[6]&&view!=='side'){/* trono: o herói senta no assento, na frente do encosto */
+      const yb=-mh*SE[vi]+sh*0.36;mount();g.drawImage(sit,-sw/2,yb-sh-bob,sw,sh);return true}
     if(view==='front'){/* de frente: o herói fica atrás da cabeça da montaria; só aparece o que sobra acima e dos lados dela */
       const hy=-mh*mtHead(fr)+(SE&&SE[5]!=null?SE[5]*mh:0);const yb=hy+sh*0.4;g.drawImage(sit,-sw/2,yb-sh-bob,sw,sh);mount();return true}
     const rider=()=>g.drawImage(sit,-sw/2+sx,fyb-sh-bob,sw,sh);
@@ -5164,7 +5166,7 @@ window.__ITEMIC=k=>{try{const EV=window.__EV,A=window.ARTC||{};const L=EV&&EV.EV
   const _ic=window.__ITEMIC;window.__ITEMIC=k=>{const a=IM[k];if(!a)return _ic?_ic(k):null;const im=A[a];if(!im)return null;if(im._i5)return im._i5;try{const sz=72,s=Math.min(sz/im.width,sz/im.height)*0.94,o=document.createElement('canvas');o.width=o.height=sz;const g=o.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(im,(sz-im.width*s)/2,(sz-im.height*s)/2,im.width*s,im.height*s);return im._i5=o.toDataURL()}catch(_){return null}}}
 }
 /* altura da sela por montaria: [lado, frente, costas, deslocamento x no lado, escala] */
-window.__MSEAT={fenimp:[0.3,0.6,0.36,0.04,1.25],lobo:[0.36,0.58,0.38,0.08,1.05],dragsomb:[0.36,0.62,0.36,0.04,1.25],grifos:[0.36,0.62,0.36,0.06,1.2],cervocr:[0.38,0.52,0.38,0.06,1.1],espectro:[0.42,0.6,0.4,0.08,1.1],lobolua:[0.38,0.58,0.38,0.08,1.05],lobocel:[0.38,0.58,0.38,0.08,1.05]};
+window.__MSEAT={fenimp:[0.3,0.6,0.36,0.04,1.25],lobo:[0.36,0.58,0.38,0.08,1.05],dragsomb:[0.36,0.62,0.36,0.04,1.25],grifos:[0.36,0.62,0.36,0.06,1.2],cervocr:[0.38,0.52,0.38,0.06,1.1],espectro:[0.42,0.6,0.4,0.08,1.1],lobolua:[0.38,0.58,0.38,0.08,1.05],lobocel:[0.38,0.58,0.38,0.08,1.05],trono:[0.2,0.42,0.5,-0.04,1.1,null,1]};
 
 /* chefes das Terras Distantes com arte desenhada */
 if(window.__ARTBOSS){const B=window.__ARTBOSS;B(18,'micelia',62,[[110,200,80],0.45]);B(19,'treant',72);B(20,'redserpent',76);B(21,'iceking',68);B(22,'darkangel',70);B(23,'eyehorror',78)}
