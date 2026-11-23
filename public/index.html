@@ -3677,7 +3677,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v82 · 22/11/2026';
+const ELD_VER='v83 · 23/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -5792,16 +5792,21 @@ function talkLia(e){const pk='eco_lia_0_0';
   return talk(e,say('O rio devolveu o segredo. Volte ao bosque e veja o lago da escada.'),[],pk)}
 /* ---------- mariposa ---------- */
 function talkMoth(){if(done('eco')&&!done('asas')){if(!E().s.asas)start('asas');toast('A mariposa pousa perto de você. Leve-a até Lia.','#ffd27a');return}if(!E().s.fio){toast('A mariposa se afasta. Fale com Lia primeiro.','#ffd27a');return}}
+/* som de sino: parciais inarmônicos com decaimento longo, um tom para cada sino */
+const BELLF=[440,554.37,659.25];
+function bell(i,vol){try{if(!soundOn)return;unlockAudio();if(!AC)return;const f=typeof i==='number'&&i<3?BELLF[i]:i,now=AC.currentTime,out=AC.createGain();out.gain.value=(vol||1)*0.32;out.connect(AC.destination);
+  for(const[r,a,d]of[[0.5,0.35,3.2],[1,1,2.6],[1.19,0.45,2],[1.5,0.32,1.6],[2,0.55,1.4],[2.74,0.22,0.9],[3.76,0.12,0.6],[5.4,0.06,0.35]]){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(f*r*(1+(Math.random()-0.5)*0.002),now);g.gain.setValueAtTime(0.0001,now);g.gain.exponentialRampToValueAtTime(a,now+0.004);g.gain.exponentialRampToValueAtTime(0.0001,now+d);o.connect(g);g.connect(out);o.start(now);o.stop(now+d+0.05)}
+  const n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*0.03,AC.sampleRate),dd=b.getChannelData(0);for(let k=0;k<dd.length;k++)dd[k]=(Math.random()*2-1)*(1-k/dd.length);n.buffer=b;const ng=AC.createGain();ng.gain.value=0.25;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*3;n.connect(bp);bp.connect(ng);ng.connect(out);n.start(now)}catch(_){}}
 /* ---------- sinos ---------- */
 const BORD=[0,1,2];/* esquerda, direita, centro */
 function demoBells(){ECO.demo={i:0,t:0.6};ECO.inp=[]}
 function ringBell(i){if(!done('fio')){toast('O sino está coberto de musgo e não soa. Siga a mariposa primeiro.','#c8ccd4');return}
-  if(done('eco')){ECO.sinoT[i]=0.8;sfx('anvil');return}
+  if(done('eco')){ECO.sinoT[i]=0.8;bell(i);return}
   if(!E().s.eco){start('eco');talk(Bells[i],say('<i>“Uma nota vem da água. Outra, debaixo dela.”</i>')+say('Os três sinos vão soar em ordem. Toque-os na mesma ordem.'),[sel('Ouvir a demonstração',()=>{closeModal();demoBells()})],'eco_sino_0');return}
-  if(ECO.demo)return;ECO.sinoT[i]=0.8;sfx('anvil');ECO.inp.push(i);const n=ECO.inp.length;
+  if(ECO.demo)return;ECO.sinoT[i]=0.8;bell(i);ECO.inp.push(i);const n=ECO.inp.length;
   if(ECO.inp[n-1]!==BORD[n-1]){toast('O eco se desfaz. Ouça de novo.','#ff9a8a');setTimeout(demoBells,700);return}
-  if(n===3){reward('eco','O sino marcou três estrelas no mapa. O caminho do Estuário se abriu.');ECO.inp=[]}}
-function talkSino(){talk(SinoA,say(done('galhada')?'Sobre o sino, uma constelação nova brilha: a quarta estrela está acesa.':'Um sino rachado, preso por cordas. Perto dele, uma escada de pedra desce e termina dentro do lago.')+(done('mare')?say('A água baixou. A escada agora leva até a margem gravada.'):''),[],'eco_sino_0')}
+  if(n===3){setTimeout(()=>{bell(0,0.7);bell(1,0.7);bell(2,0.7)},500);reward('eco','O sino marcou três estrelas no mapa. O caminho do Estuário se abriu.');ECO.inp=[]}}
+function talkSino(){bell(330,done('mare')?1:0.6);talk(SinoA,say(done('galhada')?'Sobre o sino, uma constelação nova brilha: a quarta estrela está acesa.':'Um sino rachado, preso por cordas. Perto dele, uma escada de pedra desce e termina dentro do lago.')+(done('mare')?say('A água baixou. A escada agora leva até a margem gravada.'):''),[],'eco_sino_0')}
 function readInsc(){E().insc=1;talk(Insc,say('Na pedra, três marcas em fila, gastas pela água: <b>🍃 folha – 🌊 onda – 🦌 galhada</b>.')+say('<span class="muted">Copiado no diário.</span>'),[])}
 /* ---------- portal e portões ---------- */
 function usePortal(e){if(e.eco.to==='vila'){talk(e,say('O portal leva de volta à Vila de Eldmor.'),[sel('Voltar para a vila',()=>{closeModal();tp(SPAWN.x,SPAWN.y)})]);return}
@@ -5895,7 +5900,7 @@ function tick(dt){if(ECO.for!==S)onLoad();const e=E();
   else{const i=Math.min(e.moth|0,4);tgt={x:mp[i].x,y:mp[i].y-8};if(act('fio')&&i<4&&hyp(P.x-mp[i].x,P.y-mp[i].y)<38){e.moth=i+1;sfx('dash');if(e.moth>=4){reward('fio','A mariposa pousou no sino. A primeira clareira virou ponto de retorno.');e.ret=1}}}
   const dm=hyp(tgt.x-ECO.moth.x,tgt.y-ECO.moth.y);if(dm>0.5){const sp=Math.min(dm,dt*(dm>60?110:60));ECO.moth.x+=(tgt.x-ECO.moth.x)/dm*sp;ECO.moth.y+=(tgt.y-ECO.moth.y)/dm*sp}Moth.x=ECO.moth.x;Moth.y=ECO.moth.y+14;
   /* demonstração dos sinos */
-  if(ECO.demo){ECO.demo.t-=dt;if(ECO.demo.t<=0){if(ECO.demo.i>=3)ECO.demo=null;else{ECO.sinoT[BORD[ECO.demo.i]]=0.8;sfx('anvil');ECO.demo.i++;ECO.demo.t=0.85}}}
+  if(ECO.demo){ECO.demo.t-=dt;if(ECO.demo.t<=0){if(ECO.demo.i>=3)ECO.demo=null;else{ECO.sinoT[BORD[ECO.demo.i]]=0.8;bell(BORD[ECO.demo.i]);ECO.demo.i++;ECO.demo.t=0.85}}}
   for(let i=0;i<3;i++)ECO.sinoT[i]=Math.max(0,ECO.sinoT[i]-dt);
   if(ECO.refl){ECO.refl.t-=dt;if(ECO.refl.t<=0){ECO.refl.i++;ECO.refl.t=0.9;if(ECO.refl.i>4)ECO.refl=null}}
   if(ECO.trail>0)ECO.trail-=dt;
