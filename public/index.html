@@ -2362,7 +2362,7 @@ const EAW=96,EX0=MW,ECOW={x0:EX0,aw:EAW,groups:{},pts:{},gates:[],arenas:[]};
   for(let y=4;y<SURF-4;y++)for(let v=21;v<=34;v++)set(x(v),y,WATER);
   const st=[];for(let v=21;v<=34;v++)for(let dy=-1;dy<=1;dy++)st.push([x(v),48+dy]);grp('stair',st);
   const toca=[];for(let v=21;v<=28;v++)for(let dy=-1;dy<=1;dy++)toca.push([x(v),63+dy]);disc(x(27),66,2,SAND);grp('toca',toca);
-  poly([[x(8),48],[x(14),52],[x(14),63],[x(20),63]],1,PATH,g);
+  poly([[x(8),48],[x(20),48]],1,PATH,g);poly([[x(8),48],[x(14),52],[x(14),63],[x(20),63]],1,PATH,g);
   disc(x(38),50,4,g);poly([[x(35),48],[x(46),48],[x(54),48]],1,PATH,g);
   /* arena do Náutilo: chão de areia, faixa de pedra em volta e água fora */
   const AXc=x(68),AYc=48;for(let dy=-16;dy<=16;dy++)for(let dx=-16;dx<=16;dx++){const d=hyp(dx,dy),xx=AXc+dx,yy=AYc+dy;if(d<=11)set(xx,yy,SAND);else if(d<=13)set(xx,yy,COBBLE);else if(d<=15)set(xx,yy,WATER)}
@@ -3677,7 +3677,7 @@ bossCheck=bossLimitCheck;
   for(const Q of[P,P2]){if(Q===P2&&!P2.on)continue;if(hits(Q.x,Q.y,Q.r||4)){const k=nearestPassable(Math.floor(Q.x/T),Math.floor(Q.y/T)+1);if(k>=0){Q.x=(k%MW)*T+8;Q.y=((k/MW)|0)*T+8;Q.path=null}}}}}
 {const _up=update;let stuckT=0;update=function(dt){_up(dt);if(mode!=='play'||P.dead)return;if(hits(P.x,P.y,P.r)){stuckT+=dt;if(stuckT>0.4){stuckT=0;const k=nearestPassable(Math.floor(P.x/T),Math.floor(P.y/T));if(k>=0){P.x=(k%MW)*T+8;P.y=((k/MW)|0)*T+8;P.path=null;P.goal=null}}}else stuckT=0}}
 
-const ELD_VER='v83 · 23/11/2026';
+const ELD_VER='v84 · 23/11/2026';
 {const _ot=openTitle;openTitle=function(){_ot();mbox.insertAdjacentHTML('beforeend',`<p class="muted" style="text-align:right;font-size:11px;margin:8px 0 0;opacity:.7">Versão ${ELD_VER}</p>`)}}
 
 /* ---- monstros: mais numerosos, renascem com atraso, nível variável e força pelo nível ---- */
@@ -5895,7 +5895,7 @@ function tick(dt){if(ECO.for!==S)onLoad();const e=E();
     for(const g of ECOW.gates){if(allowed(g.a))continue;if(P.y>(g.ty-4)*T&&P.y<(g.ty+5)*T&&P.x>g.x-10*T&&P.x>g.x-10&&P.x<g.x+6*T){P.x=g.x-10;P.path=null;P.goal=null;gateMsgT-=dt;if(gateMsgT<=0){gateMsgT=2.5;toast(`Passagem fechada: ${reasons(g.a).filter(r=>!r[1]).map(r=>r[0]).join(' e ')}.`,'#ff9a8a')}}}}
   /* mariposa */
   const mp=mothPts();let tgt;
-  if(done('eco')&&act('asas')){const L=Lia0,dP=hyp(P.x-ECO.moth.x,P.y-ECO.moth.y);tgt=dP>90?{x:ECO.moth.x,y:ECO.moth.y}:{x:P.x-(P.dir>0?14:-14),y:P.y-14};if(hyp(ECO.moth.x-L.x,ECO.moth.y-L.y)<44)reward('asas','A Mariposa Âmbar agora acompanha você. Escolha-a nos visuais de mascote.')}
+  if(done('eco')&&act('asas')){const dP=hyp(P.x-ECO.moth.x,P.y-ECO.moth.y);if(dP>16*T){ECO.moth={x:P.x-14,y:P.y-30}}tgt=dP>90?{x:ECO.moth.x,y:ECO.moth.y}:{x:P.x-(P.dir>0?14:-14),y:P.y-14};if([Lia0].concat(done('eco')?[Lia1]:[]).some(L=>hyp(ECO.moth.x-L.x,ECO.moth.y+14-L.y)<56))reward('asas','A Mariposa Âmbar agora acompanha você. Escolha-a nos visuais de mascote.')}
   else if(done('eco')){tgt={x:PT('0bellC').x+10,y:PT('0bellC').y-14}}
   else{const i=Math.min(e.moth|0,4);tgt={x:mp[i].x,y:mp[i].y-8};if(act('fio')&&i<4&&hyp(P.x-mp[i].x,P.y-mp[i].y)<38){e.moth=i+1;sfx('dash');if(e.moth>=4){reward('fio','A mariposa pousou no sino. A primeira clareira virou ponto de retorno.');e.ret=1}}}
   const dm=hyp(tgt.x-ECO.moth.x,tgt.y-ECO.moth.y);if(dm>0.5){const sp=Math.min(dm,dt*(dm>60?110:60));ECO.moth.x+=(tgt.x-ECO.moth.x)/dm*sp;ECO.moth.y+=(tgt.y-ECO.moth.y)/dm*sp}Moth.x=ECO.moth.x;Moth.y=ECO.moth.y+14;
